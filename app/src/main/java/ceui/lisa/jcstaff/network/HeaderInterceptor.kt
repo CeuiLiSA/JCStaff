@@ -1,0 +1,57 @@
+package ceui.lisa.jcstaff.network
+
+import okhttp3.Interceptor
+import okhttp3.Response
+import java.security.MessageDigest
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+class HeaderInterceptor(
+    private val tokenProvider: (() -> String?)? = null
+) : Interceptor {
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val requestNonce = RequestNonce.build()
+        val originalRequest = chain.request()
+
+        val newRequest = originalRequest.newBuilder().apply {
+            // Add auth token if available
+            tokenProvider?.invoke()?.let { token ->
+                addHeader("authorization", "Bearer $token")
+            }
+
+            addHeader("accept-language", "zh-CN")
+            addHeader("app-os", "ios")
+            addHeader("app-version", "7.13.4")
+            addHeader("x-client-time", requestNonce.xClientTime)
+            addHeader("x-client-hash", requestNonce.xClientHash)
+            addHeader("user-agent", "PixivIOSApp/7.13.4 (iOS 16.0.3; iPhone13,3)")
+        }.build()
+
+        return chain.proceed(newRequest)
+    }
+}
+
+data class RequestNonce(
+    val xClientTime: String,
+    val xClientHash: String,
+) {
+    companion object {
+        private val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ", Locale.US)
+        private const val HASH_SECRET = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
+
+        fun build(): RequestNonce {
+            val time = format.format(Date())
+            val hash = md5("$time$HASH_SECRET")
+            return RequestNonce(time, hash)
+        }
+
+        private fun md5(plainText: String): String {
+            val md = MessageDigest.getInstance("MD5")
+            md.update(plainText.toByteArray())
+            val digest = md.digest()
+            return digest.joinToString("") { "%02x".format(it) }
+        }
+    }
+}
