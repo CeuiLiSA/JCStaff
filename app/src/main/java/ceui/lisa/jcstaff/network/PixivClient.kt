@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.network
 
+import ceui.lisa.jcstaff.cache.ApiCacheManager
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
@@ -57,28 +58,28 @@ object PixivClient {
     fun resetClient() {
         _pixivApi = null
         TokenManager.clear()
-        apiCacheInterceptor.clearCache()
+        ApiCacheManager.clearAllSync()
     }
 
     /**
      * 清除 API 缓存（用于下拉刷新等场景）
      */
     fun clearApiCache() {
-        apiCacheInterceptor.clearCache()
+        ApiCacheManager.clearAllSync()
     }
 
     /**
      * 使指定 URL 的缓存失效
      */
     fun invalidateCache(url: String) {
-        apiCacheInterceptor.invalidate(url)
+        ApiCacheManager.invalidateSync(url)
     }
 
     /**
      * 获取缓存统计信息
      */
     fun getCacheStats(): String {
-        return apiCacheInterceptor.getStats()
+        return ApiCacheManager.getStatsSync()
     }
 
     fun getPkce(): PKCEItem {
@@ -126,15 +127,13 @@ object PixivClient {
             .build()
     }
 
-    private val apiCacheInterceptor = ApiCacheInterceptor()
-
     private fun createAppClient(): Retrofit {
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .protocols(listOf(Protocol.HTTP_1_1))
-            .addInterceptor(apiCacheInterceptor)
+            .addInterceptor(ApiCacheInterceptor())
             .addInterceptor(TokenRefreshInterceptor())
             .addInterceptor(HeaderInterceptor { TokenManager.getAccessToken() })
             .addInterceptor(HttpLoggingInterceptor().apply {
