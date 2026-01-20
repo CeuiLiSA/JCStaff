@@ -57,6 +57,28 @@ object PixivClient {
     fun resetClient() {
         _pixivApi = null
         TokenManager.clear()
+        apiCacheInterceptor.clearCache()
+    }
+
+    /**
+     * 清除 API 缓存（用于下拉刷新等场景）
+     */
+    fun clearApiCache() {
+        apiCacheInterceptor.clearCache()
+    }
+
+    /**
+     * 使指定 URL 的缓存失效
+     */
+    fun invalidateCache(url: String) {
+        apiCacheInterceptor.invalidate(url)
+    }
+
+    /**
+     * 获取缓存统计信息
+     */
+    fun getCacheStats(): String {
+        return apiCacheInterceptor.getStats()
     }
 
     fun getPkce(): PKCEItem {
@@ -104,12 +126,15 @@ object PixivClient {
             .build()
     }
 
+    private val apiCacheInterceptor = ApiCacheInterceptor()
+
     private fun createAppClient(): Retrofit {
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .protocols(listOf(Protocol.HTTP_1_1))
+            .addInterceptor(apiCacheInterceptor)
             .addInterceptor(TokenRefreshInterceptor())
             .addInterceptor(HeaderInterceptor { TokenManager.getAccessToken() })
             .addInterceptor(HttpLoggingInterceptor().apply {
