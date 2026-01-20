@@ -75,18 +75,6 @@ object TokenManager {
     }
 
     /**
-     * 刷新 token（同步版本，供 Interceptor 使用）
-     *
-     * 核心设计：
-     * - 如果已经有刷新操作在进行，等待它完成并使用其结果
-     * - 如果没有，启动新的刷新操作
-     * - 使用 Mutex 保证只有一个协程能启动刷新
-     */
-    fun refreshTokenSync(): String? = runBlocking {
-        refreshTokenSuspend()
-    }
-
-    /**
      * 刷新 token（挂起版本）
      */
     suspend fun refreshTokenSuspend(): String? {
