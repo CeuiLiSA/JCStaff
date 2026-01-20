@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +51,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
@@ -103,84 +103,6 @@ private fun ProgressiveImage(
                 modifier = Modifier
                     .fillMaxSize()
                     .alpha(if (isOriginalLoaded) 1f else 0f)
-            )
-        }
-    }
-}
-
-/**
- * 相关作品卡片
- */
-@Composable
-private fun RelatedIllustCard(
-    illust: Illust,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onClick)
-    ) {
-        Box {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(illust.image_urls?.medium ?: illust.image_urls?.square_medium)
-                    .crossfade(true)
-                    .addHeader("Referer", "https://app-api.pixiv.net/")
-                    .build(),
-                contentDescription = illust.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(illust.aspectRatio())
-            )
-
-            if (illust.page_count > 1) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "${illust.page_count}P",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-
-            if (illust.is_bookmarked == true) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = "已收藏",
-                    tint = Color.Red,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(4.dp)
-                        .size(16.dp)
-                )
-            }
-        }
-
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(
-                text = illust.title ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = illust.user?.name ?: "",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -534,7 +456,7 @@ fun IllustDetailScreen(
 
             // 相关作品瀑布流
             items(relatedIllusts, key = { "related_${it.id}" }) { relatedIllust ->
-                RelatedIllustCard(
+                IllustCard(
                     illust = relatedIllust,
                     onClick = {
                         onRelatedIllustClick?.invoke(relatedIllust)
