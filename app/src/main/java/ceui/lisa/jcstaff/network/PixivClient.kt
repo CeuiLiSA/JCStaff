@@ -19,7 +19,6 @@ object PixivClient {
     private const val OAUTH_HOST = "https://oauth.secure.pixiv.net"
     private const val REQUEST_TIMEOUT = 15L
 
-    private var tokenProvider: (() -> String?)? = null
     private var _pixivApi: PixivApi? = null
     private var currentPkce: PKCEItem? = null
 
@@ -34,13 +33,30 @@ object PixivClient {
             }
         }
 
-    fun setTokenProvider(provider: () -> String?) {
-        tokenProvider = provider
+    /**
+     * 初始化 token
+     */
+    fun initializeTokens(accessToken: String?, refreshToken: String?) {
+        TokenManager.setTokens(accessToken, refreshToken)
         _pixivApi = null
+    }
+
+    /**
+     * 执行 token 刷新 API 调用
+     * 供 AuthRepository 的刷新回调使用
+     */
+    suspend fun refreshTokenApi(refreshToken: String): AccountResponse {
+        return oAuthApi.refreshToken(
+            clientId = CLIENT_ID,
+            clientSecret = CLIENT_SECRET,
+            grantType = GRANT_TYPE_REFRESH_TOKEN,
+            refreshToken = refreshToken
+        )
     }
 
     fun resetClient() {
         _pixivApi = null
+        TokenManager.clear()
     }
 
     fun getPkce(): PKCEItem {
@@ -94,7 +110,8 @@ object PixivClient {
             .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .protocols(listOf(Protocol.HTTP_1_1))
-            .addInterceptor(HeaderInterceptor(tokenProvider))
+            .addInterceptor(TokenRefreshInterceptor())
+            .addInterceptor(HeaderInterceptor { TokenManager.getAccessToken() })
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             })

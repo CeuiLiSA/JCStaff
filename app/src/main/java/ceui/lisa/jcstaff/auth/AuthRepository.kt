@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import ceui.lisa.jcstaff.network.AccountResponse
 import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.network.TokenManager
 import ceui.lisa.jcstaff.network.User
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -67,7 +68,7 @@ class AuthRepository(private val context: Context) {
 
             saveAccount(response)
             PixivClient.resetPkce()
-            PixivClient.setTokenProvider { response.access_token }
+            PixivClient.initializeTokens(response.access_token, response.refresh_token)
 
             Result.success(response)
         } catch (e: Exception) {
@@ -88,7 +89,7 @@ class AuthRepository(private val context: Context) {
             )
 
             saveAccount(response)
-            PixivClient.setTokenProvider { response.access_token }
+            PixivClient.initializeTokens(response.access_token, response.refresh_token)
 
             Result.success(response)
         } catch (e: Exception) {
@@ -106,14 +107,38 @@ class AuthRepository(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences.remove(ACCOUNT_JSON)
         }
-        PixivClient.setTokenProvider { null }
         PixivClient.resetClient()
     }
 
     suspend fun initialize() {
-        val token = getAccessToken()
-        if (token != null) {
-            PixivClient.setTokenProvider { token }
+        val account = accountFlow.first()
+        if (account != null) {
+            PixivClient.initializeTokens(account.access_token, account.refresh_token)
+        }
+
+        // 设置 token 刷新回调
+        // 当 TokenManager 检测到 token 过期并刷新时，会调用此回调
+        // 回调负责：1. 调用刷新 API  2. 持久化新 token
+        TokenManager.setRefreshCallback { currentRefreshToken ->
+            try {
+                val response = PixivClient.refreshTokenApi(currentRefreshToken)
+
+                // 持久化新的 token
+                saveAccount(response)
+
+                TokenManager.TokenResult(
+                    accessToken = response.access_token,
+                    refreshToken = response.refresh_token,
+                    success = true
+                )
+            } catch (e: Exception) {
+                TokenManager.TokenResult(
+                    accessToken = null,
+                    refreshToken = null,
+                    success = false,
+                    error = e.message
+                )
+            }
         }
     }
 }

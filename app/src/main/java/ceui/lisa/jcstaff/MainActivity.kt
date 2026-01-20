@@ -33,6 +33,7 @@ import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
 import ceui.lisa.jcstaff.home.HomeScreen
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LoginScreen
@@ -161,9 +162,11 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                     )
                 }
                 is NavRoute.Home -> {
+                    val currentUser = (authState as? AuthState.Authenticated)?.user
                     HomeScreen(
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedContentScope = this@AnimatedContent,
+                        currentUser = currentUser,
                         onIllustClick = { data ->
                             backStack.add(NavRoute.IllustDetail(
                                 illustId = data.id,
@@ -171,6 +174,11 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                                 previewUrl = data.previewUrl,
                                 aspectRatio = data.aspectRatio
                             ))
+                        },
+                        onBookmarksClick = {
+                            currentUser?.let { user ->
+                                backStack.add(NavRoute.Bookmarks(userId = user.id))
+                            }
                         },
                         onLogoutClick = {
                             authViewModel.logout()
@@ -189,6 +197,24 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                             backStack.removeLast()
                         },
                         onRelatedIllustClick = { illust ->
+                            backStack.add(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        }
+                    )
+                }
+                is NavRoute.Bookmarks -> {
+                    BookmarksScreen(
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@AnimatedContent,
+                        userId = route.userId,
+                        onBackClick = {
+                            backStack.removeLast()
+                        },
+                        onIllustClick = { illust ->
                             backStack.add(NavRoute.IllustDetail(
                                 illustId = illust.id,
                                 title = illust.title ?: "",

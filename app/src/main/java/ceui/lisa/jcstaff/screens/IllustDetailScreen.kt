@@ -43,6 +43,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.core.IllustListViewModel
+import ceui.lisa.jcstaff.core.IllustLoader
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -118,7 +121,8 @@ fun IllustDetailScreen(
     previewUrl: String,
     aspectRatio: Float,
     onBackClick: () -> Unit,
-    onRelatedIllustClick: ((Illust) -> Unit)? = null
+    onRelatedIllustClick: ((Illust) -> Unit)? = null,
+    relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
     val context = LocalContext.current
 
@@ -137,8 +141,7 @@ fun IllustDetailScreen(
     var error by remember { mutableStateOf<String?>(null) }
 
     // 相关作品状态
-    var relatedIllusts by remember { mutableStateOf<List<Illust>>(emptyList()) }
-    var isLoadingRelated by remember { mutableStateOf(false) }
+    val relatedState by relatedViewModel.state.collectAsState()
 
     LaunchedEffect(observedIllust) {
         observedIllust?.let { illust = it }
@@ -166,22 +169,11 @@ fun IllustDetailScreen(
         }
     }
 
-    // 加载相关作品
+    // 绑定相关作品加载器
     LaunchedEffect(illustId) {
-        isLoadingRelated = true
-        try {
-            val response = PixivClient.pixivApi.getRelatedIllusts(illustId)
-            relatedIllusts = response.illusts
-            // 存入 ObjectStore
-            response.illusts.forEach { relatedIllust ->
-                ObjectStore.put(relatedIllust)
-                relatedIllust.user?.let { user -> ObjectStore.put(user) }
-            }
-        } catch (e: Exception) {
-            // 静默失败，相关作品不是必须的
-        } finally {
-            isLoadingRelated = false
-        }
+        relatedViewModel.bind(IllustLoader {
+            PixivClient.pixivApi.getRelatedIllusts(illustId).illusts
+        })
     }
 
     val firstOriginalUrl = remember(illust) {
@@ -424,7 +416,7 @@ fun IllustDetailScreen(
             }
 
             // 相关作品标题
-            if (relatedIllusts.isNotEmpty() || isLoadingRelated) {
+            if (relatedState.illusts.isNotEmpty() || relatedState.isLoading) {
                 item(key = "related_header", span = StaggeredGridItemSpan.FullLine) {
                     Column {
                         HorizontalDivider(
@@ -441,7 +433,7 @@ fun IllustDetailScreen(
             }
 
             // 相关作品加载中
-            if (isLoadingRelated && relatedIllusts.isEmpty()) {
+            if (relatedState.isLoading && relatedState.isEmpty) {
                 item(key = "related_loading", span = StaggeredGridItemSpan.FullLine) {
                     Box(
                         modifier = Modifier
@@ -455,7 +447,7 @@ fun IllustDetailScreen(
             }
 
             // 相关作品瀑布流
-            items(relatedIllusts, key = { "related_${it.id}" }) { relatedIllust ->
+            items(relatedState.illusts, key = { "related_${it.id}" }) { relatedIllust ->
                 IllustCard(
                     illust = relatedIllust,
                     onClick = {
