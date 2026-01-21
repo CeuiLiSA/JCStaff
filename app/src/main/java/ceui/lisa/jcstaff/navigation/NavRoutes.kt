@@ -11,4 +11,5 @@ sealed interface NavRoute {
         val aspectRatio: Float
     ) : NavRoute
     data class Bookmarks(val userId: Long) : NavRoute
+    data object Settings : NavRoute
 }

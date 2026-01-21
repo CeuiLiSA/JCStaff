@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,7 +55,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.network.Illust
@@ -72,10 +77,11 @@ data class IllustClickData(
 @Composable
 fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
+    animatedContentScope: AnimatedContentScope?,
     currentUser: User?,
     onIllustClick: (IllustClickData) -> Unit,
     onBookmarksClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     homeViewModel: HomeViewModel = viewModel()
 ) {
@@ -101,6 +107,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         pagerState.animateScrollToPage(1)
+                    }
+                },
+                onSettingsClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        onSettingsClick()
                     }
                 },
                 onLogoutClick = {
@@ -151,6 +163,10 @@ fun HomeScreen(
                     }
                 }
 
+                // 为两个 Tab 分别创建持久化的滚动状态
+                val recommendedGridState = rememberPersistentLazyStaggeredGridState("home_recommended")
+                val followingGridState = rememberPersistentLazyStaggeredGridState("home_following")
+
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
@@ -160,6 +176,7 @@ fun HomeScreen(
                             illusts = uiState.recommendedIllusts,
                             isLoading = uiState.isLoadingRecommended,
                             error = uiState.recommendedError,
+                            gridState = recommendedGridState,
                             onRefresh = { homeViewModel.loadRecommendedIllusts() },
                             onIllustClick = { illust, previewUrl, aspectRatio ->
                                 onIllustClick(IllustClickData(
@@ -176,6 +193,7 @@ fun HomeScreen(
                             illusts = uiState.followingIllusts,
                             isLoading = uiState.isLoadingFollowing,
                             error = uiState.followingError,
+                            gridState = followingGridState,
                             onRefresh = { homeViewModel.loadFollowingIllusts() },
                             onIllustClick = { illust, previewUrl, aspectRatio ->
                                 onIllustClick(IllustClickData(
@@ -201,11 +219,17 @@ private fun IllustGrid(
     illusts: List<Illust>,
     isLoading: Boolean,
     error: String?,
+    gridState: LazyStaggeredGridState,
     onRefresh: () -> Unit,
     onIllustClick: (Illust, String, Float) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope
+    animatedContentScope: AnimatedContentScope?
 ) {
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+    val density = LocalDensity.current
+    val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
+    val contentPadding = if (gridSpacingEnabled) PaddingValues(8.dp) else PaddingValues(0.dp)
+
     PullToRefreshBox(
         isRefreshing = isLoading,
         onRefresh = onRefresh,
@@ -241,9 +265,10 @@ private fun IllustGrid(
             else -> {
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(2),
-                    contentPadding = PaddingValues(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp,
+                    state = gridState,
+                    contentPadding = contentPadding,
+                    horizontalArrangement = Arrangement.spacedBy(spacing),
+                    verticalItemSpacing = spacing,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(illusts, key = { it.id }) { illust ->
@@ -306,10 +331,9 @@ private fun DrawerContent(
     user: User?,
     onBookmarksClick: () -> Unit,
     onFollowingClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
-    val context = LocalContext.current
-
     ModalDrawerSheet(
         modifier = Modifier.width(300.dp)
     ) {
@@ -368,6 +392,19 @@ private fun DrawerContent(
         Spacer(modifier = Modifier.weight(1f))
 
         HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+
+        NavigationDrawerItem(
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = null
+                )
+            },
+            label = { Text("设置") },
+            selected = false,
+            onClick = onSettingsClick,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
 
         NavigationDrawerItem(
             icon = {

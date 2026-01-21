@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,7 +43,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.core.IllustListViewModel
@@ -52,9 +56,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.components.IllustCard
+import ceui.lisa.jcstaff.components.IllustBoundsTransform
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
@@ -140,11 +147,19 @@ fun IllustDetailScreen(
     var isLoading by remember { mutableStateOf(cachedIllust == null) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    // 收藏状态
+    var isBookmarked by remember(illustId) { mutableStateOf(cachedIllust?.is_bookmarked ?: false) }
+    var isBookmarking by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
     // 相关作品状态
     val relatedState by relatedViewModel.state.collectAsState()
 
     LaunchedEffect(observedIllust) {
-        observedIllust?.let { illust = it }
+        observedIllust?.let {
+            illust = it
+            isBookmarked = it.is_bookmarked ?: false
+        }
     }
 
     // 加载作品详情
@@ -207,16 +222,23 @@ fun IllustDetailScreen(
             )
         }
     ) { paddingValues ->
+        val gridState = rememberPersistentLazyStaggeredGridState("illust_detail_$illustId")
+        val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+        val density = LocalDensity.current
+        val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
+        val horizontalPadding = if (gridSpacingEnabled) 8.dp else 0.dp
+
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
+            state = gridState,
             contentPadding = PaddingValues(
-                start = 8.dp,
-                end = 8.dp,
+                start = horizontalPadding,
+                end = horizontalPadding,
                 top = paddingValues.calculateTopPadding(),
                 bottom = paddingValues.calculateBottomPadding() + 16.dp
             ),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalItemSpacing = 8.dp,
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            verticalItemSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         ) {
             // 第一张图片 - 全宽显示
@@ -228,7 +250,8 @@ fun IllustDetailScreen(
                             .aspectRatio(aspectRatio)
                             .sharedElement(
                                 state = rememberSharedContentState(key = "illust-$illustId"),
-                                animatedVisibilityScope = animatedContentScope
+                                animatedVisibilityScope = animatedContentScope,
+                                boundsTransform = IllustBoundsTransform
                             )
                     ) {
                         ProgressiveImage(
@@ -331,11 +354,38 @@ fun IllustDetailScreen(
                             .padding(horizontal = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable(enabled = !isBookmarking) {
+                                    coroutineScope.launch {
+                                        isBookmarking = true
+                                        try {
+                                            if (isBookmarked) {
+                                                PixivClient.pixivApi.deleteBookmark(illustId)
+                                            } else {
+                                                PixivClient.pixivApi.addBookmark(illustId)
+                                            }
+                                            isBookmarked = !isBookmarked
+                                            // 更新 ObjectStore 中的缓存
+                                            illust?.let { currentIllust ->
+                                                val updatedIllust = currentIllust.copy(is_bookmarked = isBookmarked)
+                                                ObjectStore.put(updatedIllust)
+                                                illust = updatedIllust
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        } finally {
+                                            isBookmarking = false
+                                        }
+                                    }
+                                }
+                                .padding(4.dp)
+                        ) {
                             Icon(
-                                imageVector = if (loadedIllust.is_bookmarked == true) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "收藏",
-                                tint = if (loadedIllust.is_bookmarked == true) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                                imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (isBookmarked) "取消收藏" else "收藏",
+                                tint = if (isBookmarked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(

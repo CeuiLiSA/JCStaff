@@ -38,6 +38,8 @@ import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LoginScreen
+import ceui.lisa.jcstaff.screens.SettingsScreen
+import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,6 +49,9 @@ class MainActivity : ComponentActivity() {
 
         // 初始化 API 缓存
         ApiCacheManager.initialize(this)
+
+        // 初始化设置存储
+        SettingsStore.initialize(this)
 
         setContent {
             JCStaffTheme {
@@ -185,6 +190,9 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                                 backStack.add(NavRoute.Bookmarks(userId = user.id))
                             }
                         },
+                        onSettingsClick = {
+                            backStack.add(NavRoute.Settings)
+                        },
                         onLogoutClick = {
                             authViewModel.logout()
                         }
@@ -226,6 +234,13 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                                 previewUrl = illust.previewUrl(),
                                 aspectRatio = illust.aspectRatio()
                             ))
+                        }
+                    )
+                }
+                is NavRoute.Settings -> {
+                    SettingsScreen(
+                        onBackClick = {
+                            backStack.removeLast()
                         }
                     )
                 }

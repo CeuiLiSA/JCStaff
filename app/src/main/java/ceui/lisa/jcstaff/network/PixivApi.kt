@@ -1,6 +1,9 @@
 package ceui.lisa.jcstaff.network
 
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface PixivApi {
@@ -71,4 +74,17 @@ interface PixivApi {
         @Query("filter") filter: String = "for_ios",
         @Query("offset") offset: Int? = null
     ): UserPreviewResponse
+
+    @FormUrlEncoded
+    @POST("/v2/illust/bookmark/add")
+    suspend fun addBookmark(
+        @Field("illust_id") illustId: Long,
+        @Field("restrict") restrict: String = "public"
+    ): Unit
+
+    @FormUrlEncoded
+    @POST("/v1/illust/bookmark/delete")
+    suspend fun deleteBookmark(
+        @Field("illust_id") illustId: Long
+    ): Unit
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,7 +30,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.core.IllustListViewModel
@@ -106,11 +109,18 @@ fun BookmarksScreen(
                     }
                 }
                 else -> {
+                    val gridState = rememberPersistentLazyStaggeredGridState("bookmarks_$userId")
+                    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+                    val density = LocalDensity.current
+                    val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
+                    val contentPadding = if (gridSpacingEnabled) PaddingValues(8.dp) else PaddingValues(0.dp)
+
                     LazyVerticalStaggeredGrid(
                         columns = StaggeredGridCells.Fixed(2),
-                        contentPadding = PaddingValues(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalItemSpacing = 8.dp,
+                        state = gridState,
+                        contentPadding = contentPadding,
+                        horizontalArrangement = Arrangement.spacedBy(spacing),
+                        verticalItemSpacing = spacing,
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(state.illusts, key = { it.id }) { illust ->
