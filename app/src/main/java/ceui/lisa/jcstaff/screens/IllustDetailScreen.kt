@@ -24,8 +24,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.widget.Toast
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.IllustBoundsTransform
+import ceui.lisa.jcstaff.core.ImageDownloader
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
@@ -150,6 +153,10 @@ fun IllustDetailScreen(
     // 收藏状态
     var isBookmarked by remember(illustId) { mutableStateOf(cachedIllust?.is_bookmarked ?: false) }
     var isBookmarking by remember { mutableStateOf(false) }
+
+    // 下载状态
+    var isDownloading by remember { mutableStateOf(false) }
+
     val coroutineScope = rememberCoroutineScope()
 
     // 相关作品状态
@@ -217,6 +224,41 @@ fun IllustDetailScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回"
                         )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            val downloadUrl = firstOriginalUrl ?: previewUrl
+                            coroutineScope.launch {
+                                isDownloading = true
+                                val fileName = "pixiv_${illustId}_${System.currentTimeMillis()}"
+                                val result = ImageDownloader.downloadToGallery(
+                                    context = context,
+                                    imageUrl = downloadUrl,
+                                    fileName = fileName
+                                )
+                                isDownloading = false
+                                if (result.isSuccess) {
+                                    Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        enabled = !isDownloading
+                    ) {
+                        if (isDownloading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = "下载原图"
+                            )
+                        }
                     }
                 }
             )
