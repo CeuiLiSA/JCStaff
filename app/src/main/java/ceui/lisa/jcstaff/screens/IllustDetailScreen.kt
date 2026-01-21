@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -64,10 +65,12 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.IllustBoundsTransform
+import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.ImageDownloader
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
+import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 import coil.compose.AsyncImage
@@ -157,6 +160,14 @@ fun IllustDetailScreen(
     // 下载状态
     var isDownloading by remember { mutableStateOf(false) }
 
+    // 选择模式
+    val selectionManager = rememberSelectionManager()
+
+    // 返回键退出选择模式
+    BackHandler(enabled = selectionManager.isSelectionMode) {
+        selectionManager.clearSelection()
+    }
+
     val coroutineScope = rememberCoroutineScope()
 
     // 相关作品状态
@@ -208,62 +219,63 @@ fun IllustDetailScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = illust?.title ?: title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+    Box {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = illust?.title ?: title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            val downloadUrl = firstOriginalUrl ?: previewUrl
-                            coroutineScope.launch {
-                                isDownloading = true
-                                val fileName = "pixiv_${illustId}_${System.currentTimeMillis()}"
-                                val result = ImageDownloader.downloadToGallery(
-                                    context = context,
-                                    imageUrl = downloadUrl,
-                                    fileName = fileName
-                                )
-                                isDownloading = false
-                                if (result.isSuccess) {
-                                    Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        },
-                        enabled = !isDownloading
-                    ) {
-                        if (isDownloading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
                             Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "下载原图"
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回"
                             )
                         }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                val downloadUrl = firstOriginalUrl ?: previewUrl
+                                coroutineScope.launch {
+                                    isDownloading = true
+                                    val fileName = "pixiv_${illustId}_${System.currentTimeMillis()}"
+                                    val result = ImageDownloader.downloadToGallery(
+                                        context = context,
+                                        imageUrl = downloadUrl,
+                                        fileName = fileName
+                                    )
+                                    isDownloading = false
+                                    if (result.isSuccess) {
+                                        Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            enabled = !isDownloading
+                        ) {
+                            if (isDownloading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = "下载原图"
+                                )
+                            }
+                        }
                     }
-                }
-            )
-        }
-    ) { paddingValues ->
+                )
+            }
+        ) { paddingValues ->
         val gridState = rememberPersistentLazyStaggeredGridState("illust_detail_$illustId")
         val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
         val density = LocalDensity.current
@@ -544,9 +556,20 @@ fun IllustDetailScreen(
                     illust = relatedIllust,
                     onClick = {
                         onRelatedIllustClick?.invoke(relatedIllust)
-                    }
+                    },
+                    isSelectionMode = selectionManager.isSelectionMode,
+                    isSelected = selectionManager.isSelected(relatedIllust.id),
+                    onLongPress = { selectionManager.onLongPress(relatedIllust) },
+                    onSelectionToggle = { selectionManager.toggleSelection(relatedIllust) }
                 )
             }
         }
+    }
+
+        // Selection top bar overlay
+        SelectionTopBar(
+            selectionManager = selectionManager,
+            allIllusts = relatedState.illusts
+        )
     }
 }

@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import ceui.lisa.jcstaff.network.Illust
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -14,6 +15,16 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
+
+/**
+ * 批量下载进度回调
+ */
+data class BatchDownloadProgress(
+    val current: Int,
+    val total: Int,
+    val currentIllustId: Long,
+    val isSuccess: Boolean
+)
 
 object ImageDownloader {
 
@@ -128,5 +139,48 @@ object ImageDownloader {
                 null
             )
         }
+    }
+
+    /**
+     * 批量下载图片到相册
+     * @param context Context
+     * @param illusts 要下载的 Illust 列表
+     * @param onProgress 进度回调
+     * @return 成功下载的数量
+     */
+    suspend fun batchDownloadToGallery(
+        context: Context,
+        illusts: List<Illust>,
+        onProgress: (BatchDownloadProgress) -> Unit = {}
+    ): Int = withContext(Dispatchers.IO) {
+        var successCount = 0
+        val total = illusts.size
+
+        illusts.forEachIndexed { index, illust ->
+            val imageUrl = illust.maxUrl() ?: illust.previewUrl()
+            val fileName = "pixiv_${illust.id}"
+
+            val result = downloadToGallery(
+                context = context,
+                imageUrl = imageUrl,
+                fileName = fileName
+            )
+
+            val isSuccess = result.isSuccess
+            if (isSuccess) {
+                successCount++
+            }
+
+            onProgress(
+                BatchDownloadProgress(
+                    current = index + 1,
+                    total = total,
+                    currentIllustId = illust.id,
+                    isSuccess = isSuccess
+                )
+            )
+        }
+
+        successCount
     }
 }

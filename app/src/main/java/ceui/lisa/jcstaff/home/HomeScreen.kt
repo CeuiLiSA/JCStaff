@@ -58,8 +58,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.SettingsStore
+import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustCard
+import ceui.lisa.jcstaff.components.SelectionTopBar
+import ceui.lisa.jcstaff.core.SelectionManager
+import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.User
 import coil.compose.AsyncImage
@@ -89,11 +93,25 @@ fun HomeScreen(
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val selectionManager = rememberSelectionManager()
+
+    // 返回键退出选择模式
+    BackHandler(enabled = selectionManager.isSelectionMode) {
+        selectionManager.clearSelection()
+    }
 
     val tabs = listOf("推荐", "关注")
 
+    // 当前页面的 illusts
+    val currentIllusts = when (pagerState.currentPage) {
+        0 -> uiState.recommendedIllusts
+        1 -> uiState.followingIllusts
+        else -> emptyList()
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = !selectionManager.isSelectionMode,
         drawerContent = {
             DrawerContent(
                 user = currentUser,
@@ -124,24 +142,25 @@ fun HomeScreen(
             )
         }
     ) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                TopAppBar(
-                    title = { Text("JCStaff") },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            coroutineScope.launch { drawerState.open() }
-                        }) {
-                            UserAvatar(
-                                user = currentUser,
-                                size = 32
-                            )
+        Box {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                topBar = {
+                    TopAppBar(
+                        title = { Text("JCStaff") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                coroutineScope.launch { drawerState.open() }
+                            }) {
+                                UserAvatar(
+                                    user = currentUser,
+                                    size = 32
+                                )
+                            }
                         }
-                    }
-                )
-            }
-        ) { innerPadding ->
+                    )
+                }
+            ) { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -187,7 +206,8 @@ fun HomeScreen(
                                 ))
                             },
                             sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope
+                            animatedContentScope = animatedContentScope,
+                            selectionManager = selectionManager
                         )
                         1 -> IllustGrid(
                             illusts = uiState.followingIllusts,
@@ -204,11 +224,19 @@ fun HomeScreen(
                                 ))
                             },
                             sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope
+                            animatedContentScope = animatedContentScope,
+                            selectionManager = selectionManager
                         )
                     }
                 }
             }
+        }
+
+            // Selection top bar overlay
+            SelectionTopBar(
+                selectionManager = selectionManager,
+                allIllusts = currentIllusts
+            )
         }
     }
 }
@@ -223,7 +251,8 @@ private fun IllustGrid(
     onRefresh: () -> Unit,
     onIllustClick: (Illust, String, Float) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope?
+    animatedContentScope: AnimatedContentScope?,
+    selectionManager: SelectionManager
 ) {
     val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
     val density = LocalDensity.current
@@ -278,7 +307,11 @@ private fun IllustGrid(
                                 onIllustClick(illust, illust.previewUrl(), illust.aspectRatio())
                             },
                             sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope
+                            animatedContentScope = animatedContentScope,
+                            isSelectionMode = selectionManager.isSelectionMode,
+                            isSelected = selectionManager.isSelected(illust.id),
+                            onLongPress = { selectionManager.onLongPress(illust) },
+                            onSelectionToggle = { selectionManager.toggleSelection(illust) }
                         )
                     }
                 }
