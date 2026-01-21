@@ -82,7 +82,7 @@ fun DetailScreen(
                             style = MaterialTheme.typography.displaySmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.sharedElement(
-                                state = rememberSharedContentState(key = "id-$itemId"),
+                                sharedContentState = rememberSharedContentState(key = "id-$itemId"),
                                 animatedVisibilityScope = animatedContentScope
                             )
                         )
@@ -91,7 +91,7 @@ fun DetailScreen(
                             text = itemName,
                             style = MaterialTheme.typography.headlineMedium,
                             modifier = Modifier.sharedElement(
-                                state = rememberSharedContentState(key = "title-$itemId"),
+                                sharedContentState = rememberSharedContentState(key = "title-$itemId"),
                                 animatedVisibilityScope = animatedContentScope
                             )
                         )
@@ -102,7 +102,7 @@ fun DetailScreen(
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.sharedElement(
-                                    state = rememberSharedContentState(key = "description-$itemId"),
+                                    sharedContentState = rememberSharedContentState(key = "description-$itemId"),
                                     animatedVisibilityScope = animatedContentScope
                                 )
                             )

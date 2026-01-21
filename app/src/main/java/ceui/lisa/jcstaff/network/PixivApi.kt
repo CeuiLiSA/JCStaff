@@ -5,6 +5,7 @@ import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
+import retrofit2.http.Url
 
 interface PixivApi {
 
@@ -87,4 +88,13 @@ interface PixivApi {
     suspend fun deleteBookmark(
         @Field("illust_id") illustId: Long
     ): Unit
+
+    /**
+     * 通用 GET 请求，用于加载 next_url 分页
+     */
+    @GET
+    suspend fun getNextPageIllusts(@Url nextUrl: String): IllustResponse
+
+    @GET
+    suspend fun getNextPageHomeIllusts(@Url nextUrl: String): HomeIllustResponse
 }

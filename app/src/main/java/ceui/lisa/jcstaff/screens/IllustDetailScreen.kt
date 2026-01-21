@@ -41,9 +41,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,6 +72,8 @@ import ceui.lisa.jcstaff.components.IllustBoundsTransform
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.ImageDownloader
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.ProgressManager
+import ceui.lisa.jcstaff.core.createProgressImageLoader
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
 import ceui.lisa.jcstaff.core.rememberSelectionManager
@@ -86,12 +92,37 @@ private fun ProgressiveImage(
     originalUrl: String?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.FillWidth
+    contentScale: ContentScale = ContentScale.FillWidth,
+    onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    var isOriginalLoading by remember(originalUrl) { mutableStateOf(false) }
     var isOriginalLoaded by remember(originalUrl) { mutableStateOf(false) }
+    var downloadProgress by remember(originalUrl) { mutableStateOf(0f) }
 
-    Box(modifier = modifier) {
+    // 创建带进度追踪的 ImageLoader
+    val progressImageLoader = remember(context) { createProgressImageLoader(context) }
+
+    // 监听下载进度
+    DisposableEffect(originalUrl) {
+        if (originalUrl != null) {
+            ProgressManager.addListener(originalUrl) { _, bytesRead, contentLength ->
+                if (contentLength > 0) {
+                    downloadProgress = bytesRead.toFloat() / contentLength.toFloat()
+                }
+            }
+        }
+        onDispose {
+            if (originalUrl != null) {
+                ProgressManager.removeListener(originalUrl)
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+    ) {
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(previewUrl)
@@ -109,17 +140,66 @@ private fun ProgressiveImage(
                     .data(originalUrl)
                     .addHeader("Referer", "https://app-api.pixiv.net/")
                     .build(),
+                imageLoader = progressImageLoader,
                 contentDescription = contentDescription,
                 contentScale = contentScale,
                 onState = { state ->
-                    if (state is AsyncImagePainter.State.Success) {
-                        isOriginalLoaded = true
+                    when (state) {
+                        is AsyncImagePainter.State.Loading -> {
+                            isOriginalLoading = true
+                        }
+                        is AsyncImagePainter.State.Success -> {
+                            isOriginalLoading = false
+                            isOriginalLoaded = true
+                        }
+                        is AsyncImagePainter.State.Error -> {
+                            isOriginalLoading = false
+                        }
+                        else -> {}
                     }
                 },
                 modifier = Modifier
                     .fillMaxSize()
                     .alpha(if (isOriginalLoaded) 1f else 0f)
             )
+
+            // 原图加载中的进度指示器（带百分比）
+            if (isOriginalLoading && !isOriginalLoaded) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp)
+                        .size(48.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // 背景圆环
+                    CircularProgressIndicator(
+                        progress = { 1f },
+                        modifier = Modifier.size(40.dp),
+                        strokeWidth = 3.dp,
+                        color = Color.White.copy(alpha = 0.3f),
+                        trackColor = Color.Transparent
+                    )
+                    // 进度圆环
+                    CircularProgressIndicator(
+                        progress = { downloadProgress },
+                        modifier = Modifier.size(40.dp),
+                        strokeWidth = 3.dp,
+                        color = Color.White,
+                        trackColor = Color.Transparent
+                    )
+                    // 百分比文字
+                    Text(
+                        text = "${(downloadProgress * 100).toInt()}%",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
         }
     }
 }
@@ -135,6 +215,7 @@ fun IllustDetailScreen(
     aspectRatio: Float,
     onBackClick: () -> Unit,
     onRelatedIllustClick: ((Illust) -> Unit)? = null,
+    onImageClick: ((previewUrl: String, originalUrl: String?) -> Unit)? = null,
     relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
     val context = LocalContext.current
@@ -205,7 +286,7 @@ fun IllustDetailScreen(
     // 绑定相关作品加载器
     LaunchedEffect(illustId) {
         relatedViewModel.bind(IllustLoader {
-            PixivClient.pixivApi.getRelatedIllusts(illustId).illusts
+            PixivClient.pixivApi.getRelatedIllusts(illustId)
         })
     }
 
@@ -278,6 +359,8 @@ fun IllustDetailScreen(
         ) { paddingValues ->
         val gridState = rememberPersistentLazyStaggeredGridState("illust_detail_$illustId")
         val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+        val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
+        val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
         val density = LocalDensity.current
         val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
         val horizontalPadding = if (gridSpacingEnabled) 8.dp else 0.dp
@@ -303,7 +386,7 @@ fun IllustDetailScreen(
                             .fillMaxWidth()
                             .aspectRatio(aspectRatio)
                             .sharedElement(
-                                state = rememberSharedContentState(key = "illust-$illustId"),
+                                sharedContentState = rememberSharedContentState(key = "illust-$illustId"),
                                 animatedVisibilityScope = animatedContentScope,
                                 boundsTransform = IllustBoundsTransform
                             )
@@ -312,7 +395,10 @@ fun IllustDetailScreen(
                             previewUrl = previewUrl,
                             originalUrl = firstOriginalUrl,
                             contentDescription = title,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            onClick = {
+                                onImageClick?.invoke(previewUrl, firstOriginalUrl)
+                            }
                         )
                     }
                 }
@@ -356,7 +442,10 @@ fun IllustDetailScreen(
                                 previewUrl = largeUrl,
                                 originalUrl = originalUrl,
                                 contentDescription = loadedIllust.title,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    onImageClick?.invoke(largeUrl, originalUrl)
+                                }
                             )
                         }
                     }
@@ -560,9 +649,43 @@ fun IllustDetailScreen(
                     isSelectionMode = selectionManager.isSelectionMode,
                     isSelected = selectionManager.isSelected(relatedIllust.id),
                     onLongPress = { selectionManager.onLongPress(relatedIllust) },
-                    onSelectionToggle = { selectionManager.toggleSelection(relatedIllust) }
+                    onSelectionToggle = { selectionManager.toggleSelection(relatedIllust) },
+                    showIllustInfo = showIllustInfo,
+                    cornerRadius = illustCornerRadius
                 )
             }
+
+            // 加载更多指示器
+            if (relatedState.isLoadingMore) {
+                item(key = "related_loading_more", span = StaggeredGridItemSpan.FullLine) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                }
+            }
+        }
+
+        // 检测是否滚动到底部
+        LaunchedEffect(gridState, relatedState.canLoadMore) {
+            snapshotFlow {
+                val layoutInfo = gridState.layoutInfo
+                val totalItems = layoutInfo.totalItemsCount
+                val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                totalItems > 0 && lastVisibleItem >= totalItems - 4
+            }
+                .distinctUntilChanged()
+                .filter { it && relatedState.canLoadMore }
+                .collect {
+                    relatedViewModel.loadMore()
+                }
         }
     }
 

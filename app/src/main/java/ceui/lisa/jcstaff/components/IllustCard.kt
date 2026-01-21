@@ -33,10 +33,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -61,13 +59,14 @@ fun IllustCard(
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
     onLongPress: (() -> Unit)? = null,
-    onSelectionToggle: (() -> Unit)? = null
+    onSelectionToggle: (() -> Unit)? = null,
+    // 设置参数（从父组件传入，避免每个卡片都收集 Flow）
+    showIllustInfo: Boolean = true,
+    cornerRadius: Int = 8
 ) {
     val context = LocalContext.current
     val previewUrl = illust.previewUrl()
     val aspectRatio = illust.aspectRatio()
-    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-    val cornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
 
     // 选中时的缩放效果（带动画）
     val scale by animateFloatAsState(
@@ -115,7 +114,7 @@ fun IllustCard(
             val finalModifier = if (sharedTransitionScope != null && animatedContentScope != null && !isSelectionMode) {
                 with(sharedTransitionScope) {
                     imageModifier.sharedElement(
-                        state = rememberSharedContentState(key = "illust-${illust.id}"),
+                        sharedContentState = rememberSharedContentState(key = "illust-${illust.id}"),
                         animatedVisibilityScope = animatedContentScope,
                         boundsTransform = IllustBoundsTransform
                     )

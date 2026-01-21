@@ -39,6 +39,7 @@ import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LoginScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
+import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 
@@ -216,6 +217,12 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                                 previewUrl = illust.previewUrl(),
                                 aspectRatio = illust.aspectRatio()
                             ))
+                        },
+                        onImageClick = { previewUrl, originalUrl ->
+                            backStack.add(NavRoute.ImageViewer(
+                                imageUrl = previewUrl,
+                                originalUrl = originalUrl
+                            ))
                         }
                     )
                 }
@@ -239,6 +246,15 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                 }
                 is NavRoute.Settings -> {
                     SettingsScreen(
+                        onBackClick = {
+                            backStack.removeLast()
+                        }
+                    )
+                }
+                is NavRoute.ImageViewer -> {
+                    ImageViewerScreen(
+                        imageUrl = route.imageUrl,
+                        originalUrl = route.originalUrl,
                         onBackClick = {
                             backStack.removeLast()
                         }

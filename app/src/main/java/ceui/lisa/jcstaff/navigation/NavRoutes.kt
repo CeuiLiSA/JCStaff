@@ -12,4 +12,8 @@ sealed interface NavRoute {
     ) : NavRoute
     data class Bookmarks(val userId: Long) : NavRoute
     data object Settings : NavRoute
+    data class ImageViewer(
+        val imageUrl: String,
+        val originalUrl: String?
+    ) : NavRoute
 }

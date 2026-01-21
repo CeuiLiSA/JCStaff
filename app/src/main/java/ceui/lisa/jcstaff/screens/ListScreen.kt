@@ -116,7 +116,7 @@ private fun ItemCard(
                         text = item.name,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.sharedElement(
-                            state = rememberSharedContentState(key = "title-${item.id}"),
+                            sharedContentState = rememberSharedContentState(key = "title-${item.id}"),
                             animatedVisibilityScope = animatedContentScope
                         )
                     )
@@ -125,7 +125,7 @@ private fun ItemCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.sharedElement(
-                            state = rememberSharedContentState(key = "description-${item.id}"),
+                            sharedContentState = rememberSharedContentState(key = "description-${item.id}"),
                             animatedVisibilityScope = animatedContentScope
                         )
                     )
@@ -135,7 +135,7 @@ private fun ItemCard(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.sharedElement(
-                        state = rememberSharedContentState(key = "id-${item.id}"),
+                        sharedContentState = rememberSharedContentState(key = "id-${item.id}"),
                         animatedVisibilityScope = animatedContentScope
                     )
                 )

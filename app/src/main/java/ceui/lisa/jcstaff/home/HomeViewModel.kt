@@ -15,9 +15,16 @@ data class HomeUiState(
     val followingIllusts: List<Illust> = emptyList(),
     val isLoadingRecommended: Boolean = false,
     val isLoadingFollowing: Boolean = false,
+    val isLoadingMoreRecommended: Boolean = false,
+    val isLoadingMoreFollowing: Boolean = false,
     val recommendedError: String? = null,
-    val followingError: String? = null
-)
+    val followingError: String? = null,
+    val recommendedNextUrl: String? = null,
+    val followingNextUrl: String? = null
+) {
+    val canLoadMoreRecommended: Boolean get() = recommendedNextUrl != null && !isLoadingMoreRecommended
+    val canLoadMoreFollowing: Boolean get() = followingNextUrl != null && !isLoadingMoreFollowing
+}
 
 class HomeViewModel : ViewModel() {
 
@@ -44,12 +51,39 @@ class HomeViewModel : ViewModel() {
 
                 _uiState.value = _uiState.value.copy(
                     recommendedIllusts = illusts,
-                    isLoadingRecommended = false
+                    isLoadingRecommended = false,
+                    recommendedNextUrl = response.next_url
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoadingRecommended = false,
                     recommendedError = e.message ?: "加载失败"
+                )
+            }
+        }
+    }
+
+    fun loadMoreRecommended() {
+        val nextUrl = _uiState.value.recommendedNextUrl ?: return
+        if (_uiState.value.isLoadingMoreRecommended) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingMoreRecommended = true)
+            try {
+                val response = PixivClient.pixivApi.getNextPageHomeIllusts(nextUrl)
+                val newIllusts = response.displayList
+
+                storeIllusts(newIllusts)
+
+                _uiState.value = _uiState.value.copy(
+                    recommendedIllusts = _uiState.value.recommendedIllusts + newIllusts,
+                    isLoadingMoreRecommended = false,
+                    recommendedNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoadingMoreRecommended = false,
+                    recommendedError = e.message ?: "加载更多失败"
                 )
             }
         }
@@ -70,12 +104,39 @@ class HomeViewModel : ViewModel() {
 
                 _uiState.value = _uiState.value.copy(
                     followingIllusts = illusts,
-                    isLoadingFollowing = false
+                    isLoadingFollowing = false,
+                    followingNextUrl = response.next_url
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoadingFollowing = false,
                     followingError = e.message ?: "加载失败"
+                )
+            }
+        }
+    }
+
+    fun loadMoreFollowing() {
+        val nextUrl = _uiState.value.followingNextUrl ?: return
+        if (_uiState.value.isLoadingMoreFollowing) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingMoreFollowing = true)
+            try {
+                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
+                val newIllusts = response.illusts
+
+                storeIllusts(newIllusts)
+
+                _uiState.value = _uiState.value.copy(
+                    followingIllusts = _uiState.value.followingIllusts + newIllusts,
+                    isLoadingMoreFollowing = false,
+                    followingNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoadingMoreFollowing = false,
+                    followingError = e.message ?: "加载更多失败"
                 )
             }
         }

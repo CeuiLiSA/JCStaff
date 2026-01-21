@@ -12,8 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustCard
@@ -64,7 +70,7 @@ fun BookmarksScreen(
     // 绑定加载器
     LaunchedEffect(userId) {
         viewModel.bind(IllustLoader {
-            PixivClient.pixivApi.getUserBookmarks(userId).illusts
+            PixivClient.pixivApi.getUserBookmarks(userId)
         })
     }
 
@@ -125,6 +131,24 @@ fun BookmarksScreen(
                         val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
                         val contentPadding = if (gridSpacingEnabled) PaddingValues(8.dp) else PaddingValues(0.dp)
 
+                        // 检测是否滚动到底部
+                        LaunchedEffect(gridState, state.canLoadMore) {
+                            snapshotFlow {
+                                val layoutInfo = gridState.layoutInfo
+                                val totalItems = layoutInfo.totalItemsCount
+                                val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                                totalItems > 0 && lastVisibleItem >= totalItems - 4
+                            }
+                                .distinctUntilChanged()
+                                .filter { it && state.canLoadMore }
+                                .collect {
+                                    viewModel.loadMore()
+                                }
+                        }
+
+                        val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
+                        val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
+
                         LazyVerticalStaggeredGrid(
                             columns = StaggeredGridCells.Fixed(2),
                             state = gridState,
@@ -142,8 +166,27 @@ fun BookmarksScreen(
                                     isSelectionMode = selectionManager.isSelectionMode,
                                     isSelected = selectionManager.isSelected(illust.id),
                                     onLongPress = { selectionManager.onLongPress(illust) },
-                                    onSelectionToggle = { selectionManager.toggleSelection(illust) }
+                                    onSelectionToggle = { selectionManager.toggleSelection(illust) },
+                                    showIllustInfo = showIllustInfo,
+                                    cornerRadius = illustCornerRadius
                                 )
+                            }
+
+                            // 加载更多指示器
+                            if (state.isLoadingMore) {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

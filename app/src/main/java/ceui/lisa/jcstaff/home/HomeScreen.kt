@@ -50,6 +50,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -147,15 +154,33 @@ fun HomeScreen(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     TopAppBar(
-                        title = { Text("JCStaff") },
-                        navigationIcon = {
-                            IconButton(onClick = {
-                                coroutineScope.launch { drawerState.open() }
-                            }) {
+                        title = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable {
+                                    coroutineScope.launch { drawerState.open() }
+                                }
+                            ) {
                                 UserAvatar(
                                     user = currentUser,
-                                    size = 32
+                                    size = 36
                                 )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = currentUser?.name ?: "JCStaff",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        maxLines = 1
+                                    )
+                                    if (currentUser?.account != null) {
+                                        Text(
+                                            text = "@${currentUser.account}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
                             }
                         }
                     )
@@ -194,9 +219,12 @@ fun HomeScreen(
                         0 -> IllustGrid(
                             illusts = uiState.recommendedIllusts,
                             isLoading = uiState.isLoadingRecommended,
+                            isLoadingMore = uiState.isLoadingMoreRecommended,
+                            canLoadMore = uiState.canLoadMoreRecommended,
                             error = uiState.recommendedError,
                             gridState = recommendedGridState,
                             onRefresh = { homeViewModel.loadRecommendedIllusts() },
+                            onLoadMore = { homeViewModel.loadMoreRecommended() },
                             onIllustClick = { illust, previewUrl, aspectRatio ->
                                 onIllustClick(IllustClickData(
                                     id = illust.id,
@@ -212,9 +240,12 @@ fun HomeScreen(
                         1 -> IllustGrid(
                             illusts = uiState.followingIllusts,
                             isLoading = uiState.isLoadingFollowing,
+                            isLoadingMore = uiState.isLoadingMoreFollowing,
+                            canLoadMore = uiState.canLoadMoreFollowing,
                             error = uiState.followingError,
                             gridState = followingGridState,
                             onRefresh = { homeViewModel.loadFollowingIllusts() },
+                            onLoadMore = { homeViewModel.loadMoreFollowing() },
                             onIllustClick = { illust, previewUrl, aspectRatio ->
                                 onIllustClick(IllustClickData(
                                     id = illust.id,
@@ -246,9 +277,12 @@ fun HomeScreen(
 private fun IllustGrid(
     illusts: List<Illust>,
     isLoading: Boolean,
+    isLoadingMore: Boolean,
+    canLoadMore: Boolean,
     error: String?,
     gridState: LazyStaggeredGridState,
     onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
     onIllustClick: (Illust, String, Float) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope?,
@@ -258,6 +292,21 @@ private fun IllustGrid(
     val density = LocalDensity.current
     val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
     val contentPadding = if (gridSpacingEnabled) PaddingValues(8.dp) else PaddingValues(0.dp)
+
+    // 检测是否滚动到底部，使用 snapshotFlow 避免不必要的重组
+    LaunchedEffect(gridState, canLoadMore) {
+        snapshotFlow {
+            val layoutInfo = gridState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisibleItem >= totalItems - 4
+        }
+            .distinctUntilChanged()
+            .filter { it && canLoadMore }
+            .collect {
+                onLoadMore()
+            }
+    }
 
     PullToRefreshBox(
         isRefreshing = isLoading,
@@ -292,6 +341,9 @@ private fun IllustGrid(
                 }
             }
             else -> {
+                val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
+                val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
+
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(2),
                     state = gridState,
@@ -311,8 +363,27 @@ private fun IllustGrid(
                             isSelectionMode = selectionManager.isSelectionMode,
                             isSelected = selectionManager.isSelected(illust.id),
                             onLongPress = { selectionManager.onLongPress(illust) },
-                            onSelectionToggle = { selectionManager.toggleSelection(illust) }
+                            onSelectionToggle = { selectionManager.toggleSelection(illust) },
+                            showIllustInfo = showIllustInfo,
+                            cornerRadius = illustCornerRadius
                         )
+                    }
+
+                    // 加载更多指示器
+                    if (isLoadingMore) {
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
                     }
                 }
             }

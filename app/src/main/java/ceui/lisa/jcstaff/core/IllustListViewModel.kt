@@ -3,17 +3,19 @@ package ceui.lisa.jcstaff.core
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.IllustResponse
+import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * 插画列表加载器
- * 外部传入不同的加载逻辑，ViewModel 负责统一管理加载状态
+ * 插画列表加载器（支持分页）
+ * 返回 IllustResponse 以获取 next_url
  */
 fun interface IllustLoader {
-    suspend fun load(): List<Illust>
+    suspend fun load(): IllustResponse
 }
 
 /**
@@ -22,10 +24,13 @@ fun interface IllustLoader {
 data class IllustListState(
     val illusts: List<Illust> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val isLoadingMore: Boolean = false,
+    val error: String? = null,
+    val nextUrl: String? = null
 ) {
     val isEmpty: Boolean get() = illusts.isEmpty()
     val hasError: Boolean get() = error != null
+    val canLoadMore: Boolean get() = nextUrl != null && !isLoadingMore
 }
 
 /**
@@ -35,19 +40,13 @@ data class IllustListState(
  * ```
  * // 收藏列表
  * val bookmarksLoader = IllustLoader {
- *     PixivClient.pixivApi.getUserBookmarks(userId).illusts
+ *     PixivClient.pixivApi.getUserBookmarks(userId)
  * }
  * viewModel.bind(bookmarksLoader)
  *
- * // 推荐列表
- * val recommendedLoader = IllustLoader {
- *     PixivClient.pixivApi.getRecommendedIllusts().displayList
- * }
- * viewModel.bind(recommendedLoader)
- *
  * // 相关作品
  * val relatedLoader = IllustLoader {
- *     PixivClient.pixivApi.getRelatedIllusts(illustId).illusts
+ *     PixivClient.pixivApi.getRelatedIllusts(illustId)
  * }
  * viewModel.bind(relatedLoader)
  * ```
@@ -72,7 +71,7 @@ class IllustListViewModel : ViewModel() {
     }
 
     /**
-     * 加载数据
+     * 加载数据（首次加载或刷新）
      */
     fun load() {
         val currentLoader = loader ?: return
@@ -81,17 +80,15 @@ class IllustListViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
-                val illusts = currentLoader.load()
+                val response = currentLoader.load()
 
                 // 存入 ObjectStore
-                illusts.forEach { illust ->
-                    ObjectStore.put(illust)
-                    illust.user?.let { user -> ObjectStore.put(user) }
-                }
+                storeIllusts(response.illusts)
 
                 _state.value = _state.value.copy(
-                    illusts = illusts,
-                    isLoading = false
+                    illusts = response.illusts,
+                    isLoading = false,
+                    nextUrl = response.next_url
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -99,6 +96,43 @@ class IllustListViewModel : ViewModel() {
                     error = e.message ?: "加载失败"
                 )
             }
+        }
+    }
+
+    /**
+     * 加载更多（分页加载）
+     */
+    fun loadMore() {
+        val nextUrl = _state.value.nextUrl ?: return
+        if (_state.value.isLoadingMore) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingMore = true)
+
+            try {
+                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
+
+                // 存入 ObjectStore
+                storeIllusts(response.illusts)
+
+                _state.value = _state.value.copy(
+                    illusts = _state.value.illusts + response.illusts,
+                    isLoadingMore = false,
+                    nextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoadingMore = false,
+                    error = e.message ?: "加载更多失败"
+                )
+            }
+        }
+    }
+
+    private fun storeIllusts(illusts: List<Illust>) {
+        illusts.forEach { illust ->
+            ObjectStore.put(illust)
+            illust.user?.let { user -> ObjectStore.put(user) }
         }
     }
 
