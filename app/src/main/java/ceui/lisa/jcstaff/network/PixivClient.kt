@@ -1,6 +1,7 @@
 package ceui.lisa.jcstaff.network
 
 import ceui.lisa.jcstaff.cache.ApiCacheManager
+import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
@@ -22,6 +23,7 @@ object PixivClient {
 
     private var _pixivApi: PixivApi? = null
     private var currentPkce: PKCEItem? = null
+    private val gson = Gson()
 
     val oAuthApi: OAuthApi by lazy {
         createOAuthClient().create(OAuthApi::class.java)
@@ -80,6 +82,36 @@ object PixivClient {
      */
     fun getCacheStats(): String {
         return ApiCacheManager.getStatsSync()
+    }
+
+    /**
+     * 从缓存获取数据（即使过期也返回，用于 stale-while-revalidate）
+     * @param path API 路径，如 "/v1/illust/recommended"
+     * @param queryParams 查询参数
+     * @param clazz 响应类型
+     * @return 缓存的数据，如果没有缓存则返回 null
+     */
+    suspend fun <T> getFromStaleCache(path: String, queryParams: Map<String, String> = emptyMap(), clazz: Class<T>): T? {
+        val url = buildUrl(path, queryParams)
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
+        val cached = ApiCacheManager.getStale(cacheKey) ?: return null
+
+        return try {
+            val json = String(cached.responseBody, Charsets.UTF_8)
+            gson.fromJson(json, clazz)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun buildUrl(path: String, queryParams: Map<String, String>): String {
+        val baseUrl = APP_API_HOST + path
+        if (queryParams.isEmpty()) return baseUrl
+
+        val queryString = queryParams.entries.joinToString("&") { (key, value) ->
+            "$key=$value"
+        }
+        return "$baseUrl?$queryString"
     }
 
     fun getPkce(): PKCEItem {

@@ -48,7 +48,7 @@ object ApiCacheManager {
     }
 
     /**
-     * 获取缓存
+     * 获取缓存（检查过期）
      */
     fun getSync(key: String): CacheEntry? = runBlocking { get(key) }
 
@@ -85,6 +85,46 @@ object ApiCacheManager {
             Log.e(TAG, "❗ Read cache failed: ${e.message}")
             null
         }
+    }
+
+    /**
+     * 获取缓存（忽略过期，用于 stale-while-revalidate 模式）
+     * 返回缓存内容，即使已过期也返回，让 UI 先显示旧数据
+     */
+    fun getStaleSync(key: String): CacheEntry? = runBlocking { getStale(key) }
+
+    suspend fun getStale(key: String): CacheEntry? = withContext(Dispatchers.IO) {
+        val cacheDao = dao ?: return@withContext null
+
+        try {
+            val entity = cacheDao.get(key) ?: return@withContext null
+
+            val ageSeconds = (System.currentTimeMillis() - entity.timestamp) / 1000
+            val expired = isExpired(entity.timestamp)
+
+            Log.d(TAG, "📦 STALE ${shortenKey(key)}")
+            Log.d(TAG, "   ├─ Age: ${ageSeconds}s")
+            Log.d(TAG, "   ├─ Expired: $expired")
+            Log.d(TAG, "   └─ Size: ${entity.responseBody.size} bytes")
+
+            CacheEntry(
+                responseBody = entity.responseBody,
+                contentType = entity.contentType,
+                httpCode = entity.httpCode,
+                httpMessage = entity.httpMessage,
+                timestamp = entity.timestamp
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "❗ Read stale cache failed: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * 构建缓存 key（供 ViewModel 使用）
+     */
+    fun buildCacheKey(method: String, url: String): String {
+        return "$method:$url"
     }
 
     /**

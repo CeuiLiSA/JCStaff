@@ -21,6 +21,13 @@ class ApiCacheInterceptor : Interceptor {
     companion object {
         private const val TAG = "ApiCache"
 
+        /**
+         * 跳过缓存检查的 Header（用于 stale-while-revalidate 模式）
+         * 当带有此 Header 时，拦截器会跳过读取缓存，直接发起网络请求
+         * 但仍然会将响应存入缓存
+         */
+        const val HEADER_SKIP_CACHE = "X-Skip-Cache-Read"
+
         // 不缓存的路径
         private val EXCLUDE_PATHS = setOf(
             "/auth/token"
@@ -50,16 +57,29 @@ class ApiCacheInterceptor : Interceptor {
 
         val cacheKey = buildCacheKey(request)
 
-        // 检查缓存
-        ApiCacheManager.getSync(cacheKey)?.let { cached ->
-            return buildCachedResponse(request, cached.responseBody, cached.contentType, cached.httpCode, cached.httpMessage, cached.timestamp)
+        // 检查是否跳过缓存读取（stale-while-revalidate 模式的后台刷新请求）
+        val skipCacheRead = request.header(HEADER_SKIP_CACHE) != null
+        val actualRequest = if (skipCacheRead) {
+            // 移除这个 header，不发送到服务器
+            request.newBuilder().removeHeader(HEADER_SKIP_CACHE).build()
+        } else {
+            request
+        }
+
+        // 检查缓存（除非明确跳过）
+        if (!skipCacheRead) {
+            ApiCacheManager.getSync(cacheKey)?.let { cached ->
+                return buildCachedResponse(actualRequest, cached.responseBody, cached.contentType, cached.httpCode, cached.httpMessage, cached.timestamp)
+            }
+        } else {
+            Log.d(TAG, "🔄 REVALIDATE $path (skip cache read)")
         }
 
         Log.d(TAG, "❌ MISS $path")
 
         // 发起请求
         val startTime = System.currentTimeMillis()
-        val response = chain.proceed(request)
+        val response = chain.proceed(actualRequest)
         val duration = System.currentTimeMillis() - startTime
 
         Log.d(TAG, "🌐 FETCH $path (${duration}ms, ${response.code})")

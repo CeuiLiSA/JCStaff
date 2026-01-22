@@ -3,7 +3,9 @@ package ceui.lisa.jcstaff.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.network.HomeIllustResponse
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.IllustResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,10 +40,35 @@ class HomeViewModel : ViewModel() {
 
     fun loadRecommendedIllusts() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoadingRecommended = true,
-                recommendedError = null
+            // Stale-while-revalidate: 先从缓存加载旧数据
+            val cachedResponse = PixivClient.getFromStaleCache(
+                path = "/v1/illust/recommended",
+                queryParams = mapOf(
+                    "content_type" to "illust",
+                    "include_ranking_label" to "true",
+                    "filter" to "for_ios"
+                ),
+                clazz = HomeIllustResponse::class.java
             )
+
+            if (cachedResponse != null) {
+                // 有缓存，立即显示（不显示 loading）
+                val illusts = cachedResponse.displayList
+                storeIllusts(illusts)
+                _uiState.value = _uiState.value.copy(
+                    recommendedIllusts = illusts,
+                    recommendedNextUrl = cachedResponse.next_url,
+                    recommendedError = null
+                )
+            } else {
+                // 无缓存，显示 loading
+                _uiState.value = _uiState.value.copy(
+                    isLoadingRecommended = true,
+                    recommendedError = null
+                )
+            }
+
+            // 发起网络请求获取最新数据
             try {
                 val response = PixivClient.pixivApi.getRecommendedIllusts()
                 val illusts = response.displayList
@@ -55,9 +82,12 @@ class HomeViewModel : ViewModel() {
                     recommendedNextUrl = response.next_url
                 )
             } catch (e: Exception) {
+                // 如果已经有缓存数据，只显示错误信息但保留数据
                 _uiState.value = _uiState.value.copy(
                     isLoadingRecommended = false,
-                    recommendedError = e.message ?: "加载失败"
+                    recommendedError = if (_uiState.value.recommendedIllusts.isEmpty()) {
+                        e.message ?: "加载失败"
+                    } else null
                 )
             }
         }
@@ -91,10 +121,31 @@ class HomeViewModel : ViewModel() {
 
     fun loadFollowingIllusts() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoadingFollowing = true,
-                followingError = null
+            // Stale-while-revalidate: 先从缓存加载旧数据
+            val cachedResponse = PixivClient.getFromStaleCache(
+                path = "/v2/illust/follow",
+                queryParams = mapOf("restrict" to "public"),
+                clazz = IllustResponse::class.java
             )
+
+            if (cachedResponse != null) {
+                // 有缓存，立即显示（不显示 loading）
+                val illusts = cachedResponse.illusts
+                storeIllusts(illusts)
+                _uiState.value = _uiState.value.copy(
+                    followingIllusts = illusts,
+                    followingNextUrl = cachedResponse.next_url,
+                    followingError = null
+                )
+            } else {
+                // 无缓存，显示 loading
+                _uiState.value = _uiState.value.copy(
+                    isLoadingFollowing = true,
+                    followingError = null
+                )
+            }
+
+            // 发起网络请求获取最新数据
             try {
                 val response = PixivClient.pixivApi.getFollowingIllusts()
                 val illusts = response.illusts
@@ -108,9 +159,12 @@ class HomeViewModel : ViewModel() {
                     followingNextUrl = response.next_url
                 )
             } catch (e: Exception) {
+                // 如果已经有缓存数据，只显示错误信息但保留数据
                 _uiState.value = _uiState.value.copy(
                     isLoadingFollowing = false,
-                    followingError = e.message ?: "加载失败"
+                    followingError = if (_uiState.value.followingIllusts.isEmpty()) {
+                        e.message ?: "加载失败"
+                    } else null
                 )
             }
         }
