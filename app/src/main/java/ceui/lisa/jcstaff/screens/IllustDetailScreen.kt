@@ -25,7 +25,20 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.FlowRow
 import android.widget.Toast
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -291,76 +304,7 @@ fun IllustDetailScreen(
     }
 
     Box {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = illust?.title ?: title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回"
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = {
-                                val downloadUrl = firstOriginalUrl ?: previewUrl
-                                coroutineScope.launch {
-                                    isDownloading = true
-                                    val fileName = "pixiv_${illustId}_${System.currentTimeMillis()}"
-
-                                    // 优先使用缓存文件（如果已经下载过，瞬间保存）
-                                    val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
-                                    val result = if (cachedFilePath != null) {
-                                        // 有缓存，直接从缓存保存到相册
-                                        ImageDownloader.saveFromCacheToGallery(
-                                            context = context,
-                                            cachedFilePath = cachedFilePath,
-                                            fileName = fileName
-                                        )
-                                    } else {
-                                        // 没有缓存，需要重新下载
-                                        ImageDownloader.downloadToGallery(
-                                            context = context,
-                                            imageUrl = downloadUrl,
-                                            fileName = fileName
-                                        )
-                                    }
-
-                                    isDownloading = false
-                                    if (result.isSuccess) {
-                                        Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            },
-                            enabled = !isDownloading
-                        ) {
-                            if (isDownloading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = "下载原图"
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-        ) { paddingValues ->
+        Scaffold { paddingValues ->
         val gridState = rememberPersistentLazyStaggeredGridState("illust_detail_$illustId")
         val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
         val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
@@ -375,14 +319,14 @@ fun IllustDetailScreen(
             contentPadding = PaddingValues(
                 start = horizontalPadding,
                 end = horizontalPadding,
-                top = paddingValues.calculateTopPadding(),
+                top = 0.dp,
                 bottom = paddingValues.calculateBottomPadding() + 16.dp
             ),
             horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalItemSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         ) {
-            // 第一张图片 - 全宽显示
+            // 第一张图片 - 全宽沉浸式显示
             item(key = "preview_image", span = StaggeredGridItemSpan.FullLine) {
                 with(sharedTransitionScope) {
                     Box(
@@ -404,6 +348,25 @@ fun IllustDetailScreen(
                                 onImageClick?.invoke(previewUrl, firstOriginalUrl)
                             }
                         )
+
+                        // 浮动返回按钮
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(top = 36.dp, start = 8.dp)
+                                .size(40.dp)
+                                .background(
+                                    color = Color.Black.copy(alpha = 0.4f),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回",
+                                tint = Color.White
+                            )
+                        }
                     }
                 }
             }
@@ -455,7 +418,17 @@ fun IllustDetailScreen(
                     }
                 }
 
-                // 作者信息
+                // 标题
+                item(key = "title", span = StaggeredGridItemSpan.FullLine) {
+                    Text(
+                        text = loadedIllust.title ?: "",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                    )
+                }
+
+                // 作者信息区域
                 item(key = "author", span = StaggeredGridItemSpan.FullLine) {
                     Row(
                         modifier = Modifier
@@ -465,7 +438,7 @@ fun IllustDetailScreen(
                                     onUserClick?.invoke(user.id)
                                 }
                             }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AsyncImage(
@@ -476,7 +449,7 @@ fun IllustDetailScreen(
                                 .build(),
                             contentDescription = loadedIllust.user?.name,
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         )
@@ -487,28 +460,36 @@ fun IllustDetailScreen(
                         ) {
                             Text(
                                 text = loadedIllust.user?.name ?: "",
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "@${loadedIllust.user?.account ?: ""}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
 
-                // 统计数据
-                item(key = "stats", span = StaggeredGridItemSpan.FullLine) {
+                // 操作按钮行（收藏、下载、浏览数）
+                item(key = "actions", span = StaggeredGridItemSpan.FullLine) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // 收藏按钮
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
                                 .clickable(enabled = !isBookmarking) {
                                     coroutineScope.launch {
                                         isBookmarking = true
@@ -519,7 +500,6 @@ fun IllustDetailScreen(
                                                 PixivClient.pixivApi.addBookmark(illustId)
                                             }
                                             isBookmarked = !isBookmarked
-                                            // 更新 ObjectStore 中的缓存
                                             illust?.let { currentIllust ->
                                                 val updatedIllust = currentIllust.copy(is_bookmarked = isBookmarked)
                                                 ObjectStore.put(updatedIllust)
@@ -532,47 +512,178 @@ fun IllustDetailScreen(
                                         }
                                     }
                                 }
-                                .padding(4.dp)
+                                .background(
+                                    if (isBookmarked) MaterialTheme.colorScheme.errorContainer
+                                    else MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(20.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
                             Icon(
                                 imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = if (isBookmarked) "取消收藏" else "收藏",
-                                tint = if (isBookmarked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                                contentDescription = null,
+                                tint = if (isBookmarked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = "${loadedIllust.total_bookmarks ?: 0}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(start = 4.dp)
+                                text = formatCount(loadedIllust.total_bookmarks ?: 0),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isBookmarked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 6.dp)
                             )
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+
+                        // 下载按钮
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .clickable(enabled = !isDownloading) {
+                                    val downloadUrl = firstOriginalUrl ?: previewUrl
+                                    coroutineScope.launch {
+                                        isDownloading = true
+                                        val fileName = "pixiv_${illustId}_${System.currentTimeMillis()}"
+                                        val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
+                                        val result = if (cachedFilePath != null) {
+                                            ImageDownloader.saveFromCacheToGallery(
+                                                context = context,
+                                                cachedFilePath = cachedFilePath,
+                                                fileName = fileName
+                                            )
+                                        } else {
+                                            ImageDownloader.downloadToGallery(
+                                                context = context,
+                                                imageUrl = downloadUrl,
+                                                fileName = fileName
+                                            )
+                                        }
+                                        isDownloading = false
+                                        if (result.isSuccess) {
+                                            Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(20.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            if (isDownloading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                             Text(
-                                text = "浏览 ${loadedIllust.total_view ?: 0}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "下载",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 6.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // 浏览数
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Visibility,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = formatCount(loadedIllust.total_view ?: 0),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 4.dp)
                             )
                         }
                     }
                 }
 
-                // 标题和描述
-                item(key = "title_caption", span = StaggeredGridItemSpan.FullLine) {
+                // 元信息区域
+                item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 12.dp)
+                            .padding(horizontal = 16.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = loadedIllust.title ?: "",
-                            style = MaterialTheme.typography.titleLarge
+                        // 发布时间
+                        loadedIllust.create_date?.let { dateStr ->
+                            val formattedDate = formatDate(dateStr)
+                            if (formattedDate != null) {
+                                MetaInfoRow(
+                                    icon = Icons.Default.CalendarToday,
+                                    label = "发布时间",
+                                    value = formattedDate
+                                )
+                            }
+                        }
+
+                        // 图片尺寸
+                        if (loadedIllust.width > 0 && loadedIllust.height > 0) {
+                            MetaInfoRow(
+                                icon = Icons.Default.Photo,
+                                label = "尺寸",
+                                value = "${loadedIllust.width} × ${loadedIllust.height}"
+                            )
+                        }
+
+                        // 页数
+                        if (loadedIllust.page_count > 1) {
+                            MetaInfoRow(
+                                icon = Icons.Default.PhotoLibrary,
+                                label = "页数",
+                                value = "${loadedIllust.page_count} 张"
+                            )
+                        }
+
+                        // 作品类型
+                        val typeText = when {
+                            loadedIllust.isGif() -> "动图 (Ugoira)"
+                            loadedIllust.isManga() -> "漫画"
+                            else -> "插画"
+                        }
+                        MetaInfoRow(
+                            icon = when {
+                                loadedIllust.isGif() -> Icons.Default.PlayCircle
+                                loadedIllust.isManga() -> Icons.Default.PhotoLibrary
+                                else -> Icons.Default.Image
+                            },
+                            label = "类型",
+                            value = typeText
                         )
-                        if (!loadedIllust.caption.isNullOrEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = loadedIllust.caption,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                        // AI 类型
+                        if (loadedIllust.illust_ai_type > 0) {
+                            val aiText = when (loadedIllust.illust_ai_type) {
+                                1 -> "AI 辅助创作"
+                                2 -> "AI 生成"
+                                else -> "AI 相关"
+                            }
+                            MetaInfoRow(
+                                icon = Icons.Default.AutoAwesome,
+                                label = "AI",
+                                value = aiText,
+                                valueColor = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }
@@ -584,34 +695,71 @@ fun IllustDetailScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp)
+                                .padding(horizontal = 16.dp, vertical = 16.dp)
                         ) {
                             Text(
                                 text = "标签",
                                 style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 12.dp)
                             )
-                            Row(
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                loadedIllust.tags.take(5).forEach { tag ->
-                                    Box(
+                                loadedIllust.tags.forEach { tag ->
+                                    Column(
                                         modifier = Modifier
-                                            .background(
-                                                MaterialTheme.colorScheme.primaryContainer,
-                                                RoundedCornerShape(16.dp)
-                                            )
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                                            .clickable { /* TODO: 搜索标签 */ }
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Text(
-                                            text = tag.name ?: "",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            text = "#${tag.name ?: ""}",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
                                         )
+                                        tag.translated_name?.let { translated ->
+                                            Text(
+                                                text = translated,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                                maxLines = 1
+                                            )
+                                        }
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                // 作品简介
+                if (!loadedIllust.caption.isNullOrBlank()) {
+                    item(key = "caption", span = StaggeredGridItemSpan.FullLine) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = "简介",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Text(
+                                text = loadedIllust.caption.replace(Regex("<[^>]*>"), ""), // 简单去除 HTML 标签
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.4
+                            )
                         }
                     }
                 }
@@ -620,15 +768,18 @@ fun IllustDetailScreen(
             // 相关作品标题
             if (relatedState.illusts.isNotEmpty() || relatedState.isLoading) {
                 item(key = "related_header", span = StaggeredGridItemSpan.FullLine) {
-                    Column {
+                    Column(
+                        modifier = Modifier.padding(top = 24.dp)
+                    ) {
                         HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         )
                         Text(
                             text = "相关作品",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
                         )
                     }
                 }
@@ -703,5 +854,67 @@ fun IllustDetailScreen(
             selectionManager = selectionManager,
             allIllusts = relatedState.illusts
         )
+    }
+}
+
+/**
+ * 元信息行组件
+ */
+@Composable
+private fun MetaInfoRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = valueColor
+        )
+    }
+}
+
+/**
+ * 格式化数字显示
+ */
+private fun formatCount(count: Int): String {
+    return when {
+        count >= 100000 -> String.format(Locale.US, "%.1fw", count / 10000.0)
+        count >= 10000 -> String.format(Locale.US, "%.1f万", count / 10000.0)
+        count >= 1000 -> String.format(Locale.US, "%.1fk", count / 1000.0)
+        else -> count.toString()
+    }
+}
+
+/**
+ * 格式化日期显示
+ */
+private fun formatDate(dateStr: String): String? {
+    return try {
+        val zonedDateTime = ZonedDateTime.parse(dateStr)
+        val formatter = DateTimeFormatter.ofPattern("yyyy年M月d日 HH:mm", Locale.CHINESE)
+        zonedDateTime.format(formatter)
+    } catch (e: Exception) {
+        null
     }
 }
