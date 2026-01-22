@@ -101,6 +101,7 @@ import coil.request.ImageRequest
  * - 退出再进入时续上上一个请求
  * - 下载完成后保存到缓存文件，点击下载按钮时直接使用缓存
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ProgressiveImage(
     previewUrl: String,
@@ -108,6 +109,9 @@ private fun ProgressiveImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.FillWidth,
+    sharedElementKey: String? = null,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedContentScope: AnimatedContentScope? = null,
     onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -132,42 +136,76 @@ private fun ProgressiveImage(
         }
     }
 
+    // 计算图片的 shared element modifier
+    val imageModifier = if (sharedElementKey != null && sharedTransitionScope != null && animatedContentScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                sharedContentState = rememberSharedContentState(key = "image-$sharedElementKey"),
+                animatedVisibilityScope = animatedContentScope,
+                boundsTransform = IllustBoundsTransform
+            )
+        }
+    } else {
+        Modifier
+    }
+
+    // 计算进度指示器的 shared element modifier
+    val progressModifier = if (sharedElementKey != null && sharedTransitionScope != null && animatedContentScope != null) {
+        with(sharedTransitionScope) {
+            Modifier.sharedElement(
+                sharedContentState = rememberSharedContentState(key = "progress-$sharedElementKey"),
+                animatedVisibilityScope = animatedContentScope,
+                boundsTransform = IllustBoundsTransform
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Box(
         modifier = modifier
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
-        // 预览图（始终显示作为底层）
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(previewUrl)
-                .crossfade(true)
-                .addHeader("Referer", "https://app-api.pixiv.net/")
-                .build(),
-            contentDescription = contentDescription,
-            contentScale = contentScale,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // 原图（当下载完成后，从缓存文件加载）
-        if (originalUrl != null && originalUrl != previewUrl && isTaskCompleted && cachedFilePath != null) {
+        // 图片容器（可能带 shared element transition）
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(imageModifier)
+        ) {
+            // 预览图（始终显示作为底层）
             AsyncImage(
                 model = ImageRequest.Builder(context)
-                    .data(java.io.File(cachedFilePath))
+                    .data(previewUrl)
                     .crossfade(true)
+                    .addHeader("Referer", "https://app-api.pixiv.net/")
                     .build(),
                 contentDescription = contentDescription,
                 contentScale = contentScale,
                 modifier = Modifier.fillMaxSize()
             )
+
+            // 原图（当下载完成后，从缓存文件加载）
+            if (originalUrl != null && originalUrl != previewUrl && isTaskCompleted && cachedFilePath != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(java.io.File(cachedFilePath))
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = contentDescription,
+                    contentScale = contentScale,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
-        // 原图加载中的进度指示器（带百分比）
+        // 原图加载中的进度指示器（带百分比，可能带 shared element transition）
         if (originalUrl != null && originalUrl != previewUrl && isTaskLoading && !isTaskCompleted) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(12.dp)
                     .size(48.dp)
+                    .then(progressModifier)
                     .background(
                         color = Color.Black.copy(alpha = 0.6f),
                         shape = CircleShape
@@ -212,7 +250,7 @@ fun IllustDetailScreen(
     aspectRatio: Float,
     onBackClick: () -> Unit,
     onRelatedIllustClick: ((Illust) -> Unit)? = null,
-    onImageClick: ((previewUrl: String, originalUrl: String?) -> Unit)? = null,
+    onImageClick: ((previewUrl: String, originalUrl: String?, sharedElementKey: String) -> Unit)? = null,
     onUserClick: ((Long) -> Unit)? = null,
     relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
@@ -328,6 +366,7 @@ fun IllustDetailScreen(
         ) {
             // 第一张图片 - 全宽沉浸式显示
             item(key = "preview_image", span = StaggeredGridItemSpan.FullLine) {
+                val firstImageKey = "${illustId}_0"
                 with(sharedTransitionScope) {
                     Box(
                         modifier = Modifier
@@ -344,8 +383,11 @@ fun IllustDetailScreen(
                             originalUrl = firstOriginalUrl,
                             contentDescription = title,
                             modifier = Modifier.fillMaxSize(),
+                            sharedElementKey = firstImageKey,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedContentScope = animatedContentScope,
                             onClick = {
-                                onImageClick?.invoke(previewUrl, firstOriginalUrl)
+                                onImageClick?.invoke(previewUrl, firstOriginalUrl, firstImageKey)
                             }
                         )
 
@@ -403,6 +445,8 @@ fun IllustDetailScreen(
                     val additionalPages = loadedIllust.meta_pages?.drop(1) ?: emptyList()
                     additionalPages.forEachIndexed { index, page ->
                         item(key = "image_$index", span = StaggeredGridItemSpan.FullLine) {
+                            val pageIndex = index + 1 // 从1开始，因为0是第一张图
+                            val imageKey = "${illustId}_$pageIndex"
                             val largeUrl = page.image_urls?.large ?: ""
                             val originalUrl = page.image_urls?.original
                             ProgressiveImage(
@@ -410,8 +454,11 @@ fun IllustDetailScreen(
                                 originalUrl = originalUrl,
                                 contentDescription = loadedIllust.title,
                                 modifier = Modifier.fillMaxWidth(),
+                                sharedElementKey = imageKey,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedContentScope = animatedContentScope,
                                 onClick = {
-                                    onImageClick?.invoke(largeUrl, originalUrl)
+                                    onImageClick?.invoke(largeUrl, originalUrl, imageKey)
                                 }
                             )
                         }

@@ -236,10 +236,11 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                                 aspectRatio = illust.aspectRatio()
                             ))
                         },
-                        onImageClick = { previewUrl, originalUrl ->
+                        onImageClick = { previewUrl, originalUrl, sharedElementKey ->
                             backStack.add(NavRoute.ImageViewer(
                                 imageUrl = previewUrl,
-                                originalUrl = originalUrl
+                                originalUrl = originalUrl,
+                                sharedElementKey = sharedElementKey
                             ))
                         },
                         onUserClick = { userId ->
@@ -274,8 +275,11 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                 }
                 is NavRoute.ImageViewer -> {
                     ImageViewerScreen(
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@AnimatedContent,
                         imageUrl = route.imageUrl,
                         originalUrl = route.originalUrl,
+                        sharedElementKey = route.sharedElementKey,
                         onBackClick = {
                             backStack.removeLast()
                         }

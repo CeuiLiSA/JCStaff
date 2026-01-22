@@ -14,7 +14,8 @@ sealed interface NavRoute {
     data object Settings : NavRoute
     data class ImageViewer(
         val imageUrl: String,
-        val originalUrl: String?
+        val originalUrl: String?,
+        val sharedElementKey: String
     ) : NavRoute
     data object BrowseHistory : NavRoute
     data class UserProfile(val userId: Long) : NavRoute
