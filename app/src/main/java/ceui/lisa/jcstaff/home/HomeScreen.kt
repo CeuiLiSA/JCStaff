@@ -5,10 +5,8 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,10 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -30,12 +24,10 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -45,33 +37,21 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import androidx.lifecycle.viewmodel.compose.viewModel
-import ceui.lisa.jcstaff.components.IllustCard
+import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
-import ceui.lisa.jcstaff.core.SelectionManager
 import ceui.lisa.jcstaff.core.rememberSelectionManager
-import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.User
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -222,47 +202,45 @@ fun HomeScreen(
                     when (page) {
                         0 -> IllustGrid(
                             illusts = uiState.recommendedIllusts,
+                            onIllustClick = { illust ->
+                                onIllustClick(IllustClickData(
+                                    id = illust.id,
+                                    title = illust.title ?: "",
+                                    previewUrl = illust.previewUrl(),
+                                    aspectRatio = illust.aspectRatio()
+                                ))
+                            },
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedContentScope = animatedContentScope,
                             isLoading = uiState.isLoadingRecommended,
                             isLoadingMore = uiState.isLoadingMoreRecommended,
                             canLoadMore = uiState.canLoadMoreRecommended,
                             error = uiState.recommendedError,
-                            gridState = recommendedGridState,
                             onRefresh = { homeViewModel.loadRecommendedIllusts() },
                             onLoadMore = { homeViewModel.loadMoreRecommended() },
-                            onIllustClick = { illust, previewUrl, aspectRatio ->
+                            selectionManager = selectionManager,
+                            gridState = recommendedGridState
+                        )
+                        1 -> IllustGrid(
+                            illusts = uiState.followingIllusts,
+                            onIllustClick = { illust ->
                                 onIllustClick(IllustClickData(
                                     id = illust.id,
                                     title = illust.title ?: "",
-                                    previewUrl = previewUrl,
-                                    aspectRatio = aspectRatio
+                                    previewUrl = illust.previewUrl(),
+                                    aspectRatio = illust.aspectRatio()
                                 ))
                             },
                             sharedTransitionScope = sharedTransitionScope,
                             animatedContentScope = animatedContentScope,
-                            selectionManager = selectionManager,
-                            isScrollEnabled = !isTransitionActive
-                        )
-                        1 -> IllustGrid(
-                            illusts = uiState.followingIllusts,
                             isLoading = uiState.isLoadingFollowing,
                             isLoadingMore = uiState.isLoadingMoreFollowing,
                             canLoadMore = uiState.canLoadMoreFollowing,
                             error = uiState.followingError,
-                            gridState = followingGridState,
                             onRefresh = { homeViewModel.loadFollowingIllusts() },
                             onLoadMore = { homeViewModel.loadMoreFollowing() },
-                            onIllustClick = { illust, previewUrl, aspectRatio ->
-                                onIllustClick(IllustClickData(
-                                    id = illust.id,
-                                    title = illust.title ?: "",
-                                    previewUrl = previewUrl,
-                                    aspectRatio = aspectRatio
-                                ))
-                            },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
                             selectionManager = selectionManager,
-                            isScrollEnabled = !isTransitionActive
+                            gridState = followingGridState
                         )
                     }
                 }
@@ -274,128 +252,6 @@ fun HomeScreen(
                 selectionManager = selectionManager,
                 allIllusts = currentIllusts
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
-@Composable
-private fun IllustGrid(
-    illusts: List<Illust>,
-    isLoading: Boolean,
-    isLoadingMore: Boolean,
-    canLoadMore: Boolean,
-    error: String?,
-    gridState: LazyStaggeredGridState,
-    onRefresh: () -> Unit,
-    onLoadMore: () -> Unit,
-    onIllustClick: (Illust, String, Float) -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope?,
-    selectionManager: SelectionManager,
-    isScrollEnabled: Boolean = true
-) {
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
-    val density = LocalDensity.current
-    val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
-    val contentPadding = if (gridSpacingEnabled) PaddingValues(8.dp) else PaddingValues(0.dp)
-
-    // 检测是否滚动到底部，使用 snapshotFlow 避免不必要的重组
-    LaunchedEffect(gridState, canLoadMore) {
-        snapshotFlow {
-            val layoutInfo = gridState.layoutInfo
-            val totalItems = layoutInfo.totalItemsCount
-            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            totalItems > 0 && lastVisibleItem >= totalItems - 4
-        }
-            .distinctUntilChanged()
-            .filter { it && canLoadMore }
-            .collect {
-                onLoadMore()
-            }
-    }
-
-    PullToRefreshBox(
-        isRefreshing = isLoading,
-        onRefresh = onRefresh,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        when {
-            error != null && illusts.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = "下拉刷新重试",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                }
-            }
-            illusts.isEmpty() && isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            else -> {
-                val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-                val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    state = gridState,
-                    contentPadding = contentPadding,
-                    horizontalArrangement = Arrangement.spacedBy(spacing),
-                    verticalItemSpacing = spacing,
-                    modifier = Modifier.fillMaxSize(),
-                    // 在 shared element transition 动画进行时禁用滚动
-                    userScrollEnabled = isScrollEnabled
-                ) {
-                    items(illusts, key = { it.id }) { illust ->
-                        IllustCard(
-                            illust = illust,
-                            onClick = {
-                                onIllustClick(illust, illust.previewUrl(), illust.aspectRatio())
-                            },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
-                            isSelectionMode = selectionManager.isSelectionMode,
-                            isSelected = selectionManager.isSelected(illust.id),
-                            onLongPress = { selectionManager.onLongPress(illust) },
-                            onSelectionToggle = { selectionManager.toggleSelection(illust) },
-                            showIllustInfo = showIllustInfo,
-                            cornerRadius = illustCornerRadius
-                        )
-                    }
-
-                    // 加载更多指示器
-                    if (isLoadingMore) {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -533,4 +389,3 @@ private fun DrawerContent(
         )
     }
 }
-
