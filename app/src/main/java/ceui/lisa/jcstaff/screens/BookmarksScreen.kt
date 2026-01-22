@@ -62,6 +62,9 @@ fun BookmarksScreen(
     val state by viewModel.state.collectAsState()
     val selectionManager = rememberSelectionManager()
 
+    // 检测 shared element transition 是否正在进行
+    val isTransitionActive = sharedTransitionScope.isTransitionActive
+
     // 返回键退出选择模式
     BackHandler(enabled = selectionManager.isSelectionMode) {
         selectionManager.clearSelection()
@@ -155,7 +158,9 @@ fun BookmarksScreen(
                             contentPadding = contentPadding,
                             horizontalArrangement = Arrangement.spacedBy(spacing),
                             verticalItemSpacing = spacing,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            // 在 shared element transition 动画进行时禁用滚动
+                            userScrollEnabled = !isTransitionActive
                         ) {
                             items(state.illusts, key = { it.id }) { illust ->
                                 IllustCard(

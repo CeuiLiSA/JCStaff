@@ -203,6 +203,9 @@ fun IllustDetailScreen(
 ) {
     val context = LocalContext.current
 
+    // 检测 shared element transition 是否正在进行
+    val isTransitionActive = sharedTransitionScope.isTransitionActive
+
     // 从 ObjectStore 获取缓存数据
     val cachedIllust = remember(illustId) {
         ObjectStore.peek<Illust>(StoreKey(illustId, StoreType.ILLUST))
@@ -373,7 +376,9 @@ fun IllustDetailScreen(
             ),
             horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalItemSpacing = spacing,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            // 在 shared element transition 动画进行时禁用滚动
+            userScrollEnabled = !isTransitionActive
         ) {
             // 第一张图片 - 全宽显示
             item(key = "preview_image", span = StaggeredGridItemSpan.FullLine) {

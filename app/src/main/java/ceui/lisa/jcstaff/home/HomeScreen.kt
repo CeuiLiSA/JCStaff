@@ -96,6 +96,8 @@ fun HomeScreen(
     onLogoutClick: () -> Unit,
     homeViewModel: HomeViewModel = viewModel()
 ) {
+    // 检测 shared element transition 是否正在进行
+    val isTransitionActive = sharedTransitionScope.isTransitionActive
     val uiState by homeViewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
@@ -213,7 +215,9 @@ fun HomeScreen(
 
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    // 动画进行时禁用左右滑动
+                    userScrollEnabled = !isTransitionActive
                 ) { page ->
                     when (page) {
                         0 -> IllustGrid(
@@ -235,7 +239,8 @@ fun HomeScreen(
                             },
                             sharedTransitionScope = sharedTransitionScope,
                             animatedContentScope = animatedContentScope,
-                            selectionManager = selectionManager
+                            selectionManager = selectionManager,
+                            isScrollEnabled = !isTransitionActive
                         )
                         1 -> IllustGrid(
                             illusts = uiState.followingIllusts,
@@ -256,7 +261,8 @@ fun HomeScreen(
                             },
                             sharedTransitionScope = sharedTransitionScope,
                             animatedContentScope = animatedContentScope,
-                            selectionManager = selectionManager
+                            selectionManager = selectionManager,
+                            isScrollEnabled = !isTransitionActive
                         )
                     }
                 }
@@ -286,7 +292,8 @@ private fun IllustGrid(
     onIllustClick: (Illust, String, Float) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope?,
-    selectionManager: SelectionManager
+    selectionManager: SelectionManager,
+    isScrollEnabled: Boolean = true
 ) {
     val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
     val density = LocalDensity.current
@@ -350,7 +357,9 @@ private fun IllustGrid(
                     contentPadding = contentPadding,
                     horizontalArrangement = Arrangement.spacedBy(spacing),
                     verticalItemSpacing = spacing,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    // 在 shared element transition 动画进行时禁用滚动
+                    userScrollEnabled = isScrollEnabled
                 ) {
                     items(illusts, key = { it.id }) { illust ->
                         IllustCard(
