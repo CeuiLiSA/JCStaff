@@ -142,6 +142,37 @@ object ImageDownloader {
     }
 
     /**
+     * 从缓存文件保存到相册（瞬间完成）
+     * @param context Context
+     * @param cachedFilePath 缓存文件路径
+     * @param fileName 文件名（不含扩展名）
+     * @return 是否成功
+     */
+    suspend fun saveFromCacheToGallery(
+        context: Context,
+        cachedFilePath: String,
+        fileName: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val file = File(cachedFilePath)
+            if (!file.exists()) {
+                return@withContext Result.failure(Exception("Cache file not found"))
+            }
+
+            val bitmap = BitmapFactory.decodeFile(cachedFilePath)
+                ?: return@withContext Result.failure(Exception("Failed to decode cached image"))
+
+            saveToGallery(context, bitmap, fileName)
+            bitmap.recycle()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    /**
      * 批量下载图片到相册
      * @param context Context
      * @param illusts 要下载的 Illust 列表

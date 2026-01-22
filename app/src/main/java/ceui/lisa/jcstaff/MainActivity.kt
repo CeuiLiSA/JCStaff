@@ -40,6 +40,7 @@ import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LoginScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
+import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 
@@ -53,6 +54,9 @@ class MainActivity : ComponentActivity() {
 
         // 初始化设置存储
         SettingsStore.initialize(this)
+
+        // 初始化加载任务管理器
+        LoadTaskManager.init(this)
 
         setContent {
             JCStaffTheme {

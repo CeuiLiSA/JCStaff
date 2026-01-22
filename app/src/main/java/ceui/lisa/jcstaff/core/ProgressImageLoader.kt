@@ -23,6 +23,7 @@ typealias ProgressListener = (url: String, bytesRead: Long, contentLength: Long)
 
 /**
  * 进度追踪管理器
+ * 与 LoadTaskManager 集成，自动同步进度
  */
 object ProgressManager {
     private val listeners = ConcurrentHashMap<String, ProgressListener>()
@@ -36,7 +37,11 @@ object ProgressManager {
     }
 
     internal fun updateProgress(url: String, bytesRead: Long, contentLength: Long) {
+        // 通知本地监听器
         listeners[url]?.invoke(url, bytesRead, contentLength)
+
+        // 同步到 LoadTaskManager（全局进度管理）
+        LoadTaskManager.updateProgress(url, bytesRead, contentLength)
     }
 }
 

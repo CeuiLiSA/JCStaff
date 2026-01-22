@@ -58,7 +58,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.core.IllustListViewModel
 import ceui.lisa.jcstaff.core.IllustLoader
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -71,20 +70,22 @@ import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.IllustBoundsTransform
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.ImageDownloader
+import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
-import ceui.lisa.jcstaff.core.ProgressManager
-import ceui.lisa.jcstaff.core.createProgressImageLoader
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
 import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 
 /**
  * 渐进式图片加载组件
+ * 使用 LoadTaskManager 自己维护 OkHttp 下载，支持：
+ * - 一级详情页和二级详情页共享进度
+ * - 退出再进入时续上上一个请求
+ * - 下载完成后保存到缓存文件，点击下载按钮时直接使用缓存
  */
 @Composable
 private fun ProgressiveImage(
@@ -96,26 +97,24 @@ private fun ProgressiveImage(
     onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    var isOriginalLoading by remember(originalUrl) { mutableStateOf(false) }
-    var isOriginalLoaded by remember(originalUrl) { mutableStateOf(false) }
-    var downloadProgress by remember(originalUrl) { mutableStateOf(0f) }
 
-    // 创建带进度追踪的 ImageLoader
-    val progressImageLoader = remember(context) { createProgressImageLoader(context) }
+    // 使用 LoadTaskManager 管理加载任务（自己维护 OkHttp 下载）
+    // registerListener 会自动启动下载任务
+    val loadTaskFlow = remember(originalUrl) {
+        originalUrl?.let { LoadTaskManager.registerListener(it) }
+    }
+    val loadTask by loadTaskFlow?.collectAsState() ?: remember { mutableStateOf(null) }
 
-    // 监听下载进度
+    // 从任务状态中获取进度和加载状态
+    val downloadProgress = loadTask?.progress ?: 0f
+    val isTaskLoading = loadTask?.isLoading == true
+    val isTaskCompleted = loadTask?.isCompleted == true
+    val cachedFilePath = loadTask?.cachedFilePath
+
+    // 页面退出时取消监听（但不取消下载任务本身）
     DisposableEffect(originalUrl) {
-        if (originalUrl != null) {
-            ProgressManager.addListener(originalUrl) { _, bytesRead, contentLength ->
-                if (contentLength > 0) {
-                    downloadProgress = bytesRead.toFloat() / contentLength.toFloat()
-                }
-            }
-        }
         onDispose {
-            if (originalUrl != null) {
-                ProgressManager.removeListener(originalUrl)
-            }
+            originalUrl?.let { LoadTaskManager.unregisterListener(it) }
         }
     }
 
@@ -123,6 +122,7 @@ private fun ProgressiveImage(
         modifier = modifier
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
+        // 预览图（始终显示作为底层）
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(previewUrl)
@@ -134,71 +134,54 @@ private fun ProgressiveImage(
             modifier = Modifier.fillMaxSize()
         )
 
-        if (originalUrl != null && originalUrl != previewUrl) {
+        // 原图（当下载完成后，从缓存文件加载）
+        if (originalUrl != null && originalUrl != previewUrl && isTaskCompleted && cachedFilePath != null) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
-                    .data(originalUrl)
-                    .addHeader("Referer", "https://app-api.pixiv.net/")
+                    .data(java.io.File(cachedFilePath))
+                    .crossfade(true)
                     .build(),
-                imageLoader = progressImageLoader,
                 contentDescription = contentDescription,
                 contentScale = contentScale,
-                onState = { state ->
-                    when (state) {
-                        is AsyncImagePainter.State.Loading -> {
-                            isOriginalLoading = true
-                        }
-                        is AsyncImagePainter.State.Success -> {
-                            isOriginalLoading = false
-                            isOriginalLoaded = true
-                        }
-                        is AsyncImagePainter.State.Error -> {
-                            isOriginalLoading = false
-                        }
-                        else -> {}
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(if (isOriginalLoaded) 1f else 0f)
+                modifier = Modifier.fillMaxSize()
             )
+        }
 
-            // 原图加载中的进度指示器（带百分比）
-            if (isOriginalLoading && !isOriginalLoaded) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(12.dp)
-                        .size(48.dp)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.6f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // 背景圆环
-                    CircularProgressIndicator(
-                        progress = { 1f },
-                        modifier = Modifier.size(40.dp),
-                        strokeWidth = 3.dp,
-                        color = Color.White.copy(alpha = 0.3f),
-                        trackColor = Color.Transparent
-                    )
-                    // 进度圆环
-                    CircularProgressIndicator(
-                        progress = { downloadProgress },
-                        modifier = Modifier.size(40.dp),
-                        strokeWidth = 3.dp,
-                        color = Color.White,
-                        trackColor = Color.Transparent
-                    )
-                    // 百分比文字
-                    Text(
-                        text = "${(downloadProgress * 100).toInt()}%",
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
+        // 原图加载中的进度指示器（带百分比）
+        if (originalUrl != null && originalUrl != previewUrl && isTaskLoading && !isTaskCompleted) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+                    .size(48.dp)
+                    .background(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                // 背景圆环
+                CircularProgressIndicator(
+                    progress = { 1f },
+                    modifier = Modifier.size(40.dp),
+                    strokeWidth = 3.dp,
+                    color = Color.White.copy(alpha = 0.3f),
+                    trackColor = Color.Transparent
+                )
+                // 进度圆环
+                CircularProgressIndicator(
+                    progress = { downloadProgress },
+                    modifier = Modifier.size(40.dp),
+                    strokeWidth = 3.dp,
+                    color = Color.White,
+                    trackColor = Color.Transparent
+                )
+                // 百分比文字
+                Text(
+                    text = "${(downloadProgress * 100).toInt()}%",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }
@@ -326,11 +309,25 @@ fun IllustDetailScreen(
                                 coroutineScope.launch {
                                     isDownloading = true
                                     val fileName = "pixiv_${illustId}_${System.currentTimeMillis()}"
-                                    val result = ImageDownloader.downloadToGallery(
-                                        context = context,
-                                        imageUrl = downloadUrl,
-                                        fileName = fileName
-                                    )
+
+                                    // 优先使用缓存文件（如果已经下载过，瞬间保存）
+                                    val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
+                                    val result = if (cachedFilePath != null) {
+                                        // 有缓存，直接从缓存保存到相册
+                                        ImageDownloader.saveFromCacheToGallery(
+                                            context = context,
+                                            cachedFilePath = cachedFilePath,
+                                            fileName = fileName
+                                        )
+                                    } else {
+                                        // 没有缓存，需要重新下载
+                                        ImageDownloader.downloadToGallery(
+                                            context = context,
+                                            imageUrl = downloadUrl,
+                                            fileName = fileName
+                                        )
+                                    }
+
                                     isDownloading = false
                                     if (result.isSuccess) {
                                         Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()

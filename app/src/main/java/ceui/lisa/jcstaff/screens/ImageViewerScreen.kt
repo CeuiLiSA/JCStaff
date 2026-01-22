@@ -16,24 +16,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import ceui.lisa.jcstaff.core.ProgressManager
-import ceui.lisa.jcstaff.core.createProgressImageLoader
+import androidx.compose.runtime.collectAsState
+import ceui.lisa.jcstaff.core.LoadTaskManager
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import me.saket.telephoto.zoomable.coil.ZoomableAsyncImage
 import me.saket.telephoto.zoomable.rememberZoomableImageState
+import java.io.File
 
+/**
+ * 全屏图片查看器
+ * 使用 LoadTaskManager 自己维护 OkHttp 下载，与一级详情页共享：
+ * - 从详情页点击进入时，复用已有的加载任务和缓存文件
+ * - 退出再进入时，续上上一个请求而不是新发请求
+ * - 下载完成后直接使用缓存文件，点击下载按钮瞬间完成
+ */
 @Composable
 fun ImageViewerScreen(
     imageUrl: String,
@@ -43,22 +46,23 @@ fun ImageViewerScreen(
     val context = LocalContext.current
     val effectiveUrl = originalUrl ?: imageUrl
 
-    var isLoading by remember(effectiveUrl) { mutableStateOf(false) }
-    var isLoaded by remember(effectiveUrl) { mutableStateOf(false) }
-    var downloadProgress by remember(effectiveUrl) { mutableStateOf(0f) }
+    // 使用 LoadTaskManager 管理加载任务（与一级详情页共享）
+    // registerListener 会自动启动下载任务
+    val loadTaskFlow = remember(effectiveUrl) {
+        LoadTaskManager.registerListener(effectiveUrl)
+    }
+    val loadTask by loadTaskFlow.collectAsState()
 
-    // 创建带进度追踪的 ImageLoader
-    val progressImageLoader = remember(context) { createProgressImageLoader(context) }
+    // 从任务状态中获取进度
+    val downloadProgress = loadTask.progress
+    val isTaskLoading = loadTask.isLoading
+    val isTaskCompleted = loadTask.isCompleted
+    val cachedFilePath = loadTask.cachedFilePath
 
-    // 监听下载进度
+    // 页面退出时取消监听（但不取消下载任务本身）
     DisposableEffect(effectiveUrl) {
-        ProgressManager.addListener(effectiveUrl) { _, bytesRead, contentLength ->
-            if (contentLength > 0) {
-                downloadProgress = bytesRead.toFloat() / contentLength.toFloat()
-            }
-        }
         onDispose {
-            ProgressManager.removeListener(effectiveUrl)
+            LoadTaskManager.unregisterListener(effectiveUrl)
         }
     }
 
@@ -69,49 +73,30 @@ fun ImageViewerScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // 隐藏的 AsyncImage 用于追踪加载状态
+        // 预览图（作为底层，在原图加载完成前显示）
         AsyncImage(
             model = ImageRequest.Builder(context)
-                .data(effectiveUrl)
+                .data(imageUrl)
                 .addHeader("Referer", "https://app-api.pixiv.net/")
                 .build(),
-            imageLoader = progressImageLoader,
             contentDescription = null,
-            contentScale = ContentScale.Fit,
-            onState = { state ->
-                when (state) {
-                    is AsyncImagePainter.State.Loading -> {
-                        isLoading = true
-                    }
-                    is AsyncImagePainter.State.Success -> {
-                        isLoading = false
-                        isLoaded = true
-                    }
-                    is AsyncImagePainter.State.Error -> {
-                        isLoading = false
-                    }
-                    else -> {}
-                }
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .alpha(0f) // 隐藏，仅用于状态追踪
-        )
-
-        // 可缩放的图片
-        ZoomableAsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(effectiveUrl)
-                .addHeader("Referer", "https://app-api.pixiv.net/")
-                .build(),
-            imageLoader = progressImageLoader,
-            contentDescription = null,
-            state = zoomableState,
             modifier = Modifier.fillMaxSize()
         )
 
-        // 加载进度指示器（与一级详情页一致）
-        if (isLoading && !isLoaded) {
+        // 原图（当下载完成后，使用缓存文件加载可缩放图片）
+        if (isTaskCompleted && cachedFilePath != null) {
+            ZoomableAsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(File(cachedFilePath))
+                    .build(),
+                contentDescription = null,
+                state = zoomableState,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // 加载进度指示器
+        if (isTaskLoading && !isTaskCompleted) {
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
