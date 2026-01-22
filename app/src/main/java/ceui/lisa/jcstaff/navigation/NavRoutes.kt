@@ -16,4 +16,5 @@ sealed interface NavRoute {
         val imageUrl: String,
         val originalUrl: String?
     ) : NavRoute
+    data object BrowseHistory : NavRoute
 }

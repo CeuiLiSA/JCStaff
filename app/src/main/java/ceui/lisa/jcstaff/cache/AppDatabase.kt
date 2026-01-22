@@ -9,13 +9,15 @@ import androidx.room.RoomDatabase
  * 应用数据库
  */
 @Database(
-    entities = [ApiCacheEntity::class],
-    version = 1,
+    entities = [ApiCacheEntity::class, BrowseHistoryEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun apiCacheDao(): ApiCacheDao
+
+    abstract fun browseHistoryDao(): BrowseHistoryDao
 
     companion object {
         @Volatile

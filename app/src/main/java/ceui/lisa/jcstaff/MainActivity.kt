@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import ceui.lisa.jcstaff.cache.ApiCacheManager
+import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,6 +41,7 @@ import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LoginScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
+import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
@@ -57,6 +59,9 @@ class MainActivity : ComponentActivity() {
 
         // 初始化加载任务管理器
         LoadTaskManager.init(this)
+
+        // 初始化浏览历史管理器
+        BrowseHistoryManager.initialize(this)
 
         setContent {
             JCStaffTheme {
@@ -195,6 +200,9 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                                 backStack.add(NavRoute.Bookmarks(userId = user.id))
                             }
                         },
+                        onBrowseHistoryClick = {
+                            backStack.add(NavRoute.BrowseHistory)
+                        },
                         onSettingsClick = {
                             backStack.add(NavRoute.Settings)
                         },
@@ -261,6 +269,23 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                         originalUrl = route.originalUrl,
                         onBackClick = {
                             backStack.removeLast()
+                        }
+                    )
+                }
+                is NavRoute.BrowseHistory -> {
+                    BrowseHistoryScreen(
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@AnimatedContent,
+                        onBackClick = {
+                            backStack.removeLast()
+                        },
+                        onIllustClick = { illust ->
+                            backStack.add(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
                         }
                     )
                 }

@@ -26,6 +26,7 @@ import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import android.widget.Toast
+import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
@@ -274,6 +275,11 @@ fun IllustDetailScreen(
         relatedViewModel.bind(IllustLoader {
             PixivClient.pixivApi.getRelatedIllusts(illustId)
         })
+    }
+
+    // 记录浏览历史
+    LaunchedEffect(illust) {
+        illust?.let { BrowseHistoryManager.recordView(it) }
     }
 
     val firstOriginalUrl = remember(illust) {

@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerValue
@@ -72,6 +73,7 @@ fun HomeScreen(
     currentUser: User?,
     onIllustClick: (IllustClickData) -> Unit,
     onBookmarksClick: () -> Unit,
+    onBrowseHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     homeViewModel: HomeViewModel = viewModel()
@@ -114,6 +116,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         pagerState.animateScrollToPage(1)
+                    }
+                },
+                onBrowseHistoryClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        onBrowseHistoryClick()
                     }
                 },
                 onSettingsClick = {
@@ -300,6 +308,7 @@ private fun DrawerContent(
     user: User?,
     onBookmarksClick: () -> Unit,
     onFollowingClick: () -> Unit,
+    onBrowseHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
@@ -355,6 +364,19 @@ private fun DrawerContent(
             label = { Text("我的关注") },
             selected = false,
             onClick = onFollowingClick,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+
+        NavigationDrawerItem(
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = null
+                )
+            },
+            label = { Text("浏览历史") },
+            selected = false,
+            onClick = onBrowseHistoryClick,
             modifier = Modifier.padding(horizontal = 12.dp)
         )
 
