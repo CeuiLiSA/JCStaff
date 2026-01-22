@@ -200,6 +200,7 @@ fun IllustDetailScreen(
     onBackClick: () -> Unit,
     onRelatedIllustClick: ((Illust) -> Unit)? = null,
     onImageClick: ((previewUrl: String, originalUrl: String?) -> Unit)? = null,
+    onUserClick: ((Long) -> Unit)? = null,
     relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
     val context = LocalContext.current
@@ -464,6 +465,11 @@ fun IllustDetailScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable(enabled = onUserClick != null && loadedIllust.user != null) {
+                                loadedIllust.user?.let { user ->
+                                    onUserClick?.invoke(user.id)
+                                }
+                            }
                             .padding(vertical = 12.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

@@ -42,6 +42,7 @@ import ceui.lisa.jcstaff.screens.LoginScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
+import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
@@ -203,6 +204,11 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                         onBrowseHistoryClick = {
                             backStack.add(NavRoute.BrowseHistory)
                         },
+                        onUserProfileClick = {
+                            currentUser?.let { user ->
+                                backStack.add(NavRoute.UserProfile(userId = user.id))
+                            }
+                        },
                         onSettingsClick = {
                             backStack.add(NavRoute.Settings)
                         },
@@ -235,6 +241,9 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                                 imageUrl = previewUrl,
                                 originalUrl = originalUrl
                             ))
+                        },
+                        onUserClick = { userId ->
+                            backStack.add(NavRoute.UserProfile(userId = userId))
                         }
                     )
                 }
@@ -276,6 +285,24 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                     BrowseHistoryScreen(
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedContentScope = this@AnimatedContent,
+                        onBackClick = {
+                            backStack.removeLast()
+                        },
+                        onIllustClick = { illust ->
+                            backStack.add(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        }
+                    )
+                }
+                is NavRoute.UserProfile -> {
+                    UserProfileScreen(
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@AnimatedContent,
+                        userId = route.userId,
                         onBackClick = {
                             backStack.removeLast()
                         },

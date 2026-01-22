@@ -21,6 +21,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
@@ -74,6 +75,7 @@ fun HomeScreen(
     onIllustClick: (IllustClickData) -> Unit,
     onBookmarksClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
+    onUserProfileClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit,
     homeViewModel: HomeViewModel = viewModel()
@@ -106,6 +108,12 @@ fun HomeScreen(
         drawerContent = {
             DrawerContent(
                 user = currentUser,
+                onUserProfileClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        onUserProfileClick()
+                    }
+                },
                 onBookmarksClick = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -306,6 +314,7 @@ private fun UserAvatar(
 @Composable
 private fun DrawerContent(
     user: User?,
+    onUserProfileClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onFollowingClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
@@ -341,6 +350,19 @@ private fun DrawerContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Menu items
+        NavigationDrawerItem(
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = null
+                )
+            },
+            label = { Text("我的主页") },
+            selected = false,
+            onClick = onUserProfileClick,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+
         NavigationDrawerItem(
             icon = {
                 Icon(

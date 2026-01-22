@@ -70,6 +70,12 @@ interface PixivApi {
         @Query("max_bookmark_id") maxBookmarkId: Long? = null
     ): IllustResponse
 
+    @GET("/v1/user/detail")
+    suspend fun getUserDetail(
+        @Query("user_id") userId: Long,
+        @Query("filter") filter: String = "for_ios"
+    ): UserDetailResponse
+
     @GET("/v1/user/recommended")
     suspend fun getRecommendedUsers(
         @Query("filter") filter: String = "for_ios",
@@ -87,6 +93,19 @@ interface PixivApi {
     @POST("/v1/illust/bookmark/delete")
     suspend fun deleteBookmark(
         @Field("illust_id") illustId: Long
+    ): Unit
+
+    @FormUrlEncoded
+    @POST("/v1/user/follow/add")
+    suspend fun followUser(
+        @Field("user_id") userId: Long,
+        @Field("restrict") restrict: String = "public"
+    ): Unit
+
+    @FormUrlEncoded
+    @POST("/v1/user/follow/delete")
+    suspend fun unfollowUser(
+        @Field("user_id") userId: Long
     ): Unit
 
     /**

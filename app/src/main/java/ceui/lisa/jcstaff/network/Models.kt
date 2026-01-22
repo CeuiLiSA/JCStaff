@@ -159,3 +159,62 @@ data class Error(
 ) : Serializable {
     fun displayMessage(): String? = message ?: reason ?: user_message
 }
+
+data class UserDetailResponse(
+    val user: User? = null,
+    val profile: UserProfile? = null,
+    val profile_publicity: ProfilePublicity? = null,
+    val workspace: Workspace? = null
+) : Serializable
+
+data class UserProfile(
+    val webpage: String? = null,
+    val gender: String? = null,
+    val birth: String? = null,
+    val birth_day: String? = null,
+    val birth_year: Int? = null,
+    val region: String? = null,
+    val address_id: Int? = null,
+    val country_code: String? = null,
+    val job: String? = null,
+    val job_id: Int? = null,
+    val total_follow_users: Int? = null,
+    val total_mypixiv_users: Int? = null,
+    val total_illusts: Int? = null,
+    val total_manga: Int? = null,
+    val total_novels: Int? = null,
+    val total_illust_bookmarks_public: Int? = null,
+    val total_illust_series: Int? = null,
+    val total_novel_series: Int? = null,
+    val background_image_url: String? = null,
+    val twitter_account: String? = null,
+    val twitter_url: String? = null,
+    val pawoo_url: String? = null,
+    val is_premium: Boolean? = null,
+    val is_using_custom_profile_image: Boolean? = null
+) : Serializable
+
+data class ProfilePublicity(
+    val gender: String? = null,
+    val region: String? = null,
+    val birth_day: String? = null,
+    val birth_year: String? = null,
+    val job: String? = null,
+    val pawoo: Boolean? = null
+) : Serializable
+
+data class Workspace(
+    val pc: String? = null,
+    val monitor: String? = null,
+    val tool: String? = null,
+    val scanner: String? = null,
+    val tablet: String? = null,
+    val mouse: String? = null,
+    val printer: String? = null,
+    val desktop: String? = null,
+    val music: String? = null,
+    val desk: String? = null,
+    val chair: String? = null,
+    val comment: String? = null,
+    val workspace_image_url: String? = null
+) : Serializable

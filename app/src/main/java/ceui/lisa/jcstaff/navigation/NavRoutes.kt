@@ -17,4 +17,5 @@ sealed interface NavRoute {
         val originalUrl: String?
     ) : NavRoute
     data object BrowseHistory : NavRoute
+    data class UserProfile(val userId: Long) : NavRoute
 }
