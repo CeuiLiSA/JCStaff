@@ -91,9 +91,6 @@ fun UserProfileScreen(
         viewModel.loadUser(userId)
     }
 
-    // 检测 shared element transition
-    val isTransitionActive = sharedTransitionScope.isTransitionActive
-
     // 设置
     val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
@@ -160,8 +157,7 @@ fun UserProfileScreen(
                     ),
                     horizontalArrangement = Arrangement.spacedBy(spacing),
                     verticalItemSpacing = spacing,
-                    modifier = Modifier.fillMaxSize(),
-                    userScrollEnabled = !isTransitionActive
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     // 用户头部信息
                     item(key = "header", span = StaggeredGridItemSpan.FullLine) {

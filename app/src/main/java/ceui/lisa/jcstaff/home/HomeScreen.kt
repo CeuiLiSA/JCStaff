@@ -80,8 +80,6 @@ fun HomeScreen(
     onLogoutClick: () -> Unit,
     homeViewModel: HomeViewModel = viewModel()
 ) {
-    // 检测 shared element transition 是否正在进行
-    val isTransitionActive = sharedTransitionScope.isTransitionActive
     val uiState by homeViewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
@@ -211,9 +209,7 @@ fun HomeScreen(
 
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    // 动画进行时禁用左右滑动
-                    userScrollEnabled = !isTransitionActive
+                    modifier = Modifier.fillMaxSize()
                 ) { page ->
                     when (page) {
                         0 -> IllustGrid(

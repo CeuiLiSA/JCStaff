@@ -78,9 +78,6 @@ fun IllustGrid(
     // 自定义头部内容
     headerContent: (LazyStaggeredGridScope.() -> Unit)? = null
 ) {
-    // 检测 shared element transition 是否正在进行
-    val isTransitionActive = sharedTransitionScope?.isTransitionActive ?: false
-
     // 设置
     val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
@@ -152,9 +149,7 @@ fun IllustGrid(
                     contentPadding = finalContentPadding,
                     horizontalArrangement = Arrangement.spacedBy(spacing),
                     verticalItemSpacing = spacing,
-                    modifier = Modifier.fillMaxSize(),
-                    // 在 shared element transition 动画进行时禁用滚动
-                    userScrollEnabled = !isTransitionActive
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     // 自定义头部内容
                     headerContent?.invoke(this)
