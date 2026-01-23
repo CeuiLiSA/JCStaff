@@ -3,6 +3,7 @@ package ceui.lisa.jcstaff.navigation
 sealed interface NavRoute {
     data object Landing : NavRoute
     data object Home : NavRoute
+    data object Search : NavRoute
     data class IllustDetail(
         val illustId: Long,
         val title: String,

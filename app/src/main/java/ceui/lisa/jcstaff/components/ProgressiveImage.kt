@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import me.saket.telephoto.zoomable.coil.ZoomableAsyncImage
 import me.saket.telephoto.zoomable.rememberZoomablePeekOverlayState
 import me.saket.telephoto.zoomable.zoomablePeekOverlay
 import java.io.File
@@ -116,9 +115,9 @@ fun ProgressiveImage(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // 原图（当下载完成后，从缓存文件加载，支持 Peek Overlay 缩放）
+            // 原图（当下载完成后，从缓存文件加载，支持 Peek Overlay 缩放预览）
             if (originalUrl != null && originalUrl != previewUrl && isTaskCompleted && cachedFilePath != null) {
-                ZoomableAsyncImage(
+                AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(File(cachedFilePath))
                         .crossfade(true)

@@ -44,6 +44,7 @@ import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
+import ceui.lisa.jcstaff.screens.SearchScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.SettingsStore
@@ -207,6 +208,9 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                 aspectRatio = data.aspectRatio
                             ))
                         },
+                        onSearchClick = {
+                            backStack.add(NavRoute.Search)
+                        },
                         onBookmarksClick = {
                             currentUser?.let { user ->
                                 backStack.add(NavRoute.Bookmarks(userId = user.id))
@@ -225,6 +229,26 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                         },
                         onLogoutClick = {
                             authViewModel.logout()
+                        }
+                    )
+                }
+                is NavRoute.Search -> {
+                    SearchScreen(
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@AnimatedContent,
+                        onBackClick = {
+                            backStack.removeLast()
+                        },
+                        onIllustClick = { illust ->
+                            backStack.add(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        },
+                        onUserClick = { userId ->
+                            backStack.add(NavRoute.UserProfile(userId = userId))
                         }
                     )
                 }

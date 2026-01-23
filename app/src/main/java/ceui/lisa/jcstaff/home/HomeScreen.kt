@@ -25,11 +25,13 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -73,6 +75,7 @@ fun HomeScreen(
     animatedContentScope: AnimatedContentScope?,
     currentUser: User?,
     onIllustClick: (IllustClickData) -> Unit,
+    onSearchClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
     onUserProfileClick: () -> Unit,
@@ -177,6 +180,14 @@ fun HomeScreen(
                                         )
                                     }
                                 }
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = onSearchClick) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "搜索"
+                                )
                             }
                         }
                     )
