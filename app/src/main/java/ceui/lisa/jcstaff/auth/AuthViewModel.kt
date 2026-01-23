@@ -1,7 +1,9 @@
 package ceui.lisa.jcstaff.auth
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.network.PixivClient
@@ -40,6 +42,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     fun getLoginUrl(): String = PixivClient.getLoginUrl()
 
     fun getSignupUrl(): String = PixivClient.getSignupUrl()
+
+    /**
+     * 使用 Chrome Custom Tab 启动登录流程
+     */
+    fun launchLogin(context: Context, isSignup: Boolean = false) {
+        val url = if (isSignup) getSignupUrl() else getLoginUrl()
+        val customTabsIntent = CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+        customTabsIntent.launchUrl(context, Uri.parse(url))
+    }
 
     fun handleCallback(uri: Uri) {
         viewModelScope.launch {

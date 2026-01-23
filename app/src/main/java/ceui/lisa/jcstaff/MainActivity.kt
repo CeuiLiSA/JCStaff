@@ -1,13 +1,17 @@
 package ceui.lisa.jcstaff
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import ceui.lisa.jcstaff.network.PixivClient
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -29,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
@@ -38,7 +41,6 @@ import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
-import ceui.lisa.jcstaff.screens.LoginScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
@@ -48,6 +50,9 @@ import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val authViewModel: AuthViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -64,9 +69,28 @@ class MainActivity : ComponentActivity() {
         // 初始化浏览历史管理器
         BrowseHistoryManager.initialize(this)
 
+        // 处理启动时的 deep link
+        handleDeepLink(intent)
+
         setContent {
             JCStaffTheme {
-                AppNavigation()
+                AppNavigation(authViewModel)
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        val uri = intent?.data ?: return
+        // 处理 pixiv://account/login?code=xxx 回调
+        if (uri.scheme == "pixiv" && uri.host == "account" && uri.path == "/login") {
+            uri.getQueryParameter("code")?.let { code ->
+                val callbackUri = Uri.parse("${PixivClient.CALLBACK_URL}?code=$code")
+                authViewModel.handleCallback(callbackUri)
             }
         }
     }
@@ -74,7 +98,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
+fun AppNavigation(authViewModel: AuthViewModel) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
     val loginState by authViewModel.loginState.collectAsState()
@@ -99,16 +123,14 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                if (backStack.isEmpty() || backStack.first() == NavRoute.Landing || backStack.any { it is NavRoute.Login }) {
+                if (backStack.isEmpty() || backStack.first() == NavRoute.Landing) {
                     backStack.clear()
                     backStack.add(NavRoute.Home)
                 }
             }
             is AuthState.NotAuthenticated -> {
-                if (backStack.none { it is NavRoute.Login }) {
-                    backStack.clear()
-                    backStack.add(NavRoute.Landing)
-                }
+                backStack.clear()
+                backStack.add(NavRoute.Landing)
             }
             is AuthState.Loading -> {
                 // 保持当前状态，等待加载完成
@@ -164,21 +186,10 @@ fun AppNavigation(authViewModel: AuthViewModel = viewModel()) {
                 is NavRoute.Landing -> {
                     LandingScreen(
                         onLoginClick = {
-                            backStack.add(NavRoute.Login(isSignup = false))
+                            authViewModel.launchLogin(context, isSignup = false)
                         },
                         onSignupClick = {
-                            backStack.add(NavRoute.Login(isSignup = true))
-                        }
-                    )
-                }
-                is NavRoute.Login -> {
-                    LoginScreen(
-                        isSignup = route.isSignup,
-                        onBack = {
-                            backStack.removeLast()
-                        },
-                        onLoginCallback = { uri ->
-                            authViewModel.handleCallback(uri)
+                            authViewModel.launchLogin(context, isSignup = true)
                         }
                     )
                 }
