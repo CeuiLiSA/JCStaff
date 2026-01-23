@@ -67,6 +67,7 @@ dependencies {
     // Image loading
     implementation(libs.coil.compose)
     implementation(libs.telephoto.zoomable.image.coil)
+    implementation(libs.telephoto.zoomable.peek.overlay)
 
     // Room database
     implementation(libs.room.runtime)

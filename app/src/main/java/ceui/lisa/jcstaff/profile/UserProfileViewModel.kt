@@ -7,6 +7,7 @@ import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.User
 import ceui.lisa.jcstaff.network.UserProfile
+import ceui.lisa.jcstaff.network.Workspace
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 data class UserProfileState(
     val user: User? = null,
     val profile: UserProfile? = null,
+    val workspace: Workspace? = null,
     val illusts: List<Illust> = emptyList(),
     val isLoadingProfile: Boolean = true,
     val isLoadingIllusts: Boolean = true,
@@ -66,6 +68,7 @@ class UserProfileViewModel : ViewModel() {
                 _state.value = _state.value.copy(
                     user = response.user,
                     profile = response.profile,
+                    workspace = response.workspace,
                     isLoadingProfile = false
                 )
             } catch (e: Exception) {

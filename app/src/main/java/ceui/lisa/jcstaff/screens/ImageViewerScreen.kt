@@ -5,6 +5,9 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -158,15 +161,14 @@ fun ImageViewerScreen(
             }
 
             // 关闭按钮
+            val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(16.dp)
-                    .size(48.dp)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.5f),
-                        shape = CircleShape
+                    .padding(
+                        top = statusBarPadding.calculateTopPadding() + 4.dp,
+                        start = 4.dp
                     )
             ) {
                 Icon(

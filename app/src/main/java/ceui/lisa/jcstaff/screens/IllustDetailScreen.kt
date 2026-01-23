@@ -1,5 +1,7 @@
 package ceui.lisa.jcstaff.screens
 
+import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -9,90 +11,101 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
-import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.FlowRow
-import android.widget.Toast
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.lifecycle.viewmodel.compose.viewModel
-import ceui.lisa.jcstaff.core.IllustListViewModel
-import ceui.lisa.jcstaff.core.IllustLoader
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import ceui.lisa.jcstaff.core.SettingsStore
-import ceui.lisa.jcstaff.components.IllustCard
+import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import ceui.lisa.jcstaff.components.IllustBoundsTransform
+import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
+import ceui.lisa.jcstaff.core.IllustListViewModel
+import ceui.lisa.jcstaff.core.IllustLoader
 import ceui.lisa.jcstaff.core.ImageDownloader
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
+import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import me.saket.telephoto.zoomable.rememberZoomablePeekOverlayState
+import me.saket.telephoto.zoomable.zoomablePeekOverlay
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * 渐进式图片加载组件
@@ -100,6 +113,14 @@ import coil.request.ImageRequest
  * - 一级详情页和二级详情页共享进度
  * - 退出再进入时续上上一个请求
  * - 下载完成后保存到缓存文件，点击下载按钮时直接使用缓存
+ */
+/**
+ * 渐进式图片加载组件（支持 Peek Overlay 缩放）
+ * 使用 LoadTaskManager 自己维护 OkHttp 下载，支持：
+ * - 一级详情页和二级详情页共享进度
+ * - 退出再进入时续上上一个请求
+ * - 下载完成后保存到缓存文件
+ * - 原图下载完成后支持 Peek Overlay 手势缩放预览
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -115,6 +136,9 @@ private fun ProgressiveImage(
     onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+
+    // Peek Overlay 状态（用于手势缩放预览）
+    val peekOverlayState = rememberZoomablePeekOverlayState()
 
     // 使用 LoadTaskManager 管理加载任务（自己维护 OkHttp 下载）
     // registerListener 会自动启动下载任务
@@ -137,34 +161,23 @@ private fun ProgressiveImage(
     }
 
     // 计算图片的 shared element modifier
-    val imageModifier = if (sharedElementKey != null && sharedTransitionScope != null && animatedContentScope != null) {
-        with(sharedTransitionScope) {
-            Modifier.sharedElement(
-                sharedContentState = rememberSharedContentState(key = "image-$sharedElementKey"),
-                animatedVisibilityScope = animatedContentScope,
-                boundsTransform = IllustBoundsTransform
-            )
+    val imageModifier =
+        if (sharedElementKey != null && sharedTransitionScope != null && animatedContentScope != null) {
+            with(sharedTransitionScope) {
+                Modifier.sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "image-$sharedElementKey"),
+                    animatedVisibilityScope = animatedContentScope,
+                    boundsTransform = IllustBoundsTransform
+                )
+            }
+        } else {
+            Modifier
         }
-    } else {
-        Modifier
-    }
-
-    // 计算进度指示器的 shared element modifier
-    val progressModifier = if (sharedElementKey != null && sharedTransitionScope != null && animatedContentScope != null) {
-        with(sharedTransitionScope) {
-            Modifier.sharedElement(
-                sharedContentState = rememberSharedContentState(key = "progress-$sharedElementKey"),
-                animatedVisibilityScope = animatedContentScope,
-                boundsTransform = IllustBoundsTransform
-            )
-        }
-    } else {
-        Modifier
-    }
 
     Box(
-        modifier = modifier
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        modifier = modifier.then(
+            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+        )
     ) {
         // 图片容器（可能带 shared element transition）
         Box(
@@ -184,7 +197,7 @@ private fun ProgressiveImage(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // 原图（当下载完成后，从缓存文件加载）
+            // 原图（当下载完成后，从缓存文件加载，支持 Peek Overlay 缩放）
             if (originalUrl != null && originalUrl != previewUrl && isTaskCompleted && cachedFilePath != null) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
@@ -193,19 +206,20 @@ private fun ProgressiveImage(
                         .build(),
                     contentDescription = contentDescription,
                     contentScale = contentScale,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zoomablePeekOverlay(peekOverlayState)
                 )
             }
         }
 
-        // 原图加载中的进度指示器（带百分比，可能带 shared element transition）
+        // 原图加载中的进度指示器（带百分比）
         if (originalUrl != null && originalUrl != previewUrl && isTaskLoading && !isTaskCompleted) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(12.dp)
                     .size(48.dp)
-                    .then(progressModifier)
                     .background(
                         color = Color.Black.copy(alpha = 0.6f),
                         shape = CircleShape
@@ -274,8 +288,19 @@ fun IllustDetailScreen(
     var isBookmarked by remember(illustId) { mutableStateOf(cachedIllust?.is_bookmarked ?: false) }
     var isBookmarking by remember { mutableStateOf(false) }
 
+    // 关注状态
+    var isFollowed by remember(illustId) {
+        mutableStateOf(
+            cachedIllust?.user?.is_followed ?: false
+        )
+    }
+    var isFollowing by remember { mutableStateOf(false) }
+
     // 下载状态
     var isDownloading by remember { mutableStateOf(false) }
+
+    // 更多菜单状态
+    var showMoreMenu by remember { mutableStateOf(false) }
 
     // 选择模式
     val selectionManager = rememberSelectionManager()
@@ -294,6 +319,7 @@ fun IllustDetailScreen(
         observedIllust?.let {
             illust = it
             isBookmarked = it.is_bookmarked ?: false
+            isFollowed = it.user?.is_followed ?: false
         }
     }
 
@@ -342,441 +368,258 @@ fun IllustDetailScreen(
     }
 
     Box {
-        Scaffold { paddingValues ->
-        val gridState = rememberPersistentLazyStaggeredGridState("illust_detail_$illustId")
-        val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
-        val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-        val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-        val density = LocalDensity.current
-        val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
-        val horizontalPadding = if (gridSpacingEnabled) 8.dp else 0.dp
+        Scaffold(
+            containerColor = Color.Transparent
+        ) { paddingValues ->
+            val gridState = rememberPersistentLazyStaggeredGridState("illust_detail_$illustId")
+            val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+            val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
+            val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
+            val density = LocalDensity.current
+            val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
+            val horizontalPadding = if (gridSpacingEnabled) 8.dp else 0.dp
 
-        LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Fixed(2),
-            state = gridState,
-            contentPadding = PaddingValues(
-                start = horizontalPadding,
-                end = horizontalPadding,
-                top = 0.dp,
-                bottom = paddingValues.calculateBottomPadding() + 16.dp
-            ),
-            horizontalArrangement = Arrangement.spacedBy(spacing),
-            verticalItemSpacing = spacing,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // 第一张图片 - 全宽沉浸式显示
-            item(key = "preview_image", span = StaggeredGridItemSpan.FullLine) {
-                val firstImageKey = "${illustId}_0"
-                with(sharedTransitionScope) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(aspectRatio)
-                            .sharedElement(
-                                sharedContentState = rememberSharedContentState(key = "illust-$illustId"),
-                                animatedVisibilityScope = animatedContentScope,
-                                boundsTransform = IllustBoundsTransform
-                            )
-                    ) {
-                        ProgressiveImage(
-                            previewUrl = previewUrl,
-                            originalUrl = firstOriginalUrl,
-                            contentDescription = title,
-                            modifier = Modifier.fillMaxSize(),
-                            sharedElementKey = firstImageKey,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
-                            onClick = {
-                                onImageClick?.invoke(previewUrl, firstOriginalUrl, firstImageKey)
-                            }
-                        )
-
-                        // 浮动返回按钮
-                        IconButton(
-                            onClick = onBackClick,
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Fixed(2),
+                state = gridState,
+                contentPadding = PaddingValues(
+                    start = horizontalPadding,
+                    end = horizontalPadding,
+                    top = 0.dp,
+                    bottom = paddingValues.calculateBottomPadding() + 16.dp
+                ),
+                horizontalArrangement = Arrangement.spacedBy(spacing),
+                verticalItemSpacing = spacing,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // 第一张图片 - 全宽沉浸式显示
+                item(key = "preview_image", span = StaggeredGridItemSpan.FullLine) {
+                    val firstImageKey = "${illustId}_0"
+                    with(sharedTransitionScope) {
+                        Box(
                             modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(top = 36.dp, start = 8.dp)
-                                .size(40.dp)
-                                .background(
-                                    color = Color.Black.copy(alpha = 0.4f),
-                                    shape = CircleShape
+                                .fillMaxWidth()
+                                .aspectRatio(aspectRatio)
+                                .sharedElement(
+                                    sharedContentState = rememberSharedContentState(key = "illust-$illustId"),
+                                    animatedVisibilityScope = animatedContentScope,
+                                    boundsTransform = IllustBoundsTransform
                                 )
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回",
-                                tint = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 加载状态
-            if (isLoading) {
-                item(key = "loading", span = StaggeredGridItemSpan.FullLine) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-            } else if (error != null && illust == null) {
-                item(key = "error", span = StaggeredGridItemSpan.FullLine) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = error ?: "加载失败", color = MaterialTheme.colorScheme.error)
-                    }
-                }
-            }
-
-            // 详情内容
-            illust?.let { loadedIllust ->
-                // 多P作品的额外图片
-                if (loadedIllust.page_count > 1) {
-                    val additionalPages = loadedIllust.meta_pages?.drop(1) ?: emptyList()
-                    additionalPages.forEachIndexed { index, page ->
-                        item(key = "image_$index", span = StaggeredGridItemSpan.FullLine) {
-                            val pageIndex = index + 1 // 从1开始，因为0是第一张图
-                            val imageKey = "${illustId}_$pageIndex"
-                            val largeUrl = page.image_urls?.large ?: ""
-                            val originalUrl = page.image_urls?.original
                             ProgressiveImage(
-                                previewUrl = largeUrl,
-                                originalUrl = originalUrl,
-                                contentDescription = loadedIllust.title,
-                                modifier = Modifier.fillMaxWidth(),
-                                sharedElementKey = imageKey,
+                                previewUrl = previewUrl,
+                                originalUrl = firstOriginalUrl,
+                                contentDescription = title,
+                                modifier = Modifier.fillMaxSize(),
+                                sharedElementKey = firstImageKey,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedContentScope = animatedContentScope,
                                 onClick = {
-                                    onImageClick?.invoke(largeUrl, originalUrl, imageKey)
+                                    onImageClick?.invoke(
+                                        previewUrl,
+                                        firstOriginalUrl,
+                                        firstImageKey
+                                    )
                                 }
                             )
                         }
                     }
                 }
 
-                // 标题
-                item(key = "title", span = StaggeredGridItemSpan.FullLine) {
-                    Text(
-                        text = loadedIllust.title ?: "",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-                    )
-                }
-
-                // 作者信息区域
-                item(key = "author", span = StaggeredGridItemSpan.FullLine) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = onUserClick != null && loadedIllust.user != null) {
-                                loadedIllust.user?.let { user ->
-                                    onUserClick?.invoke(user.id)
-                                }
-                            }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(loadedIllust.user?.profile_image_urls?.medium)
-                                .crossfade(true)
-                                .addHeader("Referer", "https://app-api.pixiv.net/")
-                                .build(),
-                            contentDescription = loadedIllust.user?.name,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        )
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 12.dp)
-                        ) {
-                            Text(
-                                text = loadedIllust.user?.name ?: "",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "@${loadedIllust.user?.account ?: ""}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-
-                // 操作按钮行（收藏、下载、浏览数）
-                item(key = "actions", span = StaggeredGridItemSpan.FullLine) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // 收藏按钮
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .clickable(enabled = !isBookmarking) {
-                                    coroutineScope.launch {
-                                        isBookmarking = true
-                                        try {
-                                            if (isBookmarked) {
-                                                PixivClient.pixivApi.deleteBookmark(illustId)
-                                            } else {
-                                                PixivClient.pixivApi.addBookmark(illustId)
-                                            }
-                                            isBookmarked = !isBookmarked
-                                            illust?.let { currentIllust ->
-                                                val updatedIllust = currentIllust.copy(is_bookmarked = isBookmarked)
-                                                ObjectStore.put(updatedIllust)
-                                                illust = updatedIllust
-                                            }
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                        } finally {
-                                            isBookmarking = false
-                                        }
-                                    }
-                                }
-                                .background(
-                                    if (isBookmarked) MaterialTheme.colorScheme.errorContainer
-                                    else MaterialTheme.colorScheme.surfaceVariant,
-                                    RoundedCornerShape(20.dp)
-                                )
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = null,
-                                tint = if (isBookmarked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = formatCount(loadedIllust.total_bookmarks ?: 0),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (isBookmarked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 6.dp)
-                            )
-                        }
-
-                        // 下载按钮
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .clickable(enabled = !isDownloading) {
-                                    val downloadUrl = firstOriginalUrl ?: previewUrl
-                                    coroutineScope.launch {
-                                        isDownloading = true
-                                        val fileName = "pixiv_${illustId}_${System.currentTimeMillis()}"
-                                        val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
-                                        val result = if (cachedFilePath != null) {
-                                            ImageDownloader.saveFromCacheToGallery(
-                                                context = context,
-                                                cachedFilePath = cachedFilePath,
-                                                fileName = fileName
-                                            )
-                                        } else {
-                                            ImageDownloader.downloadToGallery(
-                                                context = context,
-                                                imageUrl = downloadUrl,
-                                                fileName = fileName
-                                            )
-                                        }
-                                        isDownloading = false
-                                        if (result.isSuccess) {
-                                            Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    RoundedCornerShape(20.dp)
-                                )
-                                .padding(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            if (isDownloading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Download,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Text(
-                                text = "下载",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 6.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        // 浏览数
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Visibility,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = formatCount(loadedIllust.total_view ?: 0),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
-                    }
-                }
-
-                // 元信息区域
-                item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // 发布时间
-                        loadedIllust.create_date?.let { dateStr ->
-                            val formattedDate = formatDate(dateStr)
-                            if (formattedDate != null) {
-                                MetaInfoRow(
-                                    icon = Icons.Default.CalendarToday,
-                                    label = "发布时间",
-                                    value = formattedDate
-                                )
-                            }
-                        }
-
-                        // 图片尺寸
-                        if (loadedIllust.width > 0 && loadedIllust.height > 0) {
-                            MetaInfoRow(
-                                icon = Icons.Default.Photo,
-                                label = "尺寸",
-                                value = "${loadedIllust.width} × ${loadedIllust.height}"
-                            )
-                        }
-
-                        // 页数
-                        if (loadedIllust.page_count > 1) {
-                            MetaInfoRow(
-                                icon = Icons.Default.PhotoLibrary,
-                                label = "页数",
-                                value = "${loadedIllust.page_count} 张"
-                            )
-                        }
-
-                        // 作品类型
-                        val typeText = when {
-                            loadedIllust.isGif() -> "动图 (Ugoira)"
-                            loadedIllust.isManga() -> "漫画"
-                            else -> "插画"
-                        }
-                        MetaInfoRow(
-                            icon = when {
-                                loadedIllust.isGif() -> Icons.Default.PlayCircle
-                                loadedIllust.isManga() -> Icons.Default.PhotoLibrary
-                                else -> Icons.Default.Image
-                            },
-                            label = "类型",
-                            value = typeText
-                        )
-
-                        // AI 类型
-                        if (loadedIllust.illust_ai_type > 0) {
-                            val aiText = when (loadedIllust.illust_ai_type) {
-                                1 -> "AI 辅助创作"
-                                2 -> "AI 生成"
-                                else -> "AI 相关"
-                            }
-                            MetaInfoRow(
-                                icon = Icons.Default.AutoAwesome,
-                                label = "AI",
-                                value = aiText,
-                                valueColor = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                    }
-                }
-
-                // 标签
-                if (!loadedIllust.tags.isNullOrEmpty()) {
-                    item(key = "tags", span = StaggeredGridItemSpan.FullLine) {
-                        Column(
+                // 加载状态
+                if (isLoading) {
+                    item(key = "loading", span = StaggeredGridItemSpan.FullLine) {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                } else if (error != null && illust == null) {
+                    item(key = "error", span = StaggeredGridItemSpan.FullLine) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "标签",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 12.dp)
+                                text = error ?: "加载失败",
+                                color = MaterialTheme.colorScheme.error
                             )
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                        }
+                    }
+                }
+
+                // 详情内容
+                illust?.let { loadedIllust ->
+                    // 多P作品的额外图片
+                    if (loadedIllust.page_count > 1) {
+                        val additionalPages = loadedIllust.meta_pages?.drop(1) ?: emptyList()
+                        additionalPages.forEachIndexed { index, page ->
+                            item(key = "image_$index", span = StaggeredGridItemSpan.FullLine) {
+                                val pageIndex = index + 1 // 从1开始，因为0是第一张图
+                                val imageKey = "${illustId}_$pageIndex"
+                                val largeUrl = page.image_urls?.large ?: ""
+                                val originalUrl = page.image_urls?.original
+                                ProgressiveImage(
+                                    previewUrl = largeUrl,
+                                    originalUrl = originalUrl,
+                                    contentDescription = loadedIllust.title,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    sharedElementKey = imageKey,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedContentScope = animatedContentScope,
+                                    onClick = {
+                                        onImageClick?.invoke(largeUrl, originalUrl, imageKey)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // 标题
+                    item(key = "title", span = StaggeredGridItemSpan.FullLine) {
+                        Text(
+                            text = loadedIllust.title ?: "",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                        )
+                    }
+
+                    // 作者信息区域
+                    item(key = "author", span = StaggeredGridItemSpan.FullLine) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = onUserClick != null && loadedIllust.user != null) {
+                                    loadedIllust.user?.let { user ->
+                                        onUserClick?.invoke(user.id)
+                                    }
+                                }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(loadedIllust.user?.profile_image_urls?.medium)
+                                    .crossfade(true)
+                                    .addHeader("Referer", "https://app-api.pixiv.net/")
+                                    .build(),
+                                contentDescription = loadedIllust.user?.name,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 12.dp)
                             ) {
-                                loadedIllust.tags.forEach { tag ->
-                                    Column(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                                            .clickable { /* TODO: 搜索标签 */ }
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
+                                Text(
+                                    text = loadedIllust.user?.name ?: "",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "@${loadedIllust.user?.account ?: ""}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            // 关注按钮
+                            loadedIllust.user?.let { user ->
+                                if (isFollowed) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                isFollowing = true
+                                                try {
+                                                    PixivClient.pixivApi.unfollowUser(user.id)
+                                                    isFollowed = false
+                                                    val updatedUser = user.copy(is_followed = false)
+                                                    ObjectStore.put(updatedUser)
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "取消关注失败",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                } finally {
+                                                    isFollowing = false
+                                                }
+                                            }
+                                        },
+                                        enabled = !isFollowing,
+                                        shape = RoundedCornerShape(20.dp),
+                                        contentPadding = PaddingValues(
+                                            horizontal = 12.dp,
+                                            vertical = 0.dp
+                                        ),
+                                        modifier = Modifier.height(32.dp)
                                     ) {
-                                        Text(
-                                            text = "#${tag.name ?: ""}",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                        tag.translated_name?.let { translated ->
+                                        if (isFollowing) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(14.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                        } else {
                                             Text(
-                                                text = translated,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
-                                                maxLines = 1
+                                                text = "已关注",
+                                                style = MaterialTheme.typography.labelMedium
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                isFollowing = true
+                                                try {
+                                                    PixivClient.pixivApi.followUser(user.id)
+                                                    isFollowed = true
+                                                    val updatedUser = user.copy(is_followed = true)
+                                                    ObjectStore.put(updatedUser)
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "关注失败",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                } finally {
+                                                    isFollowing = false
+                                                }
+                                            }
+                                        },
+                                        enabled = !isFollowing,
+                                        shape = RoundedCornerShape(20.dp),
+                                        contentPadding = PaddingValues(
+                                            horizontal = 12.dp,
+                                            vertical = 0.dp
+                                        ),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        if (isFollowing) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(14.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                        } else {
+                                            Text(
+                                                text = "关注",
+                                                style = MaterialTheme.typography.labelMedium
                                             )
                                         }
                                     }
@@ -784,117 +627,498 @@ fun IllustDetailScreen(
                             }
                         }
                     }
-                }
 
-                // 作品简介
-                if (!loadedIllust.caption.isNullOrBlank()) {
-                    item(key = "caption", span = StaggeredGridItemSpan.FullLine) {
+                    // 操作按钮行（收藏、下载、浏览数）
+                    item(key = "actions", span = StaggeredGridItemSpan.FullLine) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // 收藏按钮
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .clickable(enabled = !isBookmarking) {
+                                        coroutineScope.launch {
+                                            isBookmarking = true
+                                            try {
+                                                if (isBookmarked) {
+                                                    PixivClient.pixivApi.deleteBookmark(illustId)
+                                                } else {
+                                                    PixivClient.pixivApi.addBookmark(illustId)
+                                                }
+                                                isBookmarked = !isBookmarked
+                                                illust?.let { currentIllust ->
+                                                    val updatedIllust =
+                                                        currentIllust.copy(is_bookmarked = isBookmarked)
+                                                    ObjectStore.put(updatedIllust)
+                                                    illust = updatedIllust
+                                                }
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
+                                            } finally {
+                                                isBookmarking = false
+                                            }
+                                        }
+                                    }
+                                    .background(
+                                        if (isBookmarked) MaterialTheme.colorScheme.errorContainer
+                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(20.dp)
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = null,
+                                    tint = if (isBookmarked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = formatCount(loadedIllust.total_bookmarks ?: 0),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = if (isBookmarked) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 6.dp)
+                                )
+                            }
+
+                            // 下载按钮
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .clickable(enabled = !isDownloading) {
+                                        val downloadUrl = firstOriginalUrl ?: previewUrl
+                                        coroutineScope.launch {
+                                            isDownloading = true
+                                            val fileName =
+                                                "pixiv_${illustId}_${System.currentTimeMillis()}"
+                                            val cachedFilePath =
+                                                LoadTaskManager.getCachedFilePath(downloadUrl)
+                                            val result = if (cachedFilePath != null) {
+                                                ImageDownloader.saveFromCacheToGallery(
+                                                    context = context,
+                                                    cachedFilePath = cachedFilePath,
+                                                    fileName = fileName
+                                                )
+                                            } else {
+                                                ImageDownloader.downloadToGallery(
+                                                    context = context,
+                                                    imageUrl = downloadUrl,
+                                                    fileName = fileName
+                                                )
+                                            }
+                                            isDownloading = false
+                                            if (result.isSuccess) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "已保存到相册",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "保存失败",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    }
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(20.dp)
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                if (isDownloading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Download,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "下载",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 6.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            // 浏览数
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Visibility,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = formatCount(loadedIllust.total_view ?: 0),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // 元信息区域
+                    item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            // 发布时间
+                            loadedIllust.create_date?.let { dateStr ->
+                                val formattedDate = formatDate(dateStr)
+                                if (formattedDate != null) {
+                                    MetaInfoRow(
+                                        icon = Icons.Default.CalendarToday,
+                                        label = "发布时间",
+                                        value = formattedDate
+                                    )
+                                }
+                            }
+
+                            // 图片尺寸
+                            if (loadedIllust.width > 0 && loadedIllust.height > 0) {
+                                MetaInfoRow(
+                                    icon = Icons.Default.Photo,
+                                    label = "尺寸",
+                                    value = "${loadedIllust.width} × ${loadedIllust.height}"
+                                )
+                            }
+
+                            // 页数
+                            if (loadedIllust.page_count > 1) {
+                                MetaInfoRow(
+                                    icon = Icons.Default.PhotoLibrary,
+                                    label = "页数",
+                                    value = "${loadedIllust.page_count} 张"
+                                )
+                            }
+
+                            // 作品类型
+                            val typeText = when {
+                                loadedIllust.isGif() -> "动图 (Ugoira)"
+                                loadedIllust.isManga() -> "漫画"
+                                else -> "插画"
+                            }
+                            MetaInfoRow(
+                                icon = when {
+                                    loadedIllust.isGif() -> Icons.Default.PlayCircle
+                                    loadedIllust.isManga() -> Icons.Default.PhotoLibrary
+                                    else -> Icons.Default.Image
+                                },
+                                label = "类型",
+                                value = typeText
+                            )
+
+                            // AI 类型
+                            if (loadedIllust.illust_ai_type > 0) {
+                                val aiText = when (loadedIllust.illust_ai_type) {
+                                    1 -> "AI 辅助创作"
+                                    2 -> "AI 生成"
+                                    else -> "AI 相关"
+                                }
+                                MetaInfoRow(
+                                    icon = Icons.Default.AutoAwesome,
+                                    label = "AI",
+                                    value = aiText,
+                                    valueColor = MaterialTheme.colorScheme.tertiary
+                                )
+                            }
+                        }
+                    }
+
+                    // 标签
+                    if (!loadedIllust.tags.isNullOrEmpty()) {
+                        item(key = "tags", span = StaggeredGridItemSpan.FullLine) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                            ) {
+                                Text(
+                                    text = "标签",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    loadedIllust.tags.forEach { tag ->
+                                        Column(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                                .clickable { /* TODO: 搜索标签 */ }
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "#${tag.name ?: ""}",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                                            )
+                                            tag.translated_name?.let { translated ->
+                                                Text(
+                                                    text = translated,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(
+                                                        alpha = 0.7f
+                                                    ),
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 作品简介
+                    if (!loadedIllust.caption.isNullOrBlank()) {
+                        item(key = "caption", span = StaggeredGridItemSpan.FullLine) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                Text(
+                                    text = "简介",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                Text(
+                                    text = loadedIllust.caption.replace(
+                                        Regex("<[^>]*>"),
+                                        ""
+                                    ), // 简单去除 HTML 标签
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.4
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 相关作品标题
+                if (relatedState.illusts.isNotEmpty() || relatedState.isLoading) {
+                    item(key = "related_header", span = StaggeredGridItemSpan.FullLine) {
+                        Column(
+                            modifier = Modifier.padding(top = 24.dp)
+                        ) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
                             Text(
-                                text = "简介",
+                                text = "相关作品",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
                             )
-                            Text(
-                                text = loadedIllust.caption.replace(Regex("<[^>]*>"), ""), // 简单去除 HTML 标签
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.4
+                        }
+                    }
+                }
+
+                // 相关作品加载中
+                if (relatedState.isLoading && relatedState.isEmpty) {
+                    item(key = "related_loading", span = StaggeredGridItemSpan.FullLine) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
+                // 相关作品瀑布流
+                items(relatedState.illusts, key = { "related_${it.id}" }) { relatedIllust ->
+                    IllustCard(
+                        illust = relatedIllust,
+                        onClick = {
+                            onRelatedIllustClick?.invoke(relatedIllust)
+                        },
+                        isSelectionMode = selectionManager.isSelectionMode,
+                        isSelected = selectionManager.isSelected(relatedIllust.id),
+                        onLongPress = { selectionManager.onLongPress(relatedIllust) },
+                        onSelectionToggle = { selectionManager.toggleSelection(relatedIllust) },
+                        showIllustInfo = showIllustInfo,
+                        cornerRadius = illustCornerRadius
+                    )
+                }
+
+                // 加载更多指示器
+                if (relatedState.isLoadingMore) {
+                    item(key = "related_loading_more", span = StaggeredGridItemSpan.FullLine) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
                             )
                         }
                     }
                 }
             }
 
-            // 相关作品标题
-            if (relatedState.illusts.isNotEmpty() || relatedState.isLoading) {
-                item(key = "related_header", span = StaggeredGridItemSpan.FullLine) {
-                    Column(
-                        modifier = Modifier.padding(top = 24.dp)
-                    ) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                        Text(
-                            text = "相关作品",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-                        )
-                    }
+            // 检测是否滚动到底部
+            LaunchedEffect(gridState, relatedState.canLoadMore) {
+                snapshotFlow {
+                    val layoutInfo = gridState.layoutInfo
+                    val totalItems = layoutInfo.totalItemsCount
+                    val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                    totalItems > 0 && lastVisibleItem >= totalItems - 4
                 }
-            }
-
-            // 相关作品加载中
-            if (relatedState.isLoading && relatedState.isEmpty) {
-                item(key = "related_loading", span = StaggeredGridItemSpan.FullLine) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
+                    .distinctUntilChanged()
+                    .filter { it && relatedState.canLoadMore }
+                    .collect {
+                        relatedViewModel.loadMore()
                     }
-                }
             }
+        }
 
-            // 相关作品瀑布流
-            items(relatedState.illusts, key = { "related_${it.id}" }) { relatedIllust ->
-                IllustCard(
-                    illust = relatedIllust,
-                    onClick = {
-                        onRelatedIllustClick?.invoke(relatedIllust)
-                    },
-                    isSelectionMode = selectionManager.isSelectionMode,
-                    isSelected = selectionManager.isSelected(relatedIllust.id),
-                    onLongPress = { selectionManager.onLongPress(relatedIllust) },
-                    onSelectionToggle = { selectionManager.toggleSelection(relatedIllust) },
-                    showIllustInfo = showIllustInfo,
-                    cornerRadius = illustCornerRadius
+        // 顶部阴影渐变和按钮（使用 renderInSharedTransitionScopeOverlay 确保在转场动画期间可见）
+        val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+        with(sharedTransitionScope) {
+            Box(
+                modifier = Modifier
+                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
+                    .fillMaxWidth()
+                    .height(statusBarPadding.calculateTopPadding() + 60.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.7f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+        }
+
+        // 浮动顶部栏
+        with(sharedTransitionScope) {
+            Row(
+                modifier = Modifier
+                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
+                    .fillMaxWidth()
+                    .padding(
+                        top = statusBarPadding.calculateTopPadding() + 4.dp,
+                        start = 4.dp,
+                        end = 4.dp
+                    ),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+            // 返回按钮
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "返回",
+                    tint = Color.White
                 )
             }
 
-            // 加载更多指示器
-            if (relatedState.isLoadingMore) {
-                item(key = "related_loading_more", span = StaggeredGridItemSpan.FullLine) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
+            // 右侧按钮组
+            Row {
+                // 分享按钮
+                IconButton(
+                    onClick = {
+                        val shareUrl = "https://www.pixiv.net/artworks/$illustId"
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, shareUrl)
+                            putExtra(Intent.EXTRA_TITLE, title)
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "分享作品"))
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "分享",
+                        tint = Color.White
+                    )
+                }
+
+                // 更多按钮
+                Box {
+                    IconButton(onClick = { showMoreMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "更多",
+                            tint = Color.White
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showMoreMenu,
+                        onDismissRequest = { showMoreMenu = false }
                     ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
+                        DropdownMenuItem(
+                            text = { Text("举报") },
+                            onClick = { showMoreMenu = false },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Flag,
+                                    contentDescription = null
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("屏蔽") },
+                            onClick = { showMoreMenu = false },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Block,
+                                    contentDescription = null
+                                )
+                            }
                         )
                     }
                 }
             }
         }
-
-        // 检测是否滚动到底部
-        LaunchedEffect(gridState, relatedState.canLoadMore) {
-            snapshotFlow {
-                val layoutInfo = gridState.layoutInfo
-                val totalItems = layoutInfo.totalItemsCount
-                val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                totalItems > 0 && lastVisibleItem >= totalItems - 4
-            }
-                .distinctUntilChanged()
-                .filter { it && relatedState.canLoadMore }
-                .collect {
-                    relatedViewModel.loadMore()
-                }
         }
-    }
 
         // Selection top bar overlay
         SelectionTopBar(
