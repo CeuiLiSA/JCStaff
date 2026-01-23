@@ -7,7 +7,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -41,10 +40,9 @@ import ceui.lisa.jcstaff.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import ceui.lisa.jcstaff.components.FloatingTopBar
-import ceui.lisa.jcstaff.components.IllustBoundsTransform
 import ceui.lisa.jcstaff.components.IllustCard
-import ceui.lisa.jcstaff.components.ProgressiveImage
 import ceui.lisa.jcstaff.components.SelectionTopBar
+import ceui.lisa.jcstaff.components.illust.CollapsibleImageSection
 import ceui.lisa.jcstaff.components.illust.IllustActionBar
 import ceui.lisa.jcstaff.components.illust.IllustAuthorRow
 import ceui.lisa.jcstaff.components.illust.IllustCaption
@@ -101,6 +99,9 @@ fun IllustDetailScreen(
             cachedIllust?.user?.is_followed ?: false
         )
     }
+
+    // 图片区域展开/收起状态
+    var isImagesExpanded by remember { mutableStateOf(false) }
 
     // 选择模式
     val selectionManager = rememberSelectionManager()
@@ -190,38 +191,20 @@ fun IllustDetailScreen(
                 verticalItemSpacing = spacing,
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 第一张图片 - 全宽沉浸式显示
-                item(key = "preview_image", span = StaggeredGridItemSpan.FullLine) {
-                    val firstImageKey = "${illustId}_0"
-                    with(sharedTransitionScope) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(aspectRatio)
-                                .sharedElement(
-                                    sharedContentState = rememberSharedContentState(key = "illust-$illustId"),
-                                    animatedVisibilityScope = animatedContentScope,
-                                    boundsTransform = IllustBoundsTransform
-                                )
-                        ) {
-                            ProgressiveImage(
-                                previewUrl = previewUrl,
-                                originalUrl = firstOriginalUrl,
-                                contentDescription = title,
-                                modifier = Modifier.fillMaxSize(),
-                                sharedElementKey = firstImageKey,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedContentScope = animatedContentScope,
-                                onClick = {
-                                    onImageClick?.invoke(
-                                        previewUrl,
-                                        firstOriginalUrl,
-                                        firstImageKey
-                                    )
-                                }
-                            )
-                        }
-                    }
+                // 图片区域 - 可折叠
+                item(key = "images_section", span = StaggeredGridItemSpan.FullLine) {
+                    CollapsibleImageSection(
+                        illustId = illustId,
+                        title = title,
+                        previewUrl = previewUrl,
+                        aspectRatio = aspectRatio,
+                        illust = illust,
+                        isExpanded = isImagesExpanded,
+                        onExpandToggle = { isImagesExpanded = !isImagesExpanded },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope,
+                        onImageClick = onImageClick
+                    )
                 }
 
                 // 加载状态
@@ -254,31 +237,6 @@ fun IllustDetailScreen(
 
                 // 详情内容
                 illust?.let { loadedIllust ->
-                    // 多P作品的额外图片
-                    if (loadedIllust.page_count > 1) {
-                        val additionalPages = loadedIllust.meta_pages?.drop(1) ?: emptyList()
-                        additionalPages.forEachIndexed { index, page ->
-                            item(key = "image_$index", span = StaggeredGridItemSpan.FullLine) {
-                                val pageIndex = index + 1
-                                val imageKey = "${illustId}_$pageIndex"
-                                val largeUrl = page.image_urls?.large ?: ""
-                                val originalUrl = page.image_urls?.original
-                                ProgressiveImage(
-                                    previewUrl = largeUrl,
-                                    originalUrl = originalUrl,
-                                    contentDescription = loadedIllust.title,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    sharedElementKey = imageKey,
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedContentScope = animatedContentScope,
-                                    onClick = {
-                                        onImageClick?.invoke(largeUrl, originalUrl, imageKey)
-                                    }
-                                )
-                            }
-                        }
-                    }
-
                     // 标题
                     item(key = "title", span = StaggeredGridItemSpan.FullLine) {
                         Text(

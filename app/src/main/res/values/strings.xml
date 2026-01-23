@@ -52,6 +52,8 @@
     <string name="clear_history_message">确定要清空所有浏览历史吗？此操作无法撤销。</string>
 
     <!-- Illust Detail -->
+    <string name="expand_images">展开全部</string>
+    <string name="collapse_images">收起</string>
     <string name="related_works">相关作品</string>
     <string name="publish_date">发布时间</string>
     <string name="size">尺寸</string>
