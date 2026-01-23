@@ -5,9 +5,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -223,13 +225,13 @@ fun IllustCard(
 }
 
 /**
- * iOS 风格的 shared element 过渡动画
- * 使用 spring 动画实现自然的弹性效果
+ * Shared element 过渡动画
+ * 使用 FastOutSlowIn 缓动曲线实现快速流畅的过渡效果
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 val IllustBoundsTransform = BoundsTransform { _, _ ->
-    spring(
-        dampingRatio = Spring.DampingRatioLowBouncy,
-        stiffness = Spring.StiffnessLow
+    tween(
+        durationMillis = 260,
+        easing = FastOutSlowInEasing
     )
 }
