@@ -12,8 +12,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Workspace
 
 /**
@@ -41,7 +43,7 @@ fun UserWorkspaceCard(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "工作环境",
+            text = stringResource(R.string.workspace),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -60,31 +62,31 @@ fun UserWorkspaceCard(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (!workspace?.pc.isNullOrBlank()) {
-                    WorkspaceRow(label = "电脑", value = workspace?.pc ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_pc), value = workspace?.pc ?: "")
                 }
                 if (!workspace?.monitor.isNullOrBlank()) {
-                    WorkspaceRow(label = "显示器", value = workspace?.monitor ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_monitor), value = workspace?.monitor ?: "")
                 }
                 if (!workspace?.tool.isNullOrBlank()) {
-                    WorkspaceRow(label = "软件", value = workspace?.tool ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_software), value = workspace?.tool ?: "")
                 }
                 if (!workspace?.tablet.isNullOrBlank()) {
-                    WorkspaceRow(label = "数位板", value = workspace?.tablet ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_tablet), value = workspace?.tablet ?: "")
                 }
                 if (!workspace?.mouse.isNullOrBlank()) {
-                    WorkspaceRow(label = "鼠标", value = workspace?.mouse ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_mouse), value = workspace?.mouse ?: "")
                 }
                 if (!workspace?.desk.isNullOrBlank()) {
-                    WorkspaceRow(label = "桌子", value = workspace?.desk ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_desk), value = workspace?.desk ?: "")
                 }
                 if (!workspace?.chair.isNullOrBlank()) {
-                    WorkspaceRow(label = "椅子", value = workspace?.chair ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_chair), value = workspace?.chair ?: "")
                 }
                 if (!workspace?.music.isNullOrBlank()) {
-                    WorkspaceRow(label = "音乐", value = workspace?.music ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_music), value = workspace?.music ?: "")
                 }
                 if (!workspace?.comment.isNullOrBlank()) {
-                    WorkspaceRow(label = "备注", value = workspace?.comment ?: "")
+                    WorkspaceRow(label = stringResource(R.string.workspace_notes), value = workspace?.comment ?: "")
                 }
             }
         }

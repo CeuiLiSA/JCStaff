@@ -17,7 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.User
 
 /**
@@ -54,7 +56,7 @@ fun UserFollowButton(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("已关注")
+                    Text(stringResource(R.string.following))
                 }
             }
         } else {
@@ -76,7 +78,7 @@ fun UserFollowButton(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("关注")
+                    Text(stringResource(R.string.follow))
                 }
             }
         }

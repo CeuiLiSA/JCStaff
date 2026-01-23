@@ -14,8 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Tag
 
 /**
@@ -34,7 +36,7 @@ fun IllustTags(
             .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
         Text(
-            text = "标签",
+            text = stringResource(R.string.tags),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

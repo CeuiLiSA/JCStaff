@@ -14,6 +14,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import ceui.lisa.jcstaff.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,7 +37,7 @@ fun LandingScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "JCStaff",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
                 textAlign = TextAlign.Center
             )
@@ -43,7 +45,7 @@ fun LandingScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Pixiv 第三方客户端",
+                text = stringResource(R.string.pixiv_third_party_client),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center
@@ -52,7 +54,7 @@ fun LandingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "请登录 Pixiv 账号以继续",
+                text = stringResource(R.string.please_login_to_continue),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -64,7 +66,7 @@ fun LandingScreen(
                 onClick = onLoginClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "登录")
+                Text(text = stringResource(R.string.login))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -73,7 +75,7 @@ fun LandingScreen(
                 onClick = onSignupClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "注册")
+                Text(text = stringResource(R.string.signup))
             }
         }
     }

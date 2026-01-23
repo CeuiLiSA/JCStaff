@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.UserProfile
 
 /**
@@ -26,19 +28,19 @@ fun UserStatsRow(
     ) {
         StatItem(
             value = profile?.total_illusts ?: 0,
-            label = "插画"
+            label = stringResource(R.string.illustrations)
         )
         StatItem(
             value = profile?.total_manga ?: 0,
-            label = "漫画"
+            label = stringResource(R.string.manga)
         )
         StatItem(
             value = profile?.total_follow_users ?: 0,
-            label = "关注"
+            label = stringResource(R.string.follow)
         )
         StatItem(
             value = profile?.total_illust_bookmarks_public ?: 0,
-            label = "收藏"
+            label = stringResource(R.string.bookmarks)
         )
     }
 }

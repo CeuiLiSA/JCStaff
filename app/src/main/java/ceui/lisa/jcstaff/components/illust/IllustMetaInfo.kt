@@ -16,7 +16,9 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.MetaInfoRow
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.utils.formatDate
@@ -47,7 +49,7 @@ fun IllustMetaInfo(
             if (formattedDate != null) {
                 MetaInfoRow(
                     icon = Icons.Default.CalendarToday,
-                    label = "发布时间",
+                    label = stringResource(R.string.publish_date),
                     value = formattedDate
                 )
             }
@@ -57,7 +59,7 @@ fun IllustMetaInfo(
         if (illust.width > 0 && illust.height > 0) {
             MetaInfoRow(
                 icon = Icons.Default.Photo,
-                label = "尺寸",
+                label = stringResource(R.string.size),
                 value = "${illust.width} × ${illust.height}"
             )
         }
@@ -66,16 +68,16 @@ fun IllustMetaInfo(
         if (illust.page_count > 1) {
             MetaInfoRow(
                 icon = Icons.Default.PhotoLibrary,
-                label = "页数",
-                value = "${illust.page_count} 张"
+                label = stringResource(R.string.page_count),
+                value = "${illust.page_count} ${stringResource(R.string.page_unit)}"
             )
         }
 
         // 作品类型
         val typeText = when {
-            illust.isGif() -> "动图 (Ugoira)"
-            illust.isManga() -> "漫画"
-            else -> "插画"
+            illust.isGif() -> stringResource(R.string.type_ugoira)
+            illust.isManga() -> stringResource(R.string.type_manga)
+            else -> stringResource(R.string.type_illust)
         }
         MetaInfoRow(
             icon = when {
@@ -83,20 +85,20 @@ fun IllustMetaInfo(
                 illust.isManga() -> Icons.Default.PhotoLibrary
                 else -> Icons.Default.Image
             },
-            label = "类型",
+            label = stringResource(R.string.type),
             value = typeText
         )
 
         // AI 类型
         if (illust.illust_ai_type > 0) {
             val aiText = when (illust.illust_ai_type) {
-                1 -> "AI 辅助创作"
-                2 -> "AI 生成"
-                else -> "AI 相关"
+                1 -> stringResource(R.string.ai_assisted)
+                2 -> stringResource(R.string.ai_generated)
+                else -> stringResource(R.string.ai_related)
             }
             MetaInfoRow(
                 icon = Icons.Default.AutoAwesome,
-                label = "AI",
+                label = stringResource(R.string.ai),
                 value = aiText,
                 valueColor = MaterialTheme.colorScheme.tertiary
             )

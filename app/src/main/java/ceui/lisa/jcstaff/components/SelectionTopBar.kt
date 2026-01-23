@@ -31,7 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.core.BatchDownloadProgress
 import ceui.lisa.jcstaff.core.ImageDownloader
 import ceui.lisa.jcstaff.core.SelectionManager
@@ -61,12 +63,12 @@ fun SelectionTopBar(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isDownloading && downloadProgress != null) {
                         Text(
-                            text = "下载中 ${downloadProgress!!.current}/${downloadProgress!!.total}",
+                            text = stringResource(R.string.downloading) + "${downloadProgress!!.current}/${downloadProgress!!.total}",
                             style = MaterialTheme.typography.titleMedium
                         )
                     } else {
                         Text(
-                            text = "已选择 ${selectionManager.selectedCount} 项",
+                            text = stringResource(R.string.selected_count, selectionManager.selectedCount),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -79,7 +81,7 @@ fun SelectionTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "取消选择"
+                        contentDescription = stringResource(R.string.deselect)
                     )
                 }
             },
@@ -91,7 +93,7 @@ fun SelectionTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.SelectAll,
-                        contentDescription = "全选"
+                        contentDescription = stringResource(R.string.select_all)
                     )
                 }
 
@@ -115,7 +117,7 @@ fun SelectionTopBar(
 
                             Toast.makeText(
                                 context,
-                                "下载完成：$successCount/${selectedIllusts.size}",
+                                context.getString(R.string.download_complete, successCount, selectedIllusts.size),
                                 Toast.LENGTH_SHORT
                             ).show()
 
@@ -132,7 +134,7 @@ fun SelectionTopBar(
                     } else {
                         Icon(
                             imageVector = Icons.Default.Download,
-                            contentDescription = "下载选中项"
+                            contentDescription = stringResource(R.string.download_selected)
                         )
                     }
                 }

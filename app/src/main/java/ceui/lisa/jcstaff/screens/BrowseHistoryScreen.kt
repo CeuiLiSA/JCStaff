@@ -27,6 +27,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import ceui.lisa.jcstaff.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -56,12 +58,12 @@ fun BrowseHistoryScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("浏览历史") },
+                    title = { Text(stringResource(R.string.browse_history)) },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回"
+                                contentDescription = stringResource(R.string.back)
                             )
                         }
                     },
@@ -70,7 +72,7 @@ fun BrowseHistoryScreen(
                             IconButton(onClick = { showClearDialog = true }) {
                                 Icon(
                                     imageVector = Icons.Default.DeleteSweep,
-                                    contentDescription = "清空历史"
+                                    contentDescription = stringResource(R.string.clear_history)
                                 )
                             }
                         }
@@ -86,7 +88,7 @@ fun BrowseHistoryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "暂无浏览历史",
+                        text = stringResource(R.string.no_browse_history),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -119,8 +121,8 @@ fun BrowseHistoryScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("清空浏览历史") },
-            text = { Text("确定要清空所有浏览历史吗？此操作无法撤销。") },
+            title = { Text(stringResource(R.string.clear_history_title)) },
+            text = { Text(stringResource(R.string.clear_history_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -128,12 +130,12 @@ fun BrowseHistoryScreen(
                         showClearDialog = false
                     }
                 ) {
-                    Text("清空")
+                    Text(stringResource(R.string.clear))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

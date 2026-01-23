@@ -28,7 +28,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -142,7 +144,7 @@ fun UserProfileScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = state.illustsError ?: "加载失败",
+                                text = state.illustsError ?: stringResource(R.string.load_error),
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
@@ -159,7 +161,7 @@ fun UserProfileScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "暂无作品",
+                                text = stringResource(R.string.no_works),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

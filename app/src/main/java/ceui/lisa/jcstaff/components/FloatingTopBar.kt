@@ -35,7 +35,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 
 /**
  * 通用浮动顶部栏组件
@@ -121,7 +123,7 @@ fun FloatingTopBar(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "返回",
+                    contentDescription = stringResource(R.string.back),
                     tint = Color.White
                 )
             }
@@ -129,6 +131,7 @@ fun FloatingTopBar(
             // 右侧按钮组
             Row {
                 // 分享按钮
+                val shareText = stringResource(R.string.share)
                 IconButton(
                     onClick = {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
@@ -136,12 +139,12 @@ fun FloatingTopBar(
                             putExtra(Intent.EXTRA_TEXT, shareUrl)
                             putExtra(Intent.EXTRA_TITLE, shareTitle)
                         }
-                        context.startActivity(Intent.createChooser(shareIntent, "分享"))
+                        context.startActivity(Intent.createChooser(shareIntent, shareText))
                     }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
-                        contentDescription = "分享",
+                        contentDescription = shareText,
                         tint = Color.White
                     )
                 }
@@ -151,7 +154,7 @@ fun FloatingTopBar(
                     IconButton(onClick = { showMoreMenu = true }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "更多",
+                            contentDescription = stringResource(R.string.more),
                             tint = Color.White
                         )
                     }
@@ -161,7 +164,7 @@ fun FloatingTopBar(
                         onDismissRequest = { showMoreMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("举报") },
+                            text = { Text(stringResource(R.string.report)) },
                             onClick = {
                                 showMoreMenu = false
                                 onReportClick()
@@ -174,7 +177,7 @@ fun FloatingTopBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("屏蔽") },
+                            text = { Text(stringResource(R.string.block)) },
                             onClick = {
                                 showMoreMenu = false
                                 onBlockClick()

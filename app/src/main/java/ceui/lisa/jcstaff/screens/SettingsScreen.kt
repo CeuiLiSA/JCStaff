@@ -18,6 +18,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import kotlin.math.roundToInt
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import ceui.lisa.jcstaff.R
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,12 +42,12 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("设置") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 }
@@ -66,11 +68,11 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "显示作品信息",
+                        text = stringResource(R.string.show_illust_info_title),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "在瀑布流卡片上显示标题和作者名",
+                        text = stringResource(R.string.show_illust_info_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -97,11 +99,11 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "卡片圆角",
+                            text = stringResource(R.string.card_corner_radius_title),
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
-                            text = "调整瀑布流卡片的圆角大小",
+                            text = stringResource(R.string.card_corner_radius_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -134,11 +136,11 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "卡片间距",
+                        text = stringResource(R.string.card_spacing_title),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "开启后瀑布流卡片之间有间距",
+                        text = stringResource(R.string.card_spacing_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

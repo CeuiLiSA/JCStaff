@@ -54,9 +54,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.network.Illust
@@ -111,12 +113,12 @@ fun SearchScreen(
                     },
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
-                    placeholder = { Text("搜索插画、用户...") },
+                    placeholder = { Text(stringResource(R.string.search_placeholder)) },
                     leadingIcon = {
                         IconButton(onClick = onBackClick) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回"
+                                contentDescription = stringResource(R.string.back)
                             )
                         }
                     },
@@ -125,7 +127,7 @@ fun SearchScreen(
                             IconButton(onClick = { query = "" }) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
-                                    contentDescription = "清除"
+                                    contentDescription = stringResource(R.string.clear)
                                 )
                             }
                         }
@@ -189,12 +191,12 @@ private fun SearchSuggestions(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "最近搜索",
+                        text = stringResource(R.string.recent_searches),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "清除",
+                        text = stringResource(R.string.clear),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { onClearHistory() }
@@ -234,7 +236,7 @@ private fun SearchSuggestions(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "搜索插画、用户或标签",
+                            text = stringResource(R.string.search_empty_hint),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -273,7 +275,7 @@ private fun SearchResults(
             }
             state.error != null && state.illusts.isEmpty() -> {
                 Text(
-                    text = state.error ?: "搜索失败",
+                    text = state.error ?: stringResource(R.string.search_error),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -282,7 +284,7 @@ private fun SearchResults(
             }
             state.illusts.isEmpty() && !state.isLoading && state.hasSearched -> {
                 Text(
-                    text = "没有找到相关结果",
+                    text = stringResource(R.string.no_results),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .align(Alignment.Center)

@@ -34,8 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import ceui.lisa.jcstaff.components.FloatingTopBar
@@ -132,7 +134,7 @@ fun IllustDetailScreen(
                     illust = fetchedIllust
                 }
             } catch (e: Exception) {
-                error = e.message ?: "加载失败"
+                error = e.message
             } finally {
                 isLoading = false
             }
@@ -243,7 +245,7 @@ fun IllustDetailScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = error ?: "加载失败",
+                                text = error ?: stringResource(R.string.load_error),
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
@@ -432,7 +434,7 @@ private fun RelatedIllustsHeader(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
         Text(
-            text = "相关作品",
+            text = stringResource(R.string.related_works),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

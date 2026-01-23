@@ -7,8 +7,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 
 /**
  * 作品简介组件
@@ -25,7 +27,7 @@ fun IllustCaption(
             .padding(horizontal = 16.dp)
     ) {
         Text(
-            text = "简介",
+            text = stringResource(R.string.caption),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

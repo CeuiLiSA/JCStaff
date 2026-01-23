@@ -50,7 +50,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustGrid
@@ -94,7 +96,9 @@ fun HomeScreen(
         selectionManager.clearSelection()
     }
 
-    val tabs = listOf("推荐", "关注")
+    val tabRecommended = stringResource(R.string.tab_recommended)
+    val tabFollowing = stringResource(R.string.tab_following)
+    val tabs = listOf(tabRecommended, tabFollowing)
 
     // 当前页面的 illusts
     val currentIllusts = when (pagerState.currentPage) {
@@ -167,7 +171,7 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
-                                        text = currentUser?.name ?: "JCStaff",
+                                        text = currentUser?.name ?: stringResource(R.string.app_name),
                                         style = MaterialTheme.typography.titleMedium,
                                         maxLines = 1
                                     )
@@ -186,7 +190,7 @@ fun HomeScreen(
                             IconButton(onClick = onSearchClick) {
                                 Icon(
                                     imageVector = Icons.Default.Search,
-                                    contentDescription = "搜索"
+                                    contentDescription = stringResource(R.string.search)
                                 )
                             }
                         }
@@ -310,7 +314,7 @@ private fun UserAvatar(
         ) {
             Icon(
                 imageVector = Icons.Default.Person,
-                contentDescription = "用户",
+                contentDescription = stringResource(R.string.user_icon),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size((size * 0.6).dp)
             )
@@ -341,7 +345,7 @@ private fun DrawerContent(
             UserAvatar(user = user, size = 64)
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = user?.name ?: "未登录",
+                text = user?.name ?: stringResource(R.string.not_logged_in),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -364,7 +368,7 @@ private fun DrawerContent(
                     contentDescription = null
                 )
             },
-            label = { Text("我的主页") },
+            label = { Text(stringResource(R.string.my_profile)) },
             selected = false,
             onClick = onUserProfileClick,
             modifier = Modifier.padding(horizontal = 12.dp)
@@ -377,7 +381,7 @@ private fun DrawerContent(
                     contentDescription = null
                 )
             },
-            label = { Text("我的收藏") },
+            label = { Text(stringResource(R.string.my_bookmarks)) },
             selected = false,
             onClick = onBookmarksClick,
             modifier = Modifier.padding(horizontal = 12.dp)
@@ -390,7 +394,7 @@ private fun DrawerContent(
                     contentDescription = null
                 )
             },
-            label = { Text("我的关注") },
+            label = { Text(stringResource(R.string.my_following)) },
             selected = false,
             onClick = onFollowingClick,
             modifier = Modifier.padding(horizontal = 12.dp)
@@ -403,7 +407,7 @@ private fun DrawerContent(
                     contentDescription = null
                 )
             },
-            label = { Text("浏览历史") },
+            label = { Text(stringResource(R.string.browse_history)) },
             selected = false,
             onClick = onBrowseHistoryClick,
             modifier = Modifier.padding(horizontal = 12.dp)
@@ -420,7 +424,7 @@ private fun DrawerContent(
                     contentDescription = null
                 )
             },
-            label = { Text("设置") },
+            label = { Text(stringResource(R.string.settings)) },
             selected = false,
             onClick = onSettingsClick,
             modifier = Modifier.padding(horizontal = 12.dp)
@@ -433,7 +437,7 @@ private fun DrawerContent(
                     contentDescription = null
                 )
             },
-            label = { Text("退出登录") },
+            label = { Text(stringResource(R.string.logout)) },
             selected = false,
             onClick = onLogoutClick,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)

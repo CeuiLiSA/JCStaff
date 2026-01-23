@@ -29,7 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.core.ImageDownloader
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
@@ -133,9 +135,9 @@ fun IllustActionBar(
                         }
                         isDownloading = false
                         if (result.isSuccess) {
-                            Toast.makeText(context, "已保存到相册", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.saved_to_gallery), Toast.LENGTH_SHORT).show()
                         } else {
-                            Toast.makeText(context, "保存失败", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -160,7 +162,7 @@ fun IllustActionBar(
                 )
             }
             Text(
-                text = "下载",
+                text = stringResource(R.string.download),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 6.dp)

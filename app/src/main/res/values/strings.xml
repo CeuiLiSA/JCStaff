@@ -1,3 +1,117 @@
 <resources>
     <string name="app_name">JCStaff</string>
+
+    <!-- Common -->
+    <string name="back">返回</string>
+    <string name="cancel">取消</string>
+    <string name="clear">清除</string>
+    <string name="close">关闭</string>
+    <string name="share">分享</string>
+    <string name="more">更多</string>
+    <string name="settings">设置</string>
+    <string name="login">登录</string>
+    <string name="logout">退出登录</string>
+    <string name="signup">注册</string>
+    <string name="download">下载</string>
+    <string name="load_error">加载失败</string>
+
+    <!-- Landing Screen -->
+    <string name="pixiv_third_party_client">Pixiv 第三方客户端</string>
+    <string name="please_login_to_continue">请登录 Pixiv 账号以继续</string>
+
+    <!-- Home Screen -->
+    <string name="tab_recommended">推荐</string>
+    <string name="tab_following">关注</string>
+    <string name="search">搜索</string>
+    <string name="user_icon">用户</string>
+    <string name="not_logged_in">未登录</string>
+    <string name="my_profile">我的主页</string>
+    <string name="my_bookmarks">我的收藏</string>
+    <string name="my_following">我的关注</string>
+    <string name="browse_history">浏览历史</string>
+
+    <!-- Search Screen -->
+    <string name="search_placeholder">搜索插画、用户...</string>
+    <string name="search_empty_hint">搜索插画、用户或标签</string>
+    <string name="recent_searches">最近搜索</string>
+    <string name="search_error">搜索失败</string>
+    <string name="no_results">没有找到相关结果</string>
+
+    <!-- Settings Screen -->
+    <string name="show_illust_info_title">显示作品信息</string>
+    <string name="show_illust_info_desc">在瀑布流卡片上显示标题和作者名</string>
+    <string name="card_corner_radius_title">卡片圆角</string>
+    <string name="card_corner_radius_desc">调整瀑布流卡片的圆角大小</string>
+    <string name="card_spacing_title">卡片间距</string>
+    <string name="card_spacing_desc">开启后瀑布流卡片之间有间距</string>
+
+    <!-- Browse History Screen -->
+    <string name="clear_history">清空历史</string>
+    <string name="no_browse_history">暂无浏览历史</string>
+    <string name="clear_history_title">清空浏览历史</string>
+    <string name="clear_history_message">确定要清空所有浏览历史吗？此操作无法撤销。</string>
+
+    <!-- Illust Detail -->
+    <string name="related_works">相关作品</string>
+    <string name="publish_date">发布时间</string>
+    <string name="size">尺寸</string>
+    <string name="page_count">页数</string>
+    <string name="page_unit">张</string>
+    <string name="type">类型</string>
+    <string name="type_ugoira">动图 (Ugoira)</string>
+    <string name="type_manga">漫画</string>
+    <string name="type_illust">插画</string>
+    <string name="ai_assisted">AI 辅助创作</string>
+    <string name="ai_generated">AI 生成</string>
+    <string name="ai_related">AI 相关</string>
+    <string name="ai">AI</string>
+    <string name="caption">简介</string>
+    <string name="tags">标签</string>
+
+    <!-- User Actions -->
+    <string name="follow">关注</string>
+    <string name="following">已关注</string>
+    <string name="follow_failed">关注失败</string>
+    <string name="unfollow_failed">取消关注失败</string>
+
+    <!-- User Profile -->
+    <string name="works">作品</string>
+    <string name="no_works">暂无作品</string>
+    <string name="illustrations">插画</string>
+    <string name="manga">漫画</string>
+    <string name="bookmarks">收藏</string>
+    <string name="job">职业</string>
+    <string name="region">地区</string>
+    <string name="birthday">生日</string>
+    <string name="year_suffix">年</string>
+    <string name="website">网站</string>
+    <string name="twitter">Twitter</string>
+
+    <!-- User Workspace -->
+    <string name="workspace">工作环境</string>
+    <string name="workspace_pc">电脑</string>
+    <string name="workspace_monitor">显示器</string>
+    <string name="workspace_software">软件</string>
+    <string name="workspace_tablet">数位板</string>
+    <string name="workspace_mouse">鼠标</string>
+    <string name="workspace_desk">桌子</string>
+    <string name="workspace_chair">椅子</string>
+    <string name="workspace_music">音乐</string>
+    <string name="workspace_notes">备注</string>
+
+    <!-- Floating Top Bar -->
+    <string name="report">举报</string>
+    <string name="block">屏蔽</string>
+
+    <!-- Selection Top Bar -->
+    <string name="downloading">下载中 </string>
+    <string name="selected_count">已选择 %d 项</string>
+    <string name="deselect">取消选择</string>
+    <string name="select_all">全选</string>
+    <string name="download_selected">下载选中项</string>
+    <string name="download_complete">下载完成：%d/%d</string>
+
+    <!-- Illust Action Bar -->
+    <string name="saved_to_gallery">已保存到相册</string>
+    <string name="save_failed">保存失败</string>
 </resources>

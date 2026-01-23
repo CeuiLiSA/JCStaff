@@ -27,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import ceui.lisa.jcstaff.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.ObjectStore
@@ -109,7 +111,7 @@ fun IllustAuthorRow(
                                 val updatedUser = u.copy(is_followed = false)
                                 ObjectStore.put(updatedUser)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "取消关注失败", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.unfollow_failed), Toast.LENGTH_SHORT).show()
                             } finally {
                                 isFollowing = false
                             }
@@ -127,7 +129,7 @@ fun IllustAuthorRow(
                         )
                     } else {
                         Text(
-                            text = "已关注",
+                            text = stringResource(R.string.following),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
@@ -143,7 +145,7 @@ fun IllustAuthorRow(
                                 val updatedUser = u.copy(is_followed = true)
                                 ObjectStore.put(updatedUser)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "关注失败", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.follow_failed), Toast.LENGTH_SHORT).show()
                             } finally {
                                 isFollowing = false
                             }
@@ -161,7 +163,7 @@ fun IllustAuthorRow(
                         )
                     } else {
                         Text(
-                            text = "关注",
+                            text = stringResource(R.string.follow),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
