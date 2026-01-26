@@ -15,6 +15,11 @@
     <string name="download">下载</string>
     <string name="load_error">加载失败</string>
 
+    <!-- Language -->
+    <string name="language_title">语言</string>
+    <string name="language_desc">选择应用显示语言</string>
+    <string name="login_success">登录成功</string>
+
     <!-- Landing Screen -->
     <string name="pixiv_third_party_client">Pixiv 第三方客户端</string>
     <string name="please_login_to_continue">请登录 Pixiv 账号以继续</string>
@@ -36,11 +41,6 @@
     <string name="recent_searches">最近搜索</string>
     <string name="search_error">搜索失败</string>
     <string name="no_results">没有找到相关结果</string>
-
-    <!-- Language -->
-    <string name="language_title">语言</string>
-    <string name="language_desc">选择应用显示语言</string>
-    <string name="login_success">登录成功</string>
 
     <!-- Settings Screen -->
     <string name="show_illust_info_title">显示作品信息</string>

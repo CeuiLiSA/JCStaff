@@ -1,0 +1,124 @@
+<resources>
+    <string name="app_name">JCStaff</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="clear">Clear</string>
+    <string name="close">Close</string>
+    <string name="share">Share</string>
+    <string name="more">More</string>
+    <string name="settings">Settings</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="signup">Sign Up</string>
+    <string name="download">Download</string>
+    <string name="load_error">Failed to load</string>
+
+    <!-- Language -->
+    <string name="language_title">Language</string>
+    <string name="language_desc">Select app display language</string>
+    <string name="login_success">Login successful</string>
+
+    <!-- Landing Screen -->
+    <string name="pixiv_third_party_client">Pixiv Third-Party Client</string>
+    <string name="please_login_to_continue">Please log in to your Pixiv account to continue</string>
+
+    <!-- Home Screen -->
+    <string name="tab_recommended">Recommended</string>
+    <string name="tab_following">Following</string>
+    <string name="search">Search</string>
+    <string name="user_icon">User</string>
+    <string name="not_logged_in">Not logged in</string>
+    <string name="my_profile">My Profile</string>
+    <string name="my_bookmarks">My Bookmarks</string>
+    <string name="my_following">My Following</string>
+    <string name="browse_history">Browse History</string>
+
+    <!-- Search Screen -->
+    <string name="search_placeholder">Search illustrations, users…</string>
+    <string name="search_empty_hint">Search illustrations, users, or tags</string>
+    <string name="recent_searches">Recent Searches</string>
+    <string name="search_error">Search failed</string>
+    <string name="no_results">No results found</string>
+
+    <!-- Settings Screen -->
+    <string name="show_illust_info_title">Show Illustration Info</string>
+    <string name="show_illust_info_desc">Show title and author on waterfall cards</string>
+    <string name="card_corner_radius_title">Card Corner Radius</string>
+    <string name="card_corner_radius_desc">Adjust card corner radius</string>
+    <string name="card_spacing_title">Card Spacing</string>
+    <string name="card_spacing_desc">Add spacing between waterfall cards</string>
+
+    <!-- Browse History Screen -->
+    <string name="clear_history">Clear History</string>
+    <string name="no_browse_history">No browse history</string>
+    <string name="clear_history_title">Clear Browse History</string>
+    <string name="clear_history_message">Are you sure you want to clear all browse history? This cannot be undone.</string>
+
+    <!-- Illust Detail -->
+    <string name="expand_images">Expand All</string>
+    <string name="collapse_images">Collapse</string>
+    <string name="related_works">Related Works</string>
+    <string name="publish_date">Published</string>
+    <string name="size">Size</string>
+    <string name="page_count">Pages</string>
+    <string name="page_unit">p</string>
+    <string name="type">Type</string>
+    <string name="type_ugoira">Ugoira</string>
+    <string name="type_manga">Manga</string>
+    <string name="type_illust">Illustration</string>
+    <string name="ai_assisted">AI Assisted</string>
+    <string name="ai_generated">AI Generated</string>
+    <string name="ai_related">AI Related</string>
+    <string name="ai">AI</string>
+    <string name="caption">Caption</string>
+    <string name="tags">Tags</string>
+
+    <!-- User Actions -->
+    <string name="follow">Follow</string>
+    <string name="following">Following</string>
+    <string name="follow_failed">Failed to follow</string>
+    <string name="unfollow_failed">Failed to unfollow</string>
+
+    <!-- User Profile -->
+    <string name="works">Works</string>
+    <string name="no_works">No works</string>
+    <string name="illustrations">Illustrations</string>
+    <string name="manga">Manga</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="job">Occupation</string>
+    <string name="region">Region</string>
+    <string name="birthday">Birthday</string>
+    <string name="year_suffix">\u0020</string>
+    <string name="website">Website</string>
+    <string name="twitter">Twitter</string>
+
+    <!-- User Workspace -->
+    <string name="workspace">Workspace</string>
+    <string name="workspace_pc">Computer</string>
+    <string name="workspace_monitor">Monitor</string>
+    <string name="workspace_software">Software</string>
+    <string name="workspace_tablet">Tablet</string>
+    <string name="workspace_mouse">Mouse</string>
+    <string name="workspace_desk">Desk</string>
+    <string name="workspace_chair">Chair</string>
+    <string name="workspace_music">Music</string>
+    <string name="workspace_notes">Notes</string>
+
+    <!-- Floating Top Bar -->
+    <string name="report">Report</string>
+    <string name="block">Block</string>
+
+    <!-- Selection Top Bar -->
+    <string name="downloading">Downloading </string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="deselect">Deselect</string>
+    <string name="select_all">Select All</string>
+    <string name="download_selected">Download Selected</string>
+    <string name="download_complete">Download complete: %1$d/%2$d</string>
+
+    <!-- Illust Action Bar -->
+    <string name="saved_to_gallery">Saved to gallery</string>
+    <string name="save_failed">Save failed</string>
+</resources>

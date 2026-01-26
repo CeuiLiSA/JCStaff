@@ -1,0 +1,124 @@
+<resources>
+    <string name="app_name">JCStaff</string>
+
+    <!-- Common -->
+    <string name="back">뒤로</string>
+    <string name="cancel">취소</string>
+    <string name="clear">지우기</string>
+    <string name="close">닫기</string>
+    <string name="share">공유</string>
+    <string name="more">더보기</string>
+    <string name="settings">설정</string>
+    <string name="login">로그인</string>
+    <string name="logout">로그아웃</string>
+    <string name="signup">회원가입</string>
+    <string name="download">다운로드</string>
+    <string name="load_error">불러오기 실패</string>
+
+    <!-- Language -->
+    <string name="language_title">언어</string>
+    <string name="language_desc">앱 표시 언어 선택</string>
+    <string name="login_success">로그인 성공</string>
+
+    <!-- Landing Screen -->
+    <string name="pixiv_third_party_client">Pixiv 서드파티 클라이언트</string>
+    <string name="please_login_to_continue">계속하려면 Pixiv 계정으로 로그인하세요</string>
+
+    <!-- Home Screen -->
+    <string name="tab_recommended">추천</string>
+    <string name="tab_following">팔로잉</string>
+    <string name="search">검색</string>
+    <string name="user_icon">사용자</string>
+    <string name="not_logged_in">로그인되지 않음</string>
+    <string name="my_profile">내 프로필</string>
+    <string name="my_bookmarks">내 북마크</string>
+    <string name="my_following">내 팔로잉</string>
+    <string name="browse_history">탐색 기록</string>
+
+    <!-- Search Screen -->
+    <string name="search_placeholder">일러스트, 사용자 검색…</string>
+    <string name="search_empty_hint">일러스트, 사용자 또는 태그 검색</string>
+    <string name="recent_searches">최근 검색</string>
+    <string name="search_error">검색 실패</string>
+    <string name="no_results">관련 결과를 찾을 수 없습니다</string>
+
+    <!-- Settings Screen -->
+    <string name="show_illust_info_title">작품 정보 표시</string>
+    <string name="show_illust_info_desc">카드에 제목과 작가 이름 표시</string>
+    <string name="card_corner_radius_title">카드 모서리</string>
+    <string name="card_corner_radius_desc">카드 모서리 둥글기 조절</string>
+    <string name="card_spacing_title">카드 간격</string>
+    <string name="card_spacing_desc">카드 사이에 간격 추가</string>
+
+    <!-- Browse History Screen -->
+    <string name="clear_history">기록 삭제</string>
+    <string name="no_browse_history">탐색 기록이 없습니다</string>
+    <string name="clear_history_title">탐색 기록 삭제</string>
+    <string name="clear_history_message">모든 탐색 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</string>
+
+    <!-- Illust Detail -->
+    <string name="expand_images">전체 펼치기</string>
+    <string name="collapse_images">접기</string>
+    <string name="related_works">관련 작품</string>
+    <string name="publish_date">게시일</string>
+    <string name="size">크기</string>
+    <string name="page_count">페이지 수</string>
+    <string name="page_unit">장</string>
+    <string name="type">유형</string>
+    <string name="type_ugoira">우고이라 (Ugoira)</string>
+    <string name="type_manga">만화</string>
+    <string name="type_illust">일러스트</string>
+    <string name="ai_assisted">AI 보조 창작</string>
+    <string name="ai_generated">AI 생성</string>
+    <string name="ai_related">AI 관련</string>
+    <string name="ai">AI</string>
+    <string name="caption">소개</string>
+    <string name="tags">태그</string>
+
+    <!-- User Actions -->
+    <string name="follow">팔로우</string>
+    <string name="following">팔로잉</string>
+    <string name="follow_failed">팔로우 실패</string>
+    <string name="unfollow_failed">팔로우 해제 실패</string>
+
+    <!-- User Profile -->
+    <string name="works">작품</string>
+    <string name="no_works">작품이 없습니다</string>
+    <string name="illustrations">일러스트</string>
+    <string name="manga">만화</string>
+    <string name="bookmarks">북마크</string>
+    <string name="job">직업</string>
+    <string name="region">지역</string>
+    <string name="birthday">생일</string>
+    <string name="year_suffix">년</string>
+    <string name="website">웹사이트</string>
+    <string name="twitter">Twitter</string>
+
+    <!-- User Workspace -->
+    <string name="workspace">작업 환경</string>
+    <string name="workspace_pc">컴퓨터</string>
+    <string name="workspace_monitor">모니터</string>
+    <string name="workspace_software">소프트웨어</string>
+    <string name="workspace_tablet">태블릿</string>
+    <string name="workspace_mouse">마우스</string>
+    <string name="workspace_desk">책상</string>
+    <string name="workspace_chair">의자</string>
+    <string name="workspace_music">음악</string>
+    <string name="workspace_notes">비고</string>
+
+    <!-- Floating Top Bar -->
+    <string name="report">신고</string>
+    <string name="block">차단</string>
+
+    <!-- Selection Top Bar -->
+    <string name="downloading">다운로드 중 </string>
+    <string name="selected_count">%1$d개 선택됨</string>
+    <string name="deselect">선택 해제</string>
+    <string name="select_all">전체 선택</string>
+    <string name="download_selected">선택 항목 다운로드</string>
+    <string name="download_complete">다운로드 완료: %1$d/%2$d</string>
+
+    <!-- Illust Action Bar -->
+    <string name="saved_to_gallery">갤러리에 저장됨</string>
+    <string name="save_failed">저장 실패</string>
+</resources>

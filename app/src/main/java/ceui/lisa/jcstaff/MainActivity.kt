@@ -4,7 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.viewModels
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
@@ -46,11 +46,13 @@ import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
+import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.SettingsStore
+import ceui.lisa.jcstaff.screens.LanguageSelectionScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val authViewModel: AuthViewModel by viewModels()
 
@@ -64,6 +66,9 @@ class MainActivity : ComponentActivity() {
         // 初始化设置存储
         SettingsStore.initialize(this)
 
+        // 初始化语言管理器
+        LanguageManager.initialize(SettingsStore.getSelectedLanguageBlocking())
+
         // 初始化加载任务管理器
         LoadTaskManager.init(this)
 
@@ -75,7 +80,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             JCStaffTheme {
-                AppNavigation(authViewModel)
+                val isLanguageSelected by LanguageManager.isLanguageSelected.collectAsState()
+                if (isLanguageSelected) {
+                    AppNavigation(authViewModel)
+                } else {
+                    LanguageSelectionScreen()
+                }
             }
         }
     }
@@ -109,7 +119,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     LaunchedEffect(loginState) {
         when (val state = loginState) {
             is LoginState.Success -> {
-                Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.login_success), Toast.LENGTH_SHORT).show()
                 authViewModel.resetLoginState()
             }
             is LoginState.Error -> {

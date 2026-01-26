@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.network
 
+import ceui.lisa.jcstaff.core.LanguageManager
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.security.MessageDigest
@@ -21,10 +22,11 @@ class HeaderInterceptor(
                 addHeader("authorization", "Bearer $token")
             }
 
+            val headers = LanguageManager.currentHeaders
             addHeader("accept", "*/*")
-            addHeader("accept-language", "zh-CN,zh-Hans;q=0.9")
+            addHeader("accept-language", headers.acceptLanguage)
             addHeader("accept-encoding", "gzip, deflate, br")
-            addHeader("app-accept-language", "zh-hans")
+            addHeader("app-accept-language", headers.appAcceptLanguage)
             addHeader("app-os", "ios")
             addHeader("app-os-version", "26.2")
             addHeader("app-version", "8.4.4")

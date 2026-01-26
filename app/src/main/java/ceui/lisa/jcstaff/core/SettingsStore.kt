@@ -6,9 +6,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -16,6 +19,7 @@ object SettingsStore {
     private val SHOW_ILLUST_INFO = booleanPreferencesKey("show_illust_info")
     private val ILLUST_CARD_CORNER_RADIUS = intPreferencesKey("illust_card_corner_radius")
     private val GRID_SPACING_ENABLED = booleanPreferencesKey("grid_spacing_enabled")
+    private val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
 
     private var dataStore: DataStore<Preferences>? = null
 
@@ -66,6 +70,25 @@ object SettingsStore {
     suspend fun setGridSpacingEnabled(enabled: Boolean) {
         dataStore?.edit { preferences ->
             preferences[GRID_SPACING_ENABLED] = enabled
+        }
+    }
+
+    val selectedLanguage: Flow<String?>
+        get() = dataStore?.data?.map { preferences ->
+            preferences[SELECTED_LANGUAGE]
+        } ?: kotlinx.coroutines.flow.flowOf(null)
+
+    suspend fun setSelectedLanguage(tag: String) {
+        dataStore?.edit { preferences ->
+            preferences[SELECTED_LANGUAGE] = tag
+        }
+    }
+
+    fun getSelectedLanguageBlocking(): String? {
+        return runBlocking {
+            dataStore?.data?.map { preferences ->
+                preferences[SELECTED_LANGUAGE]
+            }?.first()
         }
     }
 }
