@@ -18,6 +18,8 @@
     <!-- Landing Screen -->
     <string name="pixiv_third_party_client">Pixiv 第三方客户端</string>
     <string name="please_login_to_continue">请登录 Pixiv 账号以继续</string>
+    <string name="landing_welcome">探索无限创意</string>
+    <string name="landing_description">发现来自全球创作者的精彩插画作品</string>
 
     <!-- Home Screen -->
     <string name="tab_recommended">推荐</string>

@@ -3,6 +3,8 @@ package ceui.lisa.jcstaff.network
 import android.util.Log
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.Strictness
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -28,7 +30,9 @@ object PixivClient {
 
     private var _pixivApi: PixivApi? = null
     private var currentPkce: PKCEItem? = null
-    private val gson = Gson()
+    private val gson: Gson = GsonBuilder()
+        .setStrictness(Strictness.LENIENT)
+        .create()
 
     private val cookieJar = object : CookieJar {
         private val cookieStore = ConcurrentHashMap<String, MutableList<Cookie>>()
@@ -184,7 +188,7 @@ object PixivClient {
 
         return Retrofit.Builder()
             .baseUrl(OAUTH_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .client(okHttpClient)
             .build()
     }
@@ -206,7 +210,7 @@ object PixivClient {
 
         return Retrofit.Builder()
             .baseUrl(APP_API_HOST)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .client(okHttpClient)
             .build()
     }

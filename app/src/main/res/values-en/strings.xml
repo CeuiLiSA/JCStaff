@@ -23,6 +23,8 @@
     <!-- Landing Screen -->
     <string name="pixiv_third_party_client">Pixiv Third-Party Client</string>
     <string name="please_login_to_continue">Please log in to your Pixiv account to continue</string>
+    <string name="landing_welcome">Explore Endless Creativity</string>
+    <string name="landing_description">Discover amazing illustrations from creators around the world</string>
 
     <!-- Home Screen -->
     <string name="tab_recommended">Recommended</string>

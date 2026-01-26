@@ -23,6 +23,8 @@
     <!-- Landing Screen -->
     <string name="pixiv_third_party_client">Pixiv 서드파티 클라이언트</string>
     <string name="please_login_to_continue">계속하려면 Pixiv 계정으로 로그인하세요</string>
+    <string name="landing_welcome">무한한 창의력 탐험</string>
+    <string name="landing_description">전 세계 크리에이터의 멋진 일러스트를 발견하세요</string>
 
     <!-- Home Screen -->
     <string name="tab_recommended">추천</string>

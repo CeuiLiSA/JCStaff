@@ -23,6 +23,8 @@
     <!-- Landing Screen -->
     <string name="pixiv_third_party_client">Pixiv サードパーティクライアント</string>
     <string name="please_login_to_continue">続けるにはPixivアカウントでログインしてください</string>
+    <string name="landing_welcome">無限の創造性を探索</string>
+    <string name="landing_description">世界中のクリエイターによる素晴らしいイラストを発見</string>
 
     <!-- Home Screen -->
     <string name="tab_recommended">おすすめ</string>

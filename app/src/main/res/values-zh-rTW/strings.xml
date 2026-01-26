@@ -23,6 +23,8 @@
     <!-- Landing Screen -->
     <string name="pixiv_third_party_client">Pixiv 第三方用戶端</string>
     <string name="please_login_to_continue">請登入 Pixiv 帳號以繼續</string>
+    <string name="landing_welcome">探索無限創意</string>
+    <string name="landing_description">發現來自全球創作者的精彩插畫作品</string>
 
     <!-- Home Screen -->
     <string name="tab_recommended">推薦</string>

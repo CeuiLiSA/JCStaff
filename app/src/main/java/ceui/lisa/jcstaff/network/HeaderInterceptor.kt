@@ -25,7 +25,6 @@ class HeaderInterceptor(
             val headers = LanguageManager.currentHeaders
             addHeader("accept", "*/*")
             addHeader("accept-language", headers.acceptLanguage)
-            addHeader("accept-encoding", "gzip, deflate, br")
             addHeader("app-accept-language", headers.appAcceptLanguage)
             addHeader("app-os", "ios")
             addHeader("app-os-version", "26.2")

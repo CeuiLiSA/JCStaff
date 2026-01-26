@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff.auth
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -72,6 +73,7 @@ class AuthRepository(private val context: Context) {
 
             Result.success(response)
         } catch (e: Exception) {
+            Log.e("AuthRepository", "loginWithCode", e)
             Result.failure(e)
         }
     }
