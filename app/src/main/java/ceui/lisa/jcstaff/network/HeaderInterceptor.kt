@@ -21,12 +21,17 @@ class HeaderInterceptor(
                 addHeader("authorization", "Bearer $token")
             }
 
-            addHeader("accept-language", "zh-CN")
+            addHeader("accept", "*/*")
+            addHeader("accept-language", "zh-CN,zh-Hans;q=0.9")
+            addHeader("accept-encoding", "gzip, deflate, br")
+            addHeader("app-accept-language", "zh-hans")
             addHeader("app-os", "ios")
-            addHeader("app-version", "7.13.4")
+            addHeader("app-os-version", "26.2")
+            addHeader("app-version", "8.4.4")
             addHeader("x-client-time", requestNonce.xClientTime)
             addHeader("x-client-hash", requestNonce.xClientHash)
-            addHeader("user-agent", "PixivIOSApp/7.13.4 (iOS 16.0.3; iPhone13,3)")
+            addHeader("user-agent", "PixivIOSApp/8.4.4 (iOS 26.2; iPhone18,1)")
+            addHeader("priority", "u=3")
         }.build()
 
         return chain.proceed(newRequest)

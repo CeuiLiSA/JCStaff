@@ -1,12 +1,17 @@
 package ceui.lisa.jcstaff.network
 
+import android.util.Log
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import com.google.gson.Gson
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 object PixivClient {
@@ -24,6 +29,30 @@ object PixivClient {
     private var _pixivApi: PixivApi? = null
     private var currentPkce: PKCEItem? = null
     private val gson = Gson()
+
+    private val cookieJar = object : CookieJar {
+        private val cookieStore = ConcurrentHashMap<String, MutableList<Cookie>>()
+
+        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+            cookieStore[url.host] = cookies.toMutableList()
+            Log.d("CookieJar", "saveFromResponse [${url.host}] cookies:")
+            cookies.forEach { cookie ->
+                Log.d("CookieJar", "  ${cookie.name}=${cookie.value} " +
+                        "(domain=${cookie.domain}, path=${cookie.path}, " +
+                        "secure=${cookie.secure}, httpOnly=${cookie.httpOnly}, " +
+                        "expiresAt=${cookie.expiresAt})")
+            }
+        }
+
+        override fun loadForRequest(url: HttpUrl): List<Cookie> {
+            val cookies = cookieStore[url.host] ?: emptyList()
+            Log.d("CookieJar", "loadForRequest [${url.host}] sending ${cookies.size} cookies:")
+            cookies.forEach { cookie ->
+                Log.d("CookieJar", "  ${cookie.name}=${cookie.value}")
+            }
+            return cookies
+        }
+    }
 
     val oAuthApi: OAuthApi by lazy {
         createOAuthClient().create(OAuthApi::class.java)
@@ -146,6 +175,7 @@ object PixivClient {
             .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .protocols(listOf(Protocol.HTTP_1_1))
+            .cookieJar(cookieJar)
             .addInterceptor(HeaderInterceptor())
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
@@ -165,6 +195,7 @@ object PixivClient {
             .writeTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(REQUEST_TIMEOUT, TimeUnit.SECONDS)
             .protocols(listOf(Protocol.HTTP_1_1))
+            .cookieJar(cookieJar)
             .addInterceptor(ApiCacheInterceptor())
             .addInterceptor(TokenRefreshInterceptor())
             .addInterceptor(HeaderInterceptor { TokenManager.getAccessToken() })
