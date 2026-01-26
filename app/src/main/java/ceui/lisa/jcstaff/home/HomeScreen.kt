@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -35,10 +37,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
@@ -86,7 +88,7 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel()
 ) {
     val uiState by homeViewModel.uiState.collectAsState()
-    val pagerState = rememberPagerState(pageCount = { 2 })
+    val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val selectionManager = rememberSelectionManager()
@@ -96,14 +98,11 @@ fun HomeScreen(
         selectionManager.clearSelection()
     }
 
-    val tabRecommended = stringResource(R.string.tab_recommended)
-    val tabFollowing = stringResource(R.string.tab_following)
-    val tabs = listOf(tabRecommended, tabFollowing)
-
     // 当前页面的 illusts
     val currentIllusts = when (pagerState.currentPage) {
         0 -> uiState.recommendedIllusts
-        1 -> uiState.followingIllusts
+        1 -> uiState.trendingIllusts
+        2 -> uiState.followingIllusts
         else -> emptyList()
     }
 
@@ -128,7 +127,7 @@ fun HomeScreen(
                 onFollowingClick = {
                     coroutineScope.launch {
                         drawerState.close()
-                        pagerState.animateScrollToPage(1)
+                        pagerState.animateScrollToPage(2)
                     }
                 },
                 onBrowseHistoryClick = {
@@ -195,36 +194,46 @@ fun HomeScreen(
                             }
                         }
                     )
-                }
-            ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                TabRow(
-                    selectedTabIndex = pagerState.currentPage
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = pagerState.currentPage == index,
+                },
+                bottomBar = {
+                    NavigationBar {
+                        NavigationBarItem(
+                            selected = pagerState.currentPage == 0,
                             onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
+                                coroutineScope.launch { pagerState.animateScrollToPage(0) }
                             },
-                            text = { Text(title) }
+                            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                            label = { Text(stringResource(R.string.tab_discover)) }
+                        )
+                        NavigationBarItem(
+                            selected = pagerState.currentPage == 1,
+                            onClick = {
+                                coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                            },
+                            icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) },
+                            label = { Text(stringResource(R.string.tab_trending)) }
+                        )
+                        NavigationBarItem(
+                            selected = pagerState.currentPage == 2,
+                            onClick = {
+                                coroutineScope.launch { pagerState.animateScrollToPage(2) }
+                            },
+                            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                            label = { Text(stringResource(R.string.tab_following)) }
                         )
                     }
                 }
-
-                // 为两个 Tab 分别创建持久化的滚动状态
+            ) { innerPadding ->
+                // 为三个 Tab 分别创建持久化的滚动状态
                 val recommendedGridState = rememberPersistentLazyStaggeredGridState("home_recommended")
+                val trendingGridState = rememberPersistentLazyStaggeredGridState("home_trending")
                 val followingGridState = rememberPersistentLazyStaggeredGridState("home_following")
 
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) { page ->
                     when (page) {
                         0 -> IllustGrid(
@@ -249,6 +258,27 @@ fun HomeScreen(
                             gridState = recommendedGridState
                         )
                         1 -> IllustGrid(
+                            illusts = uiState.trendingIllusts,
+                            onIllustClick = { illust ->
+                                onIllustClick(IllustClickData(
+                                    id = illust.id,
+                                    title = illust.title ?: "",
+                                    previewUrl = illust.previewUrl(),
+                                    aspectRatio = illust.aspectRatio()
+                                ))
+                            },
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedContentScope = animatedContentScope,
+                            isLoading = uiState.isLoadingTrending,
+                            isLoadingMore = uiState.isLoadingMoreTrending,
+                            canLoadMore = uiState.canLoadMoreTrending,
+                            error = uiState.trendingError,
+                            onRefresh = { homeViewModel.loadTrendingIllusts() },
+                            onLoadMore = { homeViewModel.loadMoreTrending() },
+                            selectionManager = selectionManager,
+                            gridState = trendingGridState
+                        )
+                        2 -> IllustGrid(
                             illusts = uiState.followingIllusts,
                             onIllustClick = { illust ->
                                 onIllustClick(IllustClickData(
@@ -271,7 +301,6 @@ fun HomeScreen(
                         )
                     }
                 }
-            }
         }
 
             // Selection top bar overlay

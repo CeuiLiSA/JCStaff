@@ -27,6 +27,8 @@
     <string name="landing_description">Discover amazing illustrations from creators around the world</string>
 
     <!-- Home Screen -->
+    <string name="tab_discover">Discover</string>
+    <string name="tab_trending">Trending</string>
     <string name="tab_recommended">Recommended</string>
     <string name="tab_following">Following</string>
     <string name="search">Search</string>

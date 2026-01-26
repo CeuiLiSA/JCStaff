@@ -1,7 +1,6 @@
 package ceui.lisa.jcstaff.components
 
 import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -30,7 +29,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -113,17 +111,18 @@ fun IllustCard(
                 .fillMaxWidth()
                 .aspectRatio(aspectRatio)
 
-            val finalModifier = if (sharedTransitionScope != null && animatedContentScope != null && !isSelectionMode) {
-                with(sharedTransitionScope) {
-                    imageModifier.sharedElement(
-                        sharedContentState = rememberSharedContentState(key = "illust-${illust.id}"),
-                        animatedVisibilityScope = animatedContentScope,
-                        boundsTransform = IllustBoundsTransform
-                    )
+            val finalModifier =
+                if (sharedTransitionScope != null && animatedContentScope != null && !isSelectionMode) {
+                    with(sharedTransitionScope) {
+                        imageModifier.sharedElement(
+                            sharedContentState = rememberSharedContentState(key = "illust-${illust.id}"),
+                            animatedVisibilityScope = animatedContentScope,
+                            boundsTransform = IllustBoundsTransform
+                        )
+                    }
+                } else {
+                    imageModifier
                 }
-            } else {
-                imageModifier
-            }
 
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -149,7 +148,9 @@ fun IllustCard(
                     modifier = Modifier
                         .size(28.dp)
                         .background(
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.4f),
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Black.copy(
+                                alpha = 0.4f
+                            ),
                             shape = CircleShape
                         )
                         .border(
@@ -209,6 +210,7 @@ fun IllustCard(
                 Text(
                     text = illust.title ?: "",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

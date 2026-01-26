@@ -27,6 +27,8 @@
     <string name="landing_description">發現來自全球創作者的精彩插畫作品</string>
 
     <!-- Home Screen -->
+    <string name="tab_discover">發現</string>
+    <string name="tab_trending">排行</string>
     <string name="tab_recommended">推薦</string>
     <string name="tab_following">關注</string>
     <string name="search">搜尋</string>

@@ -14,17 +14,23 @@ import kotlinx.coroutines.launch
 
 data class HomeUiState(
     val recommendedIllusts: List<Illust> = emptyList(),
+    val trendingIllusts: List<Illust> = emptyList(),
     val followingIllusts: List<Illust> = emptyList(),
     val isLoadingRecommended: Boolean = false,
+    val isLoadingTrending: Boolean = false,
     val isLoadingFollowing: Boolean = false,
     val isLoadingMoreRecommended: Boolean = false,
+    val isLoadingMoreTrending: Boolean = false,
     val isLoadingMoreFollowing: Boolean = false,
     val recommendedError: String? = null,
+    val trendingError: String? = null,
     val followingError: String? = null,
     val recommendedNextUrl: String? = null,
+    val trendingNextUrl: String? = null,
     val followingNextUrl: String? = null
 ) {
     val canLoadMoreRecommended: Boolean get() = recommendedNextUrl != null && !isLoadingMoreRecommended
+    val canLoadMoreTrending: Boolean get() = trendingNextUrl != null && !isLoadingMoreTrending
     val canLoadMoreFollowing: Boolean get() = followingNextUrl != null && !isLoadingMoreFollowing
 }
 
@@ -35,6 +41,7 @@ class HomeViewModel : ViewModel() {
 
     init {
         loadRecommendedIllusts()
+        loadTrendingIllusts()
         loadFollowingIllusts()
     }
 
@@ -114,6 +121,80 @@ class HomeViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(
                     isLoadingMoreRecommended = false,
                     recommendedError = e.message ?: "加载更多失败"
+                )
+            }
+        }
+    }
+
+    fun loadTrendingIllusts() {
+        viewModelScope.launch {
+            val cachedResponse = PixivClient.getFromStaleCache(
+                path = "/v1/illust/ranking",
+                queryParams = mapOf(
+                    "mode" to "day",
+                    "filter" to "for_ios"
+                ),
+                clazz = IllustResponse::class.java
+            )
+
+            if (cachedResponse != null) {
+                val illusts = cachedResponse.illusts
+                storeIllusts(illusts)
+                _uiState.value = _uiState.value.copy(
+                    trendingIllusts = illusts,
+                    trendingNextUrl = cachedResponse.next_url,
+                    trendingError = null
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isLoadingTrending = true,
+                    trendingError = null
+                )
+            }
+
+            try {
+                val response = PixivClient.pixivApi.getRankingIllusts(mode = "day")
+                val illusts = response.illusts
+
+                storeIllusts(illusts)
+
+                _uiState.value = _uiState.value.copy(
+                    trendingIllusts = illusts,
+                    isLoadingTrending = false,
+                    trendingNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoadingTrending = false,
+                    trendingError = if (_uiState.value.trendingIllusts.isEmpty()) {
+                        e.message ?: "加载失败"
+                    } else null
+                )
+            }
+        }
+    }
+
+    fun loadMoreTrending() {
+        val nextUrl = _uiState.value.trendingNextUrl ?: return
+        if (_uiState.value.isLoadingMoreTrending) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingMoreTrending = true)
+            try {
+                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
+                val newIllusts = response.illusts
+
+                storeIllusts(newIllusts)
+
+                _uiState.value = _uiState.value.copy(
+                    trendingIllusts = _uiState.value.trendingIllusts + newIllusts,
+                    isLoadingMoreTrending = false,
+                    trendingNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoadingMoreTrending = false,
+                    trendingError = e.message ?: "加载更多失败"
                 )
             }
         }
@@ -211,6 +292,7 @@ class HomeViewModel : ViewModel() {
 
     fun refresh() {
         loadRecommendedIllusts()
+        loadTrendingIllusts()
         loadFollowingIllusts()
     }
 }
