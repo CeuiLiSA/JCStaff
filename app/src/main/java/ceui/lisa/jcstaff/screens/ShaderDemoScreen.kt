@@ -353,6 +353,28 @@ float3 camXform(float3 p, float tTime) {
     return p;
 }
 
+// ── 5 cosine-palette themes (a = center, b = amplitude) ─────
+// Each pair produces 120°-separated triadic colors.
+//   0  Violet Dream   — purple / magenta / teal
+//   1  Ocean Abyss    — coral / deep blue / emerald
+//   2  Aurora          — rose / electric blue / green
+//   3  Ember Glow     — crimson / sapphire / amber
+//   4  Sakura Mist    — pink / mint / lavender
+float3 palCenter(int idx) {
+    if (idx == 1) return float3(0.15, 0.28, 0.42);
+    if (idx == 2) return float3(0.20, 0.35, 0.28);
+    if (idx == 3) return float3(0.42, 0.20, 0.15);
+    if (idx == 4) return float3(0.38, 0.22, 0.35);
+    return float3(0.28, 0.18, 0.38); // 0
+}
+float3 palAmp(int idx) {
+    if (idx == 1) return float3(0.28, 0.20, 0.18);
+    if (idx == 2) return float3(0.22, 0.28, 0.30);
+    if (idx == 3) return float3(0.28, 0.25, 0.28);
+    if (idx == 4) return float3(0.20, 0.28, 0.20);
+    return float3(0.28, 0.22, 0.28); // 0
+}
+
 float rayPlane(float3 ro, float3 rd, float3 n, float d) {
     float ndotdir = dot(rd, n);
     if (ndotdir < 0.0) {
@@ -378,6 +400,14 @@ half4 main(float2 fragCoord) {
     float alpha = 1.0;
     float fogD = 0.0;
     const float sc = 5.0;
+
+    // Cycle through 5 palettes — 8s each, 40s full loop, seamless.
+    float cyc = mod(iTime * 0.125, 5.0);
+    int pi0 = int(floor(cyc));
+    int pi1 = pi0 < 4 ? pi0 + 1 : 0;
+    float pblend = smoothstep(0.0, 1.0, fract(cyc));
+    float3 pa = mix(palCenter(pi0), palCenter(pi1), pblend);
+    float3 pb = mix(palAmp(pi0),    palAmp(pi1),    pblend);
 
     for (int i = 0; i < 2; i++) {
         float plB = rayPlane(ro, r, float3(0.0,  1.0, 0.0), 1.0);
@@ -417,12 +447,10 @@ half4 main(float2 fragCoord) {
         float hpat = hash21(id * 7.31 + 0.53);
         float pat = smoothstep(0.3, 0.7, hpat);
 
-        // No iTime — color is purely spatial; the moving camera
-        // reveals new tiles continuously so colors never stagnate.
-        // RGB phase offsets at 120° (0.0, 0.33, 0.67) maximise hue spread.
+        // Per-tile phase from spatial hash; palette (pa, pb) cycles over time.
+        // 120° offsets (0.0, 0.33, 0.67) maximise hue spread within each theme.
         float phase = hid + hpat * 0.3;
-        float3 sqCol = float3(0.28, 0.18, 0.38)
-                      + float3(0.28, 0.22, 0.28) * cos(6.2831 * (phase + float3(0.0, 0.33, 0.67)));
+        float3 sqCol = pa + pb * cos(6.2831 * (phase + float3(0.0, 0.33, 0.67)));
         sqCol *= 2.2;
 
         // gap color: deep indigo

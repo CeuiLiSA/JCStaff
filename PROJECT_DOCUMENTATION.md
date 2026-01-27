@@ -1,0 +1,723 @@
+# JCStaff - Pixiv 第三方 Android 客户端
+
+## 项目概览
+
+JCStaff 是一个使用 **Jetpack Compose + Material Design 3** 构建的 Pixiv 第三方 Android 客户端。采用 **MVVM 架构**，支持多账号登录、插画/小说浏览、搜索、收藏、下载等完整功能。
+
+**技术栈一览：**
+
+| 层次 | 技术 |
+|------|------|
+| UI 框架 | Jetpack Compose + Material 3 |
+| 架构模式 | MVVM (ViewModel + StateFlow) |
+| 网络请求 | Retrofit2 + OkHttp + Gson |
+| 本地存储 | Room 数据库 + DataStore |
+| 图片加载 | Coil + 自定义进度加载器 |
+| 认证方式 | OAuth 2.0 + PKCE |
+| 导航 | 自定义栈式导航 (NavigationViewModel) |
+| 动画 | Shared Element Transitions |
+| 特效 | AGSL RuntimeShader |
+
+---
+
+## 目录结构
+
+```
+ceui.lisa.jcstaff/
+├── MainActivity.kt              # 入口 Activity，主题/语言/导航的根节点
+├── auth/                         # 认证与多账号系统
+│   ├── AuthViewModel.kt          # 认证状态管理
+│   ├── AuthRepository.kt         # Token 持久化与刷新
+│   ├── AuthState.kt              # 认证状态定义
+│   ├── AccountRegistry.kt        # 多账号注册表
+│   ├── AccountSessionManager.kt  # 账号会话生命周期
+│   ├── AccountMigration.kt       # 单账号→多账号迁移
+│   └── AccountCleanup.kt         # 账号数据清理
+├── network/                      # 网络层
+│   ├── PixivClient.kt            # Retrofit 客户端工厂
+│   ├── PixivApi.kt               # Pixiv API 接口定义
+│   ├── OAuthApi.kt               # OAuth 认证接口
+│   ├── Models.kt                 # 数据模型（Illust, Novel, User 等）
+│   ├── TokenManager.kt           # Access Token 内存管理
+│   ├── TokenRefreshInterceptor.kt# 401 自动刷新拦截器
+│   ├── HeaderInterceptor.kt      # 请求头注入
+│   ├── ApiCacheInterceptor.kt    # API 响应缓存拦截器
+│   └── PkceUtil.kt               # PKCE 工具
+├── cache/                        # 本地缓存
+│   ├── AppDatabase.kt            # Room 数据库
+│   ├── ApiCacheManager.kt        # API 缓存管理器
+│   ├── ApiCacheEntity.kt         # 缓存实体
+│   ├── ApiCacheDao.kt            # 缓存 DAO
+│   ├── BrowseHistoryManager.kt   # 浏览历史管理器
+│   ├── BrowseHistoryEntity.kt    # 浏览历史实体
+│   └── BrowseHistoryDao.kt       # 浏览历史 DAO
+├── core/                         # 核心工具
+│   ├── ObjectStore.kt            # 全局响应式对象池
+│   ├── SettingsStore.kt          # 用户设置（DataStore）
+│   ├── LanguageManager.kt        # 多语言管理
+│   ├── AppLanguage.kt            # 语言定义
+│   ├── IllustListViewModel.kt    # 通用插画列表 ViewModel
+│   ├── ImageDownloader.kt        # 图片下载器
+│   ├── LoadTaskManager.kt        # 原图加载任务管理
+│   ├── ProgressImageLoader.kt    # 带进度的图片加载
+│   ├── SelectionManager.kt       # 多选管理器
+│   └── ScrollPositionStore.kt    # 滚动位置持久化
+├── navigation/                   # 导航系统
+│   ├── NavRoutes.kt              # 路由定义
+│   └── NavigationViewModel.kt    # 导航栈管理
+├── home/                         # 首页
+│   ├── HomeScreen.kt             # 首页界面（三 Tab + 抽屉）
+│   ├── RecommendedViewModel.kt   # 推荐插画
+│   ├── TrendingViewModel.kt      # 热门排行
+│   ├── FollowingViewModel.kt     # 关注动态
+│   └── RecommendedNovelsViewModel.kt # 推荐小说
+├── screens/                      # 各功能页面
+│   ├── LandingScreen.kt          # 登录引导页
+│   ├── LanguageSelectionScreen.kt# 语言选择页
+│   ├── IllustDetailScreen.kt     # 插画详情页
+│   ├── ImageViewerScreen.kt      # 全屏图片查看器
+│   ├── NovelDetailScreen.kt      # 小说详情页
+│   ├── SearchScreen.kt           # 搜索页
+│   ├── TagDetailScreen.kt        # 标签详情页
+│   ├── UserProfileScreen.kt      # 用户主页
+│   ├── BookmarksScreen.kt        # 收藏列表
+│   ├── BrowseHistoryScreen.kt    # 浏览历史
+│   ├── SettingsScreen.kt         # 设置页
+│   ├── ListScreen.kt             # 通用列表页
+│   └── DetailScreen.kt           # 通用详情页
+├── components/                   # 可复用 UI 组件
+│   ├── IllustCard.kt             # 插画卡片
+│   ├── IllustGrid.kt             # 插画瀑布流网格
+│   ├── NovelCard.kt              # 小说卡片
+│   ├── NovelList.kt              # 小说列表
+│   ├── FloatingTopBar.kt         # 浮动顶部栏（返回+分享）
+│   ├── SelectionTopBar.kt        # 多选操作栏
+│   ├── ProgressiveImage.kt       # 渐进式图片
+│   ├── MetaInfoRow.kt            # 元信息行
+│   ├── ShaderBackground.kt       # AGSL 着色器背景
+│   ├── illust/                   # 插画详情组件
+│   │   ├── CollapsibleImageSection.kt  # 可折叠图片区域
+│   │   ├── IllustActionBar.kt    # 收藏/下载操作栏
+│   │   ├── IllustAuthorRow.kt    # 作者信息行
+│   │   ├── IllustCaption.kt      # 作品简介
+│   │   ├── IllustMetaInfo.kt     # 元数据（尺寸、日期等）
+│   │   └── IllustTags.kt         # 标签流
+│   ├── novel/                    # 小说组件
+│   │   └── NovelActionBar.kt     # 小说操作栏
+│   └── user/                     # 用户组件
+│       ├── UserProfileHeader.kt  # 用户主页头部
+│       ├── UserInfoCard.kt       # 用户信息卡片
+│       ├── UserAvatarSection.kt  # 头像区域
+│       ├── UserStatsRow.kt       # 统计数据行
+│       ├── UserFollowButton.kt   # 关注按钮
+│       ├── UserWorkspaceCard.kt  # 工作环境卡片
+│       ├── WorkspaceRow.kt       # 工作环境行
+│       └── StatItem.kt           # 统计项
+├── search/                       # 搜索模块
+│   └── SearchViewModel.kt        # 搜索逻辑
+├── profile/                      # 用户主页模块
+│   └── UserProfileViewModel.kt   # 用户主页逻辑
+├── tagdetail/                    # 标签详情模块
+│   └── TagDetailViewModel.kt     # 标签搜索逻辑
+├── history/                      # 浏览历史模块
+│   └── BrowseHistoryViewModel.kt # 浏览历史逻辑
+├── ui/theme/                     # 主题
+│   ├── Color.kt                  # 颜色定义
+│   ├── Theme.kt                  # 主题配置
+│   └── Type.kt                   # 字体排版
+└── utils/                        # 工具类
+    └── Formatters.kt             # 格式化工具
+```
+
+---
+
+## 功能详解
+
+### 1. 登录与认证系统
+
+#### 用户视角
+- 首次打开 App 选择语言后进入登录页
+- 点击「登录」或「注册」跳转至 Pixiv 官方网页完成授权
+- 授权完成后自动返回 App，显示首页内容
+- 支持同时登录多个账号，在抽屉中切换
+
+#### 实现原理
+
+**OAuth 2.0 + PKCE 流程：**
+
+```
+┌──────────┐     ①生成 PKCE      ┌──────────┐
+│   App    │ ─────────────────→ │  PKCE    │
+│          │     code_verifier  │  Util    │
+│          │     code_challenge │          │
+└────┬─────┘                    └──────────┘
+     │  ②打开 Chrome Custom Tab
+     │  带 code_challenge 参数
+     ▼
+┌──────────┐     ③用户登录       ┌──────────┐
+│ Chrome   │ ─────────────────→ │  Pixiv   │
+│ Custom   │                    │  Server  │
+│ Tab      │ ←───────────────── │          │
+└────┬─────┘  ④回调 pixiv://     └──────────┘
+     │        携带 auth_code
+     ▼
+┌──────────┐     ⑤用 code +     ┌──────────┐
+│   App    │     verifier 换    │  OAuth   │
+│  Auth    │ ─────────────────→ │  Server  │
+│ ViewModel│                    │          │
+│          │ ←───────────────── │          │
+└──────────┘  ⑥返回 access_token └──────────┘
+              + refresh_token
+```
+
+**关键文件：**
+- `PkceUtil.kt` — 生成 SHA256 code_challenge 和随机 code_verifier
+- `OAuthApi.kt` — 定义 `/auth/token` 接口（登录+刷新）
+- `AuthRepository.kt` — 通过 DataStore 持久化 token，管理 token 刷新回调
+- `AuthViewModel.kt` — 管理认证状态机（Loading → Authenticated / NotAuthenticated）
+
+**Token 自动刷新：**
+当 API 返回 401 时，`TokenRefreshInterceptor` 自动拦截请求、刷新 token 并重试：
+```
+请求 → 401 → 加锁 → 刷新 token → 更新内存+DataStore → 重试原请求
+```
+使用 `ReentrantLock` 确保并发请求只触发一次刷新。
+
+---
+
+### 2. 多账号系统
+
+#### 用户视角
+- 在抽屉菜单中查看所有已登录账号
+- 点击其他账号即可快速切换
+- 点击「添加账号」可登录新账号
+- 长按可移除指定账号
+
+#### 实现原理
+
+**数据隔离架构：**
+
+每个账号拥有独立的：
+- DataStore 文件：`auth_prefs_{userId}` 存储 token，`settings_{userId}` 存储设置
+- Room 数据库：`jcstaff_db_{userId}` 存储缓存和浏览历史
+- 缓存目录：`image_load_cache_{userId}` 存储图片缓存
+
+**切换账号流程：**
+```
+用户点击切换
+    → AccountSessionManager.switchAccount()
+        → teardownCurrentSession()     // 关闭当前 DB、重置缓存
+        → AccountRegistry.setActiveAccount(userId)
+        → initializeAuth(userId)       // 加载新账号 token
+        → initializeServices(userId)   // 创建新 DB、缓存实例
+    → UI 通过 key(activeUserId) 强制重建所有页面
+```
+
+**关键文件：**
+- `AccountRegistry.kt` — DataStore 存储账号列表和当前活跃 ID
+- `AccountSessionManager.kt` — 会话生命周期协调器（初始化/切换/拆卸）
+- `AccountMigration.kt` — 旧版单账号数据自动迁移至新的 per-user 命名
+
+---
+
+### 3. 首页（三 Tab + 抽屉）
+
+#### 用户视角
+- **推荐 Tab**：展示 Pixiv 推荐的插画，顶部有每日排行轮播，下方有推荐插画/推荐小说的子 Tab
+- **热门 Tab**：展示每日排行榜插画
+- **关注 Tab**：展示已关注画师的最新作品
+- 左侧抽屉显示用户信息、多账号切换、快捷入口
+
+#### 实现原理
+
+**页面结构：**
+```
+ModalNavigationDrawer（侧滑抽屉）
+└── Scaffold
+    ├── TopAppBar（用户头像 + 搜索按钮）
+    ├── BottomNavigation（推荐 / 热门 / 关注）
+    └── HorizontalPager（三个 Tab 页面）
+        ├── Tab 0: DiscoverPage
+        │   └── HorizontalPager（插画 / 小说 子Tab）
+        │       ├── IllustGrid + RankingCarousel
+        │       └── NovelList
+        ├── Tab 1: IllustGrid（热门排行）
+        └── Tab 2: IllustGrid（关注动态）
+```
+
+**四个独立 ViewModel** 分别管理各 Tab 数据：
+- `RecommendedViewModel` — 推荐插画 + 每日排行
+- `TrendingViewModel` — 热门排行
+- `FollowingViewModel` — 关注动态
+- `RecommendedNovelsViewModel` — 推荐小说
+
+每个 ViewModel 在 `init` 时自动加载数据，采用 **Stale-While-Revalidate** 策略：先展示过期缓存，再后台请求最新数据。
+
+---
+
+### 4. 插画详情页
+
+#### 用户视角
+- 从任何列表点击插画卡片进入详情
+- 顶部显示作品图片（多图可展开），支持共享元素过渡动画
+- 下方依次展示：标题、作者信息（可关注）、操作栏（收藏/下载/分享）、标签、简介、元数据
+- 底部展示相关推荐作品的瀑布流
+
+#### 实现原理
+
+**数据获取流程：**
+1. 从 `ObjectStore`（内存缓存池）获取上一个页面传递的缓存数据，**即时展示**
+2. 如果缓存不存在，调用 `getIllustDetail` API 获取
+3. 绑定 `IllustLoader` 加载相关作品列表
+4. 通过 `BrowseHistoryManager.recordView()` 记录浏览历史
+
+**ObjectStore 响应式数据共享：**
+```
+列表页 put(illust) → ObjectStore[StoreKey] = MutableStateFlow(illust)
+                              ↕ 双向同步
+详情页 get(StoreKey) → 收到 StateFlow → collectAsState()
+
+当详情页更新收藏状态:
+    ObjectStore.updateTyped(key) { illust.copy(is_bookmarked = true) }
+    → 列表页的 Flow 同步更新 → 卡片自动刷新收藏图标
+```
+
+**共享元素过渡动画：**
+- 使用 Compose `SharedTransitionLayout` + `AnimatedContent`
+- 每张图片通过 `sharedElement(key = "image-{illustId}")` 关联
+- 从列表到详情页，图片平滑过渡而非突然切换
+
+---
+
+### 5. 全屏图片查看器
+
+#### 用户视角
+- 点击详情页中的图片进入全屏模式
+- 先显示预览图，后台加载原图并显示下载进度（百分比环形指示器）
+- 原图加载完成后可双指缩放和拖拽
+- 支持共享元素过渡动画
+
+#### 实现原理
+
+**分层加载策略：**
+```
+┌─────────────────────────────────┐
+│  ZoomableAsyncImage（原图/可缩放）│ ← 原图下载完成后显示
+├─────────────────────────────────┤
+│  AsyncImage（预览图/底层）       │ ← 立即显示
+└─────────────────────────────────┘
+```
+
+**LoadTaskManager 任务管理：**
+- 每个 URL 对应一个下载任务，使用 `StateFlow` 广播进度
+- 详情页和图片查看器**共享同一个下载任务**：
+  - 在详情页点击图片时，下载可能已开始
+  - 进入图片查看器后，直接续上已有任务的进度
+  - 退出查看器时取消监听但不取消下载
+- 下载完成后缓存到本地文件，再次查看时**瞬间加载**
+
+**缩放功能：** 使用 `telephoto` 库的 `ZoomableAsyncImage` 组件。
+
+---
+
+### 6. 搜索系统
+
+#### 用户视角
+- 点击首页搜索图标进入搜索页
+- 搜索框自动聚焦，展示搜索历史
+- 输入关键词后展示瀑布流搜索结果
+- 支持无限滚动加载更多
+
+#### 实现原理
+
+- 使用 Material 3 `SearchBar` 组件，支持展开/收起动画
+- `SearchViewModel` 管理搜索状态：
+  - 调用 `PixivApi.searchIllusts()` 进行搜索
+  - 搜索历史存储在内存中
+  - 支持分页加载（通过 `next_url`）
+- 搜索结果使用 `LazyVerticalStaggeredGrid` 瀑布流展示
+
+---
+
+### 7. 标签详情页
+
+#### 用户视角
+- 从插画详情页点击标签进入
+- 顶部显示标签名和翻译名
+- 展示该标签下的所有作品
+- Premium 用户可按热度排序，普通用户按时间排序
+
+#### 实现原理
+
+- `TagDetailViewModel` 接收 `Tag` 对象
+- 普通用户使用 `sort=date_desc`，Premium 用户使用 `sort=popular_desc`
+- 使用通用 `IllustGrid` 组件展示结果
+
+---
+
+### 8. 用户主页
+
+#### 用户视角
+- 沉浸式头部：背景图 + 头像 + 用户名 + 简介
+- 统计数据：投稿数、收藏数、关注数
+- 关注/取消关注按钮
+- 下方展示该用户的所有投稿作品（瀑布流）
+
+#### 实现原理
+
+- `UserProfileViewModel` 并行加载：
+  - `getUserDetail()` — 用户基本信息和统计
+  - `getUserIllusts()` — 用户作品列表（分页）
+- `UserProfileHeader` 组件：
+  - 背景图使用 `background_image_url`
+  - 如无背景图，使用渐变色兜底
+  - 信息卡片包含工作环境（电脑、显示器、绘图板等）
+
+---
+
+### 9. 收藏管理
+
+#### 用户视角
+- 在插画详情页点击收藏按钮即时收藏/取消收藏
+- 在抽屉菜单中进入「我的收藏」查看所有收藏
+- 支持多选批量下载收藏的作品
+
+#### 实现原理
+
+**收藏操作流程：**
+```
+用户点击收藏
+    → 调用 addBookmark/deleteBookmark API
+    → 更新本地 ObjectStore 中的 is_bookmarked
+    → 所有引用该 Illust 的 UI 自动更新
+```
+
+**收藏列表：** 使用 `IllustListViewModel` + `IllustLoader`，绑定 `getUserBookmarks()` API。
+
+---
+
+### 10. 小说功能
+
+#### 用户视角
+- 在首页推荐 Tab 的「小说」子 Tab 中浏览推荐小说
+- 小说卡片展示封面、标题、作者、字数等信息
+- 点击进入小说详情页查看完整信息
+
+#### 实现原理
+
+- `NovelCard` 组件：较大的卡片样式，展示封面图、标题、作者、字数、标签
+- `NovelList` 使用 `LazyColumn` 而非瀑布流（小说适合线性列表）
+- `RecommendedNovelsViewModel` 调用 `getRecommendedNovels()` API
+
+---
+
+### 11. 浏览历史
+
+#### 用户视角
+- 在抽屉菜单中进入「浏览历史」
+- 展示最近浏览过的插画，按时间排序
+- 支持多选批量下载
+
+#### 实现原理
+
+- `BrowseHistoryManager` 使用 Room 数据库记录浏览：
+  - 每次进入插画详情页时 `recordView(illust)` 写入记录
+  - 包含插画 ID、标题、预览图 URL、作者信息、时间戳
+  - 重复浏览同一作品时更新时间戳（REPLACE 策略）
+  - 启动时异步清理 30 天前的旧记录
+- `BrowseHistoryViewModel` 从数据库读取并转换为 `Illust` 对象
+
+---
+
+### 12. 图片下载
+
+#### 用户视角
+- 在插画详情页点击下载按钮保存原图
+- 在多选模式下可批量下载
+- 如果原图已缓存，下载瞬间完成
+
+#### 实现原理
+
+**`ImageDownloader` 下载流程：**
+1. 使用独立的 OkHttpClient 下载原图（添加 Referer 头）
+2. 解码为 Bitmap
+3. 通过 `MediaStore` API（Android 10+）或直接文件写入保存到相册
+4. 保存路径：`Pictures/JCStaff/pixiv_{illustId}.jpg`
+
+**批量下载：**
+- `batchDownloadToGallery()` 接受 `List<Illust>` 逐一下载
+- 通过 `onProgress` 回调报告进度
+
+**缓存优先：**
+- `LoadTaskManager` 管理原图缓存
+- 如果原图已通过图片查看器下载过，直接从缓存复制到相册（瞬间完成）
+
+---
+
+### 13. 多选模式
+
+#### 用户视角
+- 长按任意插画卡片进入多选模式
+- 顶部出现操作栏，显示已选数量
+- 支持全选、批量下载
+- 按返回键退出多选
+
+#### 实现原理
+
+- `SelectionManager`（Compose State 管理）：
+  - `isSelectionMode` — 是否处于选择模式
+  - `selectedIds` — 已选 ID 集合
+  - `onLongPress(illust)` — 触发进入选择模式
+  - `toggleSelection(illust)` — 切换选中状态
+- `SelectionTopBar` 悬浮在页面顶部，显示操作按钮
+- `IllustCard` 在选择模式下显示勾选框覆盖层
+
+---
+
+### 14. 多语言支持
+
+#### 用户视角
+- 首次打开 App 选择显示语言
+- 支持：简体中文、繁体中文、英语、日语、韩语
+- 语言设置影响 App UI 和 Pixiv API 返回的内容语言
+
+#### 实现原理
+
+- `AppLanguage` 枚举定义所有支持的语言，每种语言包含：
+  - `tag` — BCP 47 语言标签（如 `zh-Hans`）
+  - `acceptLanguage` — HTTP Accept-Language 头
+  - `appAcceptLanguage` — Pixiv 特有的 App-Accept-Language 头
+- `LanguageManager` 管理当前语言状态：
+  - 启动时从 DataStore 异步读取已保存的语言
+  - 通过 `StateFlow` 通知 UI 语言是否已初始化
+  - 设置语言时调用 `AppCompatDelegate.setApplicationLocales()` 更新系统 Locale
+- `HeaderInterceptor` 在每个 API 请求中注入对应的语言头
+
+---
+
+### 15. 设置页
+
+#### 用户视角
+- 开关：是否在卡片上显示标题和作者名
+- 滑块：卡片圆角大小（0~24dp）
+- 开关：是否开启瀑布流间距
+- 切换显示语言
+
+#### 实现原理
+
+- `SettingsStore` 使用 DataStore 持久化设置：
+  - `showIllustInfo` — 布尔值，控制卡片信息显示
+  - `illustCardCornerRadius` — 整数，圆角半径
+  - `gridSpacingEnabled` — 布尔值，瀑布流间距
+  - `selectedLanguage` — 字符串，全局语言设置
+- 每个设置项都是 `Flow`，UI 通过 `collectAsState()` 实时响应变化
+- per-user 设置和全局设置（语言）分开存储
+
+---
+
+## 架构深入解析
+
+### 导航系统
+
+不使用 Jetpack Navigation，而是自定义实现：
+
+```kotlin
+class NavigationViewModel : ViewModel() {
+    val backStack: SnapshotStateList<NavRoute> = mutableStateListOf()
+
+    val currentRoute: NavRoute? get() = backStack.lastOrNull()
+
+    fun navigate(route: NavRoute) { backStack.add(route) }
+    fun goBack() { if (backStack.size > 1) backStack.removeLast() }
+    fun clearAndNavigate(route: NavRoute) { backStack.clear(); backStack.add(route) }
+}
+```
+
+**优势：**
+- 使用 Compose `SnapshotStateList` 自动触发重组
+- 路由是类型安全的 `sealed interface`，参数直接嵌入
+- `AnimatedContent` 实现页面切换动画
+- `SaveableStateProvider(route.stableKey)` 保存每个页面的 UI 状态
+- 通过 `CompositionLocalProvider` 全局提供 `navViewModel`
+
+**路由定义：**
+
+| 路由 | 参数 | 说明 |
+|------|------|------|
+| `Landing` | 无 | 登录引导页 |
+| `Home` | 无 | 首页 |
+| `Search` | 无 | 搜索页 |
+| `IllustDetail` | illustId, title, previewUrl, aspectRatio | 插画详情 |
+| `ImageViewer` | imageUrl, originalUrl, sharedElementKey | 全屏看图 |
+| `NovelDetail` | novelId | 小说详情 |
+| `TagDetail` | tag (Tag 对象) | 标签详情 |
+| `UserProfile` | userId | 用户主页 |
+| `Bookmarks` | userId | 收藏列表 |
+| `BrowseHistory` | 无 | 浏览历史 |
+| `Settings` | 无 | 设置页 |
+
+---
+
+### 网络层架构
+
+```
+┌────────────────────────────────────────────────────┐
+│                   PixivApi (Retrofit)               │
+│  getRecommendedIllusts / searchIllusts / ...       │
+└───────────────────────┬────────────────────────────┘
+                        │
+┌───────────────────────▼────────────────────────────┐
+│                  OkHttp Client                      │
+│  ┌──────────────────────────────────────────────┐  │
+│  │ Interceptor Chain:                            │  │
+│  │  1. ApiCacheInterceptor  → 读/写 Room 缓存    │  │
+│  │  2. TokenRefreshInterceptor → 401 自动刷新    │  │
+│  │  3. HeaderInterceptor    → 注入认证头/语言头   │  │
+│  │  4. HttpLoggingInterceptor → 日志             │  │
+│  └──────────────────────────────────────────────┘  │
+└───────────────────────┬────────────────────────────┘
+                        │
+                        ▼
+                  Pixiv API Server
+```
+
+**ApiCacheInterceptor 工作原理：**
+1. 请求发出前，检查 Room 数据库中是否有有效缓存（15 分钟有效期）
+2. 如果缓存命中：构造 304 响应直接返回（不发网络请求）
+3. 如果缓存未命中或过期：正常发送请求
+4. 收到 200 响应后：将响应体存入 Room 缓存
+
+**Stale-While-Revalidate：**
+各 ViewModel 使用 `PixivClient.getFromStaleCache()` 先展示过期缓存数据，同时发起网络请求更新。用户看到的是：旧数据立即显示 → 新数据刷入替换。
+
+---
+
+### ObjectStore — 全局响应式对象池
+
+**设计思想：** 解决列表页和详情页数据不同步的问题。
+
+```
+                    ┌─────────────────────────┐
+                    │     ObjectStore          │
+                    │  ConcurrentHashMap<      │
+推荐列表 ──put()──→ │    StoreKey,             │ ←──get()── 详情页
+热门列表 ──put()──→ │    MutableStateFlow<     │ ←──get()── 相关作品
+搜索结果 ──put()──→ │      Storable>           │ ←──get()── 用户主页
+                    │  >                       │
+                    └─────────────────────────┘
+                              │
+                              │ StateFlow 自动通知
+                              ▼
+                    所有订阅者的 UI 自动更新
+```
+
+**场景举例：** 在插画详情页收藏了作品 → ObjectStore 中对应的 StateFlow 更新 → 返回推荐列表后，该作品的卡片上收藏图标已同步变化。
+
+---
+
+### API 缓存系统
+
+**两层缓存架构：**
+
+| 层次 | 存储 | 有效期 | 用途 |
+|------|------|--------|------|
+| L1 — ObjectStore | 内存 (ConcurrentHashMap) | 进程生命周期 | 页面间数据共享 |
+| L2 — ApiCacheManager | Room 数据库 | 15 分钟 | API 响应级别缓存 |
+
+**ApiCacheManager 特性：**
+- 最大 100 条缓存，超出时 LRU 淘汰最旧的 10 条
+- 启动时异步清理过期条目
+- 支持强制失效（用于下拉刷新等场景）
+- per-user 隔离：每个账号独立的数据库文件
+
+---
+
+### AGSL 着色器背景
+
+**ShaderBackground.kt** 使用 Android 13+ 的 AGSL (Android Graphics Shading Language) 实现动态背景效果：
+
+**算法：**
+1. **Domain Warping FBM（分形布朗运动域扭曲）：**
+   - 5 层 octave 的 FBM 噪声
+   - 两级域扭曲：`q = fbm(uv)` → `r = fbm(uv + q)` → `f = fbm(uv + r)`
+   - 产生有机、流动的纹理图案
+
+2. **动态色板：**
+   - 5 个颜色通道以不同周期正弦变化（14~21 秒）
+   - 颜色从深靛蓝、紫罗兰到翡翠、珊瑚不断渐变
+   - 基于噪声值混合不同颜色层
+
+3. **示波器波纹：**
+   - 两条螺旋缠绕的波纹线（青蓝色 + 品红色）
+   - 主螺旋 + 多次谐波叠加
+   - 使用 `smoothstep` 实现线条发光效果
+
+**降级方案：** Android 13 以下设备使用静态渐变背景作为兜底。
+
+**性能优化：** 时间变量仅在 `drawBehind` 绘制阶段读取，不触发 recomposition。
+
+---
+
+### 启动流程
+
+```
+onCreate()
+    ├── enableEdgeToEdge()          // 沉浸式状态栏
+    ├── Coil.setImageLoader(...)    // 全局图片加载器（添加 Referer 头）
+    ├── SettingsStore.initialize()  // 创建 DataStore 实例（不读盘）
+    ├── authViewModel               // 触发 AuthViewModel 创建
+    │   └── init {
+    │       ├── AccountRegistry.initialize()    // 同步
+    │       ├── launch(IO) {                    // 异步
+    │       │   ├── AccountMigration.migrateIfNeeded()  // 首次升级迁移
+    │       │   ├── AccountRegistry.getActiveUserId()   // DataStore 读取
+    │       │   ├── _activeUserId.value = activeId      // 提前设置
+    │       │   ├── AccountSessionManager.initializeAuth()  // Token 加载
+    │       │   ├── _authState.value = Authenticated    // 设置认证状态
+    │       │   └── launch { initializeServices() }     // 后台初始化 DB
+    │       └── }
+    │
+    ├── launch(IO) {               // 并行: 语言初始化
+    │   ├── SettingsStore.selectedLanguage.first()
+    │   └── LanguageManager.initialize(savedTag)
+    │   }
+    │
+    └── setContent {
+        └── JCStaffTheme {
+            ├── !isInitialized → 空白（语言加载中）
+            ├── isLanguageSelected → AppNavigation()
+            │   ├── authState == Loading → 转圈（认证中）
+            │   └── authState == Authenticated → HomeScreen
+            └── else → LanguageSelectionScreen()
+        }
+    }
+```
+
+**并行优化：** 语言初始化和认证初始化同时进行，总启动时间 = max(语言加载, 认证加载)。
+
+---
+
+### 数据持久化一览
+
+| 存储类型 | 文件/位置 | 内容 | 生命周期 |
+|---------|----------|------|---------|
+| DataStore | `account_registry` | 账号列表、活跃 ID、迁移标记 | 全局 |
+| DataStore | `settings_global` | 语言设置 | 全局 |
+| DataStore | `auth_prefs_{userId}` | Access Token、Refresh Token | per-user |
+| DataStore | `settings_{userId}` | 用户偏好设置 | per-user |
+| Room DB | `jcstaff_db_{userId}` | API 缓存、浏览历史 | per-user |
+| 文件 | `image_load_cache_{userId}/` | 原图缓存文件 | per-user |
+
+---
+
+## 项目统计
+
+| 指标 | 数值 |
+|------|------|
+| Kotlin 源文件数 | 86 |
+| 页面数 | 12 |
+| ViewModel 数 | 10+ |
+| API 接口数 | 20+ |
+| 支持语言 | 5 (中/繁中/英/日/韩) |
+| Room Entity | 2 (ApiCache, BrowseHistory) |
+| OkHttp Interceptor | 4 |
