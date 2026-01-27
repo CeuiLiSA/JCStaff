@@ -355,24 +355,26 @@ float3 camXform(float3 p, float tTime) {
 
 // ── 5 cosine-palette themes (a = center, b = amplitude) ─────
 // Each pair produces 120°-separated triadic colors.
-//   0  Violet Dream   — purple / magenta / teal
-//   1  Ocean Abyss    — coral / deep blue / emerald
-//   2  Aurora          — rose / electric blue / green
-//   3  Ember Glow     — crimson / sapphire / amber
-//   4  Sakura Mist    — pink / mint / lavender
+// Dominant channel shifts around the color wheel so transitions
+// are clearly visible: purple → cyan → green → red/orange → pink.
+//   0  Violet Dream   — deep purple / magenta / teal
+//   1  Ocean Abyss    — coral / deep cyan / jade
+//   2  Aurora          — rose / electric blue / vivid green
+//   3  Ember Glow     — crimson-orange / sapphire / gold
+//   4  Sakura Mist    — hot pink / mint / lavender
 float3 palCenter(int idx) {
-    if (idx == 1) return float3(0.15, 0.28, 0.42);
-    if (idx == 2) return float3(0.20, 0.35, 0.28);
-    if (idx == 3) return float3(0.42, 0.20, 0.15);
-    if (idx == 4) return float3(0.38, 0.22, 0.35);
-    return float3(0.28, 0.18, 0.38); // 0
+    if (idx == 1) return float3(0.08, 0.38, 0.50);
+    if (idx == 2) return float3(0.12, 0.48, 0.18);
+    if (idx == 3) return float3(0.52, 0.18, 0.08);
+    if (idx == 4) return float3(0.48, 0.12, 0.42);
+    return float3(0.25, 0.10, 0.48); // 0
 }
 float3 palAmp(int idx) {
-    if (idx == 1) return float3(0.28, 0.20, 0.18);
-    if (idx == 2) return float3(0.22, 0.28, 0.30);
-    if (idx == 3) return float3(0.28, 0.25, 0.28);
-    if (idx == 4) return float3(0.20, 0.28, 0.20);
-    return float3(0.28, 0.22, 0.28); // 0
+    if (idx == 1) return float3(0.32, 0.22, 0.18);
+    if (idx == 2) return float3(0.25, 0.32, 0.35);
+    if (idx == 3) return float3(0.30, 0.30, 0.28);
+    if (idx == 4) return float3(0.22, 0.32, 0.20);
+    return float3(0.32, 0.22, 0.28); // 0
 }
 
 float rayPlane(float3 ro, float3 rd, float3 n, float d) {
@@ -401,8 +403,8 @@ half4 main(float2 fragCoord) {
     float fogD = 0.0;
     const float sc = 5.0;
 
-    // Cycle through 5 palettes — 8s each, 40s full loop, seamless.
-    float cyc = mod(iTime * 0.125, 5.0);
+    // Cycle through 5 palettes — 16s each, 80s full loop, seamless.
+    float cyc = mod(iTime * 0.0625, 5.0);
     int pi0 = int(floor(cyc));
     int pi1 = pi0 < 4 ? pi0 + 1 : 0;
     float pblend = smoothstep(0.0, 1.0, fract(cyc));
@@ -453,8 +455,8 @@ half4 main(float2 fragCoord) {
         float3 sqCol = pa + pb * cos(6.2831 * (phase + float3(0.0, 0.33, 0.67)));
         sqCol *= 2.2;
 
-        // gap color: deep indigo
-        float3 gapCol = float3(0.03, 0.01, 0.08);
+        // gap color tinted by current palette mood
+        float3 gapCol = pa * 0.12;
         float3 sampleCol = mix(gapCol, sqCol * sh, inside) * (0.6 + pat * 0.5);
 
         // lighting — cyan-blue specular, magenta-pink fresnel (matching ShaderBackground waves)
