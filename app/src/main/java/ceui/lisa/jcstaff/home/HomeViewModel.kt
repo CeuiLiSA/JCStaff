@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 
 data class HomeUiState(
     val recommendedIllusts: List<Illust> = emptyList(),
+    val rankingIllusts: List<Illust> = emptyList(),
     val trendingIllusts: List<Illust> = emptyList(),
     val followingIllusts: List<Illust> = emptyList(),
     val isLoadingRecommended: Boolean = false,
@@ -52,7 +53,7 @@ class HomeViewModel : ViewModel() {
                 path = "/v1/illust/recommended",
                 queryParams = mapOf(
                     "content_type" to "illust",
-                    "include_ranking_label" to "true",
+                    "include_ranking_illusts" to "true",
                     "filter" to "for_ios"
                 ),
                 clazz = HomeIllustResponse::class.java
@@ -60,10 +61,13 @@ class HomeViewModel : ViewModel() {
 
             if (cachedResponse != null) {
                 // 有缓存，立即显示（不显示 loading）
-                val illusts = cachedResponse.displayList
+                val illusts = cachedResponse.illusts
+                val ranking = cachedResponse.ranking_illusts
                 storeIllusts(illusts)
+                storeIllusts(ranking)
                 _uiState.value = _uiState.value.copy(
                     recommendedIllusts = illusts,
+                    rankingIllusts = ranking,
                     recommendedNextUrl = cachedResponse.next_url,
                     recommendedError = null
                 )
@@ -78,13 +82,16 @@ class HomeViewModel : ViewModel() {
             // 发起网络请求获取最新数据
             try {
                 val response = PixivClient.pixivApi.getRecommendedIllusts()
-                val illusts = response.displayList
+                val illusts = response.illusts
+                val ranking = response.ranking_illusts
 
                 // 存入 ObjectStore
                 storeIllusts(illusts)
+                storeIllusts(ranking)
 
                 _uiState.value = _uiState.value.copy(
                     recommendedIllusts = illusts,
+                    rankingIllusts = ranking,
                     isLoadingRecommended = false,
                     recommendedNextUrl = response.next_url
                 )

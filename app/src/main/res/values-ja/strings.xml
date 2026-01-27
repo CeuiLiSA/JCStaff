@@ -27,6 +27,7 @@
     <string name="landing_description">世界中のクリエイターによる素晴らしいイラストを発見</string>
 
     <!-- Home Screen -->
+    <string name="daily_ranking">デイリーランキング</string>
     <string name="tab_discover">見つける</string>
     <string name="tab_trending">ランキング</string>
     <string name="tab_recommended">おすすめ</string>

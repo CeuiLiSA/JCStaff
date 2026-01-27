@@ -27,6 +27,7 @@
     <string name="landing_description">发现来自全球创作者的精彩插画作品</string>
 
     <!-- Home Screen -->
+    <string name="daily_ranking">每日排行</string>
     <string name="tab_discover">发现</string>
     <string name="tab_trending">排行</string>
     <string name="tab_recommended">推荐</string>
