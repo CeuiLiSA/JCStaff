@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.IllustCard
@@ -71,13 +73,9 @@ fun IllustDetailScreen(
     title: String,
     previewUrl: String,
     aspectRatio: Float,
-    onBackClick: () -> Unit,
-    onRelatedIllustClick: ((Illust) -> Unit)? = null,
-    onImageClick: ((previewUrl: String, originalUrl: String?, sharedElementKey: String) -> Unit)? = null,
-    onUserClick: ((Long) -> Unit)? = null,
-    onTagClick: ((Tag) -> Unit)? = null,
     relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     // 从 ObjectStore 获取缓存数据
     val cachedIllust = remember(illustId) {
         ObjectStore.peek<Illust>(StoreKey(illustId, StoreType.ILLUST))
@@ -205,7 +203,13 @@ fun IllustDetailScreen(
                         onExpandToggle = { isImagesExpanded = !isImagesExpanded },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedContentScope = animatedContentScope,
-                        onImageClick = onImageClick
+                        onImageClick = { previewUrl, originalUrl, sharedElementKey ->
+                            navViewModel.navigate(NavRoute.ImageViewer(
+                                imageUrl = previewUrl,
+                                originalUrl = originalUrl,
+                                sharedElementKey = sharedElementKey
+                            ))
+                        }
                     )
                 }
 
@@ -256,7 +260,9 @@ fun IllustDetailScreen(
                             user = loadedIllust.user,
                             isFollowed = isFollowed,
                             onFollowStateChanged = { followed -> isFollowed = followed },
-                            onUserClick = onUserClick
+                            onUserClick = { userId ->
+                            navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                        }
                         )
                     }
 
@@ -278,7 +284,9 @@ fun IllustDetailScreen(
                         item(key = "tags", span = StaggeredGridItemSpan.FullLine) {
                             IllustTags(
                                 tags = loadedIllust.tags,
-                                onTagClick = { tag -> onTagClick?.invoke(tag) }
+                                onTagClick = { tag ->
+                                navViewModel.navigate(NavRoute.TagDetail(tag = tag))
+                            }
                             )
                         }
                     }
@@ -322,7 +330,14 @@ fun IllustDetailScreen(
                 items(relatedState.illusts, key = { "related_${it.id}" }) { relatedIllust ->
                     IllustCard(
                         illust = relatedIllust,
-                        onClick = { onRelatedIllustClick?.invoke(relatedIllust) },
+                        onClick = {
+                            navViewModel.navigate(NavRoute.IllustDetail(
+                                illustId = relatedIllust.id,
+                                title = relatedIllust.title ?: "",
+                                previewUrl = relatedIllust.previewUrl(),
+                                aspectRatio = relatedIllust.aspectRatio()
+                            ))
+                        },
                         isSelectionMode = selectionManager.isSelectionMode,
                         isSelected = selectionManager.isSelected(relatedIllust.id),
                         onLongPress = { selectionManager.onLongPress(relatedIllust) },
@@ -370,7 +385,6 @@ fun IllustDetailScreen(
         FloatingTopBar(
             shareUrl = "https://www.pixiv.net/artworks/$illustId",
             shareTitle = title,
-            onBackClick = onBackClick,
             sharedTransitionScope = sharedTransitionScope,
             animatedContentScope = animatedContentScope
         )

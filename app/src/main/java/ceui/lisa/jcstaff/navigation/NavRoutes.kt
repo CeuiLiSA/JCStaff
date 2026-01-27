@@ -3,24 +3,49 @@ package ceui.lisa.jcstaff.navigation
 import ceui.lisa.jcstaff.network.Tag
 
 sealed interface NavRoute {
-    data object Landing : NavRoute
-    data object Home : NavRoute
-    data object Search : NavRoute
+    /** Bundle-compatible key for SaveableStateProvider */
+    val stableKey: String
+
+    data object Landing : NavRoute {
+        override val stableKey = "Landing"
+    }
+    data object Home : NavRoute {
+        override val stableKey = "Home"
+    }
+    data object Search : NavRoute {
+        override val stableKey = "Search"
+    }
     data class IllustDetail(
         val illustId: Long,
         val title: String,
         val previewUrl: String,
         val aspectRatio: Float
-    ) : NavRoute
-    data class Bookmarks(val userId: Long) : NavRoute
-    data object Settings : NavRoute
+    ) : NavRoute {
+        override val stableKey = "IllustDetail_$illustId"
+    }
+    data class Bookmarks(val userId: Long) : NavRoute {
+        override val stableKey = "Bookmarks_$userId"
+    }
+    data object Settings : NavRoute {
+        override val stableKey = "Settings"
+    }
     data class ImageViewer(
         val imageUrl: String,
         val originalUrl: String?,
         val sharedElementKey: String
-    ) : NavRoute
-    data object BrowseHistory : NavRoute
-    data class UserProfile(val userId: Long) : NavRoute
-    data class TagDetail(val tag: Tag) : NavRoute
-    data class NovelDetail(val novelId: Long) : NavRoute
+    ) : NavRoute {
+        override val stableKey = "ImageViewer_$sharedElementKey"
+    }
+    data object BrowseHistory : NavRoute {
+        override val stableKey = "BrowseHistory"
+    }
+    data class UserProfile(val userId: Long) : NavRoute {
+        override val stableKey = "UserProfile_$userId"
+    }
+    data class TagDetail(val tag: Tag) : NavRoute {
+        override val stableKey = "TagDetail_${tag.name}"
+    }
+    data class NovelDetail(val novelId: Long) : NavRoute {
+        override val stableKey = "NovelDetail_$novelId"
+    }
 }

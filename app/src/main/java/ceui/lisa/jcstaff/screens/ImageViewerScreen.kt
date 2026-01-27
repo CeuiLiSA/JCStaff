@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import androidx.compose.runtime.collectAsState
 import ceui.lisa.jcstaff.components.IllustBoundsTransform
 import ceui.lisa.jcstaff.core.LoadTaskManager
@@ -53,9 +54,9 @@ fun ImageViewerScreen(
     animatedContentScope: AnimatedContentScope,
     imageUrl: String,
     originalUrl: String?,
-    sharedElementKey: String,
-    onBackClick: () -> Unit
+    sharedElementKey: String
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     val context = LocalContext.current
     val effectiveUrl = originalUrl ?: imageUrl
 
@@ -165,7 +166,7 @@ fun ImageViewerScreen(
             // 关闭按钮
             val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
             IconButton(
-                onClick = onBackClick,
+                onClick = { navViewModel.goBack() },
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(

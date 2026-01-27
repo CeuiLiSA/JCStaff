@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -32,9 +33,9 @@ fun DetailScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     itemId: Int,
-    itemName: String,
-    onBackClick: () -> Unit
+    itemName: String
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     val item = sampleItems.find { it.id == itemId }
 
     Scaffold(
@@ -43,7 +44,7 @@ fun DetailScreen(
             TopAppBar(
                 title = { Text("Detail") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = { navViewModel.goBack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"

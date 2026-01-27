@@ -25,19 +25,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
 import ceui.lisa.jcstaff.home.HomeScreen
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.navigation.NavigationViewModel
 import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
@@ -115,7 +118,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
     val loginState by authViewModel.loginState.collectAsState()
-    val backStack = remember { mutableStateListOf<NavRoute>() }
+    val navViewModel: NavigationViewModel = viewModel()
 
     // Handle login state changes
     LaunchedEffect(loginState) {
@@ -136,14 +139,12 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                if (backStack.isEmpty() || backStack.first() == NavRoute.Landing) {
-                    backStack.clear()
-                    backStack.add(NavRoute.Home)
+                if (navViewModel.backStack.isEmpty() || navViewModel.backStack.first() == NavRoute.Landing) {
+                    navViewModel.clearAndNavigate(NavRoute.Home)
                 }
             }
             is AuthState.NotAuthenticated -> {
-                backStack.clear()
-                backStack.add(NavRoute.Landing)
+                navViewModel.clearAndNavigate(NavRoute.Landing)
             }
             is AuthState.Loading -> {
                 // 保持当前状态，等待加载完成
@@ -151,10 +152,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
         }
     }
 
-    val currentRoute = backStack.lastOrNull()
+    val currentRoute = navViewModel.currentRoute
 
-    BackHandler(enabled = backStack.size > 1) {
-        backStack.removeLast()
+    BackHandler(enabled = navViewModel.canGoBack) {
+        navViewModel.goBack()
     }
 
     // Loading 状态显示加载指示器
@@ -183,229 +184,107 @@ fun AppNavigation(authViewModel: AuthViewModel) {
         return
     }
 
-    SharedTransitionLayout(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        AnimatedContent(
-            targetState = currentRoute,
-            transitionSpec = {
-                fadeIn() togetherWith fadeOut() using SizeTransform(clip = false)
-            },
-            label = "navigation"
-        ) { route ->
-            when (route) {
-                is NavRoute.Landing -> {
-                    LandingScreen(
-                        onLoginClick = {
-                            authViewModel.launchLogin(context, isSignup = false)
-                        },
-                        onSignupClick = {
-                            authViewModel.launchLogin(context, isSignup = true)
-                        }
-                    )
-                }
-                is NavRoute.Home -> {
-                    val currentUser = (authState as? AuthState.Authenticated)?.user
-                    HomeScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        currentUser = currentUser,
-                        onIllustClick = { data ->
-                            backStack.add(NavRoute.IllustDetail(
-                                illustId = data.id,
-                                title = data.title,
-                                previewUrl = data.previewUrl,
-                                aspectRatio = data.aspectRatio
-                            ))
-                        },
-                        onNovelClick = { novel ->
-                            backStack.add(NavRoute.NovelDetail(novelId = novel.id))
-                        },
-                        onSearchClick = {
-                            backStack.add(NavRoute.Search)
-                        },
-                        onBookmarksClick = {
-                            currentUser?.let { user ->
-                                backStack.add(NavRoute.Bookmarks(userId = user.id))
+    val saveableStateHolder = rememberSaveableStateHolder()
+
+    CompositionLocalProvider(LocalNavigationViewModel provides navViewModel) {
+        SharedTransitionLayout(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            AnimatedContent(
+                targetState = currentRoute,
+                transitionSpec = {
+                    fadeIn() togetherWith fadeOut() using SizeTransform(clip = false)
+                },
+                label = "navigation"
+            ) { route ->
+                saveableStateHolder.SaveableStateProvider(route.stableKey) {
+                when (route) {
+                    is NavRoute.Landing -> {
+                        LandingScreen(
+                            onLoginClick = {
+                                authViewModel.launchLogin(context, isSignup = false)
+                            },
+                            onSignupClick = {
+                                authViewModel.launchLogin(context, isSignup = true)
                             }
-                        },
-                        onBrowseHistoryClick = {
-                            backStack.add(NavRoute.BrowseHistory)
-                        },
-                        onUserProfileClick = {
-                            currentUser?.let { user ->
-                                backStack.add(NavRoute.UserProfile(userId = user.id))
+                        )
+                    }
+                    is NavRoute.Home -> {
+                        val currentUser = (authState as? AuthState.Authenticated)?.user
+                        HomeScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            currentUser = currentUser,
+                            onLogoutClick = {
+                                authViewModel.logout()
                             }
-                        },
-                        onSettingsClick = {
-                            backStack.add(NavRoute.Settings)
-                        },
-                        onLogoutClick = {
-                            authViewModel.logout()
-                        }
-                    )
+                        )
+                    }
+                    is NavRoute.Search -> {
+                        SearchScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent
+                        )
+                    }
+                    is NavRoute.IllustDetail -> {
+                        IllustDetailScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            illustId = route.illustId,
+                            title = route.title,
+                            previewUrl = route.previewUrl,
+                            aspectRatio = route.aspectRatio
+                        )
+                    }
+                    is NavRoute.TagDetail -> {
+                        val isPremium = (authState as? AuthState.Authenticated)?.user?.is_premium == true
+                        TagDetailScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            tag = route.tag,
+                            isPremium = isPremium
+                        )
+                    }
+                    is NavRoute.NovelDetail -> {
+                        NovelDetailScreen(
+                            novelId = route.novelId
+                        )
+                    }
+                    is NavRoute.Bookmarks -> {
+                        BookmarksScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            userId = route.userId
+                        )
+                    }
+                    is NavRoute.Settings -> {
+                        SettingsScreen()
+                    }
+                    is NavRoute.ImageViewer -> {
+                        ImageViewerScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            imageUrl = route.imageUrl,
+                            originalUrl = route.originalUrl,
+                            sharedElementKey = route.sharedElementKey
+                        )
+                    }
+                    is NavRoute.BrowseHistory -> {
+                        BrowseHistoryScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent
+                        )
+                    }
+                    is NavRoute.UserProfile -> {
+                        UserProfileScreen(
+                            sharedTransitionScope = this@SharedTransitionLayout,
+                            animatedContentScope = this@AnimatedContent,
+                            userId = route.userId
+                        )
+                    }
                 }
-                is NavRoute.Search -> {
-                    SearchScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        onBackClick = {
-                            backStack.removeLast()
-                        },
-                        onIllustClick = { illust ->
-                            backStack.add(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        },
-                        onUserClick = { userId ->
-                            backStack.add(NavRoute.UserProfile(userId = userId))
-                        }
-                    )
-                }
-                is NavRoute.IllustDetail -> {
-                    IllustDetailScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        illustId = route.illustId,
-                        title = route.title,
-                        previewUrl = route.previewUrl,
-                        aspectRatio = route.aspectRatio,
-                        onBackClick = {
-                            backStack.removeLast()
-                        },
-                        onRelatedIllustClick = { illust ->
-                            backStack.add(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        },
-                        onImageClick = { previewUrl, originalUrl, sharedElementKey ->
-                            backStack.add(NavRoute.ImageViewer(
-                                imageUrl = previewUrl,
-                                originalUrl = originalUrl,
-                                sharedElementKey = sharedElementKey
-                            ))
-                        },
-                        onUserClick = { userId ->
-                            backStack.add(NavRoute.UserProfile(userId = userId))
-                        },
-                        onTagClick = { tag ->
-                            backStack.add(NavRoute.TagDetail(tag = tag))
-                        }
-                    )
-                }
-                is NavRoute.TagDetail -> {
-                    val isPremium = (authState as? AuthState.Authenticated)?.user?.is_premium == true
-                    TagDetailScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        tag = route.tag,
-                        isPremium = isPremium,
-                        onBackClick = {
-                            backStack.removeLast()
-                        },
-                        onIllustClick = { illust ->
-                            backStack.add(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        }
-                    )
-                }
-                is NavRoute.NovelDetail -> {
-                    NovelDetailScreen(
-                        novelId = route.novelId,
-                        onBackClick = {
-                            backStack.removeLast()
-                        },
-                        onUserClick = { userId ->
-                            backStack.add(NavRoute.UserProfile(userId = userId))
-                        },
-                        onTagClick = { tag ->
-                            backStack.add(NavRoute.TagDetail(tag = tag))
-                        }
-                    )
-                }
-                is NavRoute.Bookmarks -> {
-                    BookmarksScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        userId = route.userId,
-                        onBackClick = {
-                            backStack.removeLast()
-                        },
-                        onIllustClick = { illust ->
-                            backStack.add(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        }
-                    )
-                }
-                is NavRoute.Settings -> {
-                    SettingsScreen(
-                        onBackClick = {
-                            backStack.removeLast()
-                        }
-                    )
-                }
-                is NavRoute.ImageViewer -> {
-                    ImageViewerScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        imageUrl = route.imageUrl,
-                        originalUrl = route.originalUrl,
-                        sharedElementKey = route.sharedElementKey,
-                        onBackClick = {
-                            backStack.removeLast()
-                        }
-                    )
-                }
-                is NavRoute.BrowseHistory -> {
-                    BrowseHistoryScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        onBackClick = {
-                            backStack.removeLast()
-                        },
-                        onIllustClick = { illust ->
-                            backStack.add(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        }
-                    )
-                }
-                is NavRoute.UserProfile -> {
-                    UserProfileScreen(
-                        sharedTransitionScope = this@SharedTransitionLayout,
-                        animatedContentScope = this@AnimatedContent,
-                        userId = route.userId,
-                        onBackClick = {
-                            backStack.removeLast()
-                        },
-                        onIllustClick = { illust ->
-                            backStack.add(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        }
-                    )
                 }
             }
         }

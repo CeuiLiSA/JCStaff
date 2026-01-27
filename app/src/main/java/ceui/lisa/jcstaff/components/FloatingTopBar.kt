@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 
 /**
  * 通用浮动顶部栏组件
@@ -49,13 +50,13 @@ import ceui.lisa.jcstaff.R
 fun FloatingTopBar(
     shareUrl: String,
     shareTitle: String,
-    onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedContentScope: AnimatedContentScope? = null,
     onReportClick: () -> Unit = {},
     onBlockClick: () -> Unit = {}
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     val context = LocalContext.current
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -120,7 +121,7 @@ fun FloatingTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 返回按钮
-            IconButton(onClick = onBackClick) {
+            IconButton(onClick = { navViewModel.goBack() }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),

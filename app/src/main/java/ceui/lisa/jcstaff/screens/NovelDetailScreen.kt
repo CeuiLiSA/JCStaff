@@ -45,6 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.components.illust.IllustAuthorRow
 import ceui.lisa.jcstaff.components.illust.IllustCaption
 import ceui.lisa.jcstaff.components.illust.IllustTags
@@ -61,11 +63,9 @@ import coil.request.ImageRequest
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NovelDetailScreen(
-    novelId: Long,
-    onBackClick: () -> Unit,
-    onUserClick: ((Long) -> Unit)? = null,
-    onTagClick: ((Tag) -> Unit)? = null
+    novelId: Long
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     // Try to get from ObjectStore first
     val novelFlow = ObjectStore.get<Novel>(StoreKey(novelId, StoreType.NOVEL))
     var novel by remember { mutableStateOf(novelFlow?.value) }
@@ -106,7 +106,7 @@ fun NovelDetailScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = { navViewModel.goBack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
@@ -164,7 +164,9 @@ fun NovelDetailScreen(
                 user = loadedNovel.user,
                 isFollowed = isFollowed,
                 onFollowStateChanged = { followed -> isFollowed = followed },
-                onUserClick = onUserClick
+                onUserClick = { userId ->
+                    navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                }
             )
 
             // Action bar (bookmark, text length, views)
@@ -246,7 +248,9 @@ fun NovelDetailScreen(
             if (!loadedNovel.tags.isNullOrEmpty()) {
                 IllustTags(
                     tags = loadedNovel.tags,
-                    onTagClick = { tag -> onTagClick?.invoke(tag) }
+                    onTagClick = { tag ->
+                        navViewModel.navigate(NavRoute.TagDetail(tag = tag))
+                    }
                 )
             }
 

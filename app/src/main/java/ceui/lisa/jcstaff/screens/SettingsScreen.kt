@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -43,9 +44,8 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    onBackClick: () -> Unit
-) {
+fun SettingsScreen() {
+    val navViewModel = LocalNavigationViewModel.current
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
     val cornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
     val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
@@ -58,7 +58,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = { navViewModel.goBack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)

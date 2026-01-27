@@ -29,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -41,10 +43,9 @@ import ceui.lisa.jcstaff.network.Illust
 fun BrowseHistoryScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onBackClick: () -> Unit,
-    onIllustClick: (Illust) -> Unit,
     viewModel: BrowseHistoryViewModel = viewModel()
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
     val selectionManager = rememberSelectionManager()
     var showClearDialog by remember { mutableStateOf(false) }
@@ -60,7 +61,7 @@ fun BrowseHistoryScreen(
                 TopAppBar(
                     title = { Text(stringResource(R.string.browse_history)) },
                     navigationIcon = {
-                        IconButton(onClick = onBackClick) {
+                        IconButton(onClick = { navViewModel.goBack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back)
@@ -96,7 +97,14 @@ fun BrowseHistoryScreen(
             } else {
                 IllustGrid(
                     illusts = state.illusts,
-                    onIllustClick = onIllustClick,
+                    onIllustClick = { illust ->
+                        navViewModel.navigate(NavRoute.IllustDetail(
+                            illustId = illust.id,
+                            title = illust.title ?: "",
+                            previewUrl = illust.previewUrl(),
+                            aspectRatio = illust.aspectRatio()
+                        ))
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),

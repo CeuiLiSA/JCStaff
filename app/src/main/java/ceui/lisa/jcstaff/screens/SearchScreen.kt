@@ -59,6 +59,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.network.Illust
@@ -73,11 +75,9 @@ import ceui.lisa.jcstaff.search.SearchViewModel
 fun SearchScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onBackClick: () -> Unit,
-    onIllustClick: (Illust) -> Unit,
-    onUserClick: (Long) -> Unit,
     viewModel: SearchViewModel = viewModel()
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -93,7 +93,7 @@ fun SearchScreen(
         if (expanded && query.isNotEmpty()) {
             query = ""
         } else {
-            onBackClick()
+            navViewModel.goBack()
         }
     }
 
@@ -115,7 +115,7 @@ fun SearchScreen(
                     onExpandedChange = { expanded = it },
                     placeholder = { Text(stringResource(R.string.search_placeholder)) },
                     leadingIcon = {
-                        IconButton(onClick = onBackClick) {
+                        IconButton(onClick = { navViewModel.goBack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back)
@@ -160,8 +160,17 @@ fun SearchScreen(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedContentScope = animatedContentScope,
                 state = state,
-                onIllustClick = onIllustClick,
-                onUserClick = onUserClick,
+                onIllustClick = { illust ->
+                    navViewModel.navigate(NavRoute.IllustDetail(
+                        illustId = illust.id,
+                        title = illust.title ?: "",
+                        previewUrl = illust.previewUrl(),
+                        aspectRatio = illust.aspectRatio()
+                    ))
+                },
+                onUserClick = { userId ->
+                    navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                },
                 onLoadMore = { viewModel.loadMore() },
                 modifier = Modifier
                     .fillMaxSize()

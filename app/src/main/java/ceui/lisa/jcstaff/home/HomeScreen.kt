@@ -8,7 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -23,7 +22,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -76,19 +74,13 @@ import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
-import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.User
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.launch
-
-data class IllustClickData(
-    val id: Long,
-    val title: String,
-    val previewUrl: String,
-    val aspectRatio: Float
-)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -96,17 +88,17 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope?,
     currentUser: User?,
-    onIllustClick: (IllustClickData) -> Unit,
-    onNovelClick: (Novel) -> Unit,
-    onSearchClick: () -> Unit,
-    onBookmarksClick: () -> Unit,
-    onBrowseHistoryClick: () -> Unit,
-    onUserProfileClick: () -> Unit,
-    onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    homeViewModel: HomeViewModel = viewModel()
+    recommendedViewModel: RecommendedViewModel = viewModel(),
+    trendingViewModel: TrendingViewModel = viewModel(),
+    followingViewModel: FollowingViewModel = viewModel(),
+    novelsViewModel: RecommendedNovelsViewModel = viewModel()
 ) {
-    val uiState by homeViewModel.uiState.collectAsState()
+    val navViewModel = LocalNavigationViewModel.current
+    val recommendedState by recommendedViewModel.state.collectAsState()
+    val trendingState by trendingViewModel.state.collectAsState()
+    val followingState by followingViewModel.state.collectAsState()
+
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -119,9 +111,9 @@ fun HomeScreen(
 
     // 当前页面的 illusts
     val currentIllusts = when (pagerState.currentPage) {
-        0 -> uiState.recommendedIllusts
-        1 -> uiState.trendingIllusts
-        2 -> uiState.followingIllusts
+        0 -> recommendedState.illusts
+        1 -> trendingState.illusts
+        2 -> followingState.illusts
         else -> emptyList()
     }
 
@@ -134,13 +126,17 @@ fun HomeScreen(
                 onUserProfileClick = {
                     coroutineScope.launch {
                         drawerState.close()
-                        onUserProfileClick()
+                        currentUser?.let { user ->
+                            navViewModel.navigate(NavRoute.UserProfile(userId = user.id))
+                        }
                     }
                 },
                 onBookmarksClick = {
                     coroutineScope.launch {
                         drawerState.close()
-                        onBookmarksClick()
+                        currentUser?.let { user ->
+                            navViewModel.navigate(NavRoute.Bookmarks(userId = user.id))
+                        }
                     }
                 },
                 onFollowingClick = {
@@ -152,13 +148,13 @@ fun HomeScreen(
                 onBrowseHistoryClick = {
                     coroutineScope.launch {
                         drawerState.close()
-                        onBrowseHistoryClick()
+                        navViewModel.navigate(NavRoute.BrowseHistory)
                     }
                 },
                 onSettingsClick = {
                     coroutineScope.launch {
                         drawerState.close()
-                        onSettingsClick()
+                        navViewModel.navigate(NavRoute.Settings)
                     }
                 },
                 onLogoutClick = {
@@ -205,7 +201,9 @@ fun HomeScreen(
                             }
                         },
                         actions = {
-                            IconButton(onClick = onSearchClick) {
+                            IconButton(onClick = {
+                                navViewModel.navigate(NavRoute.Search)
+                            }) {
                                 Icon(
                                     imageVector = Icons.Default.Search,
                                     contentDescription = stringResource(R.string.search)
@@ -257,58 +255,60 @@ fun HomeScreen(
                 ) { page ->
                     when (page) {
                         0 -> DiscoverPage(
-                            uiState = uiState,
-                            homeViewModel = homeViewModel,
+                            recommendedViewModel = recommendedViewModel,
+                            novelsViewModel = novelsViewModel,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedContentScope = animatedContentScope,
                             selectionManager = selectionManager,
                             recommendedGridState = recommendedGridState,
-                            novelListState = novelListState,
-                            onIllustClick = onIllustClick,
-                            onNovelClick = onNovelClick
+                            novelListState = novelListState
                         )
-                        1 -> IllustGrid(
-                            illusts = uiState.trendingIllusts,
-                            onIllustClick = { illust ->
-                                onIllustClick(IllustClickData(
-                                    id = illust.id,
-                                    title = illust.title ?: "",
-                                    previewUrl = illust.previewUrl(),
-                                    aspectRatio = illust.aspectRatio()
-                                ))
-                            },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
-                            isLoading = uiState.isLoadingTrending,
-                            isLoadingMore = uiState.isLoadingMoreTrending,
-                            canLoadMore = uiState.canLoadMoreTrending,
-                            error = uiState.trendingError,
-                            onRefresh = { homeViewModel.loadTrendingIllusts() },
-                            onLoadMore = { homeViewModel.loadMoreTrending() },
-                            selectionManager = selectionManager,
-                            gridState = trendingGridState
-                        )
-                        2 -> IllustGrid(
-                            illusts = uiState.followingIllusts,
-                            onIllustClick = { illust ->
-                                onIllustClick(IllustClickData(
-                                    id = illust.id,
-                                    title = illust.title ?: "",
-                                    previewUrl = illust.previewUrl(),
-                                    aspectRatio = illust.aspectRatio()
-                                ))
-                            },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
-                            isLoading = uiState.isLoadingFollowing,
-                            isLoadingMore = uiState.isLoadingMoreFollowing,
-                            canLoadMore = uiState.canLoadMoreFollowing,
-                            error = uiState.followingError,
-                            onRefresh = { homeViewModel.loadFollowingIllusts() },
-                            onLoadMore = { homeViewModel.loadMoreFollowing() },
-                            selectionManager = selectionManager,
-                            gridState = followingGridState
-                        )
+                        1 -> {
+                            IllustGrid(
+                                illusts = trendingState.illusts,
+                                onIllustClick = { illust ->
+                                    navViewModel.navigate(NavRoute.IllustDetail(
+                                        illustId = illust.id,
+                                        title = illust.title ?: "",
+                                        previewUrl = illust.previewUrl(),
+                                        aspectRatio = illust.aspectRatio()
+                                    ))
+                                },
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedContentScope = animatedContentScope,
+                                isLoading = trendingState.isLoading,
+                                isLoadingMore = trendingState.isLoadingMore,
+                                canLoadMore = trendingState.canLoadMore,
+                                error = trendingState.error,
+                                onRefresh = { trendingViewModel.load() },
+                                onLoadMore = { trendingViewModel.loadMore() },
+                                selectionManager = selectionManager,
+                                gridState = trendingGridState
+                            )
+                        }
+                        2 -> {
+                            IllustGrid(
+                                illusts = followingState.illusts,
+                                onIllustClick = { illust ->
+                                    navViewModel.navigate(NavRoute.IllustDetail(
+                                        illustId = illust.id,
+                                        title = illust.title ?: "",
+                                        previewUrl = illust.previewUrl(),
+                                        aspectRatio = illust.aspectRatio()
+                                    ))
+                                },
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedContentScope = animatedContentScope,
+                                isLoading = followingState.isLoading,
+                                isLoadingMore = followingState.isLoadingMore,
+                                canLoadMore = followingState.canLoadMore,
+                                error = followingState.error,
+                                onRefresh = { followingViewModel.load() },
+                                onLoadMore = { followingViewModel.loadMore() },
+                                selectionManager = selectionManager,
+                                gridState = followingGridState
+                            )
+                        }
                     }
                 }
         }
@@ -487,16 +487,18 @@ private fun DrawerContent(
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun DiscoverPage(
-    uiState: HomeUiState,
-    homeViewModel: HomeViewModel,
+    recommendedViewModel: RecommendedViewModel,
+    novelsViewModel: RecommendedNovelsViewModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope?,
     selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
     recommendedGridState: androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState,
-    novelListState: androidx.compose.foundation.lazy.LazyListState,
-    onIllustClick: (IllustClickData) -> Unit,
-    onNovelClick: (Novel) -> Unit
+    novelListState: androidx.compose.foundation.lazy.LazyListState
 ) {
+    val navViewModel = LocalNavigationViewModel.current
+    val recommendedState by recommendedViewModel.state.collectAsState()
+    val novelsState by novelsViewModel.state.collectAsState()
+
     val innerPagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
 
@@ -530,10 +532,10 @@ private fun DiscoverPage(
         ) { innerPage ->
             when (innerPage) {
                 0 -> IllustGrid(
-                    illusts = uiState.recommendedIllusts,
+                    illusts = recommendedState.illusts,
                     onIllustClick = { illust ->
-                        onIllustClick(IllustClickData(
-                            id = illust.id,
+                        navViewModel.navigate(NavRoute.IllustDetail(
+                            illustId = illust.id,
                             title = illust.title ?: "",
                             previewUrl = illust.previewUrl(),
                             aspectRatio = illust.aspectRatio()
@@ -541,22 +543,22 @@ private fun DiscoverPage(
                     },
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope,
-                    isLoading = uiState.isLoadingRecommended,
-                    isLoadingMore = uiState.isLoadingMoreRecommended,
-                    canLoadMore = uiState.canLoadMoreRecommended,
-                    error = uiState.recommendedError,
-                    onRefresh = { homeViewModel.loadRecommendedIllusts() },
-                    onLoadMore = { homeViewModel.loadMoreRecommended() },
+                    isLoading = recommendedState.isLoading,
+                    isLoadingMore = recommendedState.isLoadingMore,
+                    canLoadMore = recommendedState.canLoadMore,
+                    error = recommendedState.error,
+                    onRefresh = { recommendedViewModel.refresh() },
+                    onLoadMore = { recommendedViewModel.loadMore() },
                     selectionManager = selectionManager,
                     gridState = recommendedGridState,
-                    headerContent = if (uiState.rankingIllusts.isNotEmpty()) {
+                    headerContent = if (recommendedState.rankingIllusts.isNotEmpty()) {
                         {
                             item(span = StaggeredGridItemSpan.FullLine) {
                                 RankingCarousel(
-                                    illusts = uiState.rankingIllusts,
+                                    illusts = recommendedState.rankingIllusts,
                                     onIllustClick = { illust ->
-                                        onIllustClick(IllustClickData(
-                                            id = illust.id,
+                                        navViewModel.navigate(NavRoute.IllustDetail(
+                                            illustId = illust.id,
                                             title = illust.title ?: "",
                                             previewUrl = illust.previewUrl(),
                                             aspectRatio = illust.aspectRatio()
@@ -568,14 +570,16 @@ private fun DiscoverPage(
                     } else null
                 )
                 1 -> NovelList(
-                    novels = uiState.recommendedNovels,
-                    onNovelClick = onNovelClick,
-                    isLoading = uiState.isLoadingNovels,
-                    isLoadingMore = uiState.isLoadingMoreNovels,
-                    canLoadMore = uiState.canLoadMoreNovels,
-                    error = uiState.novelError,
-                    onRefresh = { homeViewModel.loadRecommendedNovels() },
-                    onLoadMore = { homeViewModel.loadMoreNovels() },
+                    novels = novelsState.novels,
+                    onNovelClick = { novel ->
+                        navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
+                    },
+                    isLoading = novelsState.isLoading,
+                    isLoadingMore = novelsState.isLoadingMore,
+                    canLoadMore = novelsState.canLoadMore,
+                    error = novelsState.error,
+                    onRefresh = { novelsViewModel.refresh() },
+                    onLoadMore = { novelsViewModel.loadMore() },
                     listState = novelListState
                 )
             }

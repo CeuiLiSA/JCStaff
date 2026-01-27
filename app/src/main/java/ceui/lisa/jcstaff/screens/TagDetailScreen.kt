@@ -56,6 +56,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.rememberSelectionManager
@@ -73,10 +75,9 @@ fun TagDetailScreen(
     animatedContentScope: AnimatedContentScope,
     tag: Tag,
     isPremium: Boolean,
-    onBackClick: () -> Unit,
-    onIllustClick: (Illust) -> Unit,
     viewModel: TagDetailViewModel = viewModel(key = "tag_detail_${tag.name}")
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
     val selectionManager = rememberSelectionManager()
     val pagerState = rememberPagerState(pageCount = { 2 })
@@ -156,7 +157,7 @@ fun TagDetailScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBackClick) {
+                        IconButton(onClick = { navViewModel.goBack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back)
@@ -195,7 +196,14 @@ fun TagDetailScreen(
                         0 -> {
                             IllustGrid(
                                 illusts = state.illusts,
-                                onIllustClick = onIllustClick,
+                                onIllustClick = { illust ->
+                                    navViewModel.navigate(NavRoute.IllustDetail(
+                                        illustId = illust.id,
+                                        title = illust.title ?: "",
+                                        previewUrl = illust.previewUrl(),
+                                        aspectRatio = illust.aspectRatio()
+                                    ))
+                                },
                                 modifier = Modifier.fillMaxSize(),
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedContentScope = animatedContentScope,

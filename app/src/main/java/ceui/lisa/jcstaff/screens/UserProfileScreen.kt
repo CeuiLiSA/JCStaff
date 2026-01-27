@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -50,10 +52,9 @@ fun UserProfileScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     userId: Long,
-    onBackClick: () -> Unit,
-    onIllustClick: (Illust) -> Unit,
     viewModel: UserProfileViewModel = viewModel(key = "user_profile_$userId")
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
     val selectionManager = rememberSelectionManager()
 
@@ -172,7 +173,14 @@ fun UserProfileScreen(
                 items(state.illusts, key = { it.id }) { illust ->
                     IllustCard(
                         illust = illust,
-                        onClick = { onIllustClick(illust) },
+                        onClick = {
+                            navViewModel.navigate(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedContentScope = animatedContentScope,
                         isSelectionMode = selectionManager.isSelectionMode,
@@ -206,8 +214,7 @@ fun UserProfileScreen(
         // 浮动顶部栏
         FloatingTopBar(
             shareUrl = "https://www.pixiv.net/users/$userId",
-            shareTitle = state.user?.name ?: "",
-            onBackClick = onBackClick
+            shareTitle = state.user?.name ?: ""
         )
 
         SelectionTopBar(
