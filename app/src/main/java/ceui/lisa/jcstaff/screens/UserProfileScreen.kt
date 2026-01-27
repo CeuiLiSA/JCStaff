@@ -27,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
@@ -66,13 +65,8 @@ fun UserProfileScreen(
         viewModel.loadUser(userId)
     }
 
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
     val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-
-    val density = LocalDensity.current
-    val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
-    val horizontalPadding = if (gridSpacingEnabled) 8.dp else 0.dp
 
     val gridState = rememberPersistentLazyStaggeredGridState("user_profile_$userId")
 
@@ -100,13 +94,13 @@ fun UserProfileScreen(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
                 contentPadding = PaddingValues(
-                    start = horizontalPadding,
-                    end = horizontalPadding,
+                    start = 0.dp,
+                    end = 0.dp,
                     top = 0.dp,
                     bottom = 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(spacing),
-                verticalItemSpacing = spacing,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalItemSpacing = 4.dp,
                 modifier = Modifier.fillMaxSize()
             ) {
                 // 沉浸式头部

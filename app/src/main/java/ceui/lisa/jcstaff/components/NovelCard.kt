@@ -80,7 +80,7 @@ fun NovelCard(
                     contentDescription = novel.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(width = 80.dp, height = 110.dp)
+                        .size(width = 96.dp, height = 132.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 )

@@ -85,6 +85,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
@@ -469,7 +473,8 @@ private fun DrawerContent(
 
     ModalDrawerSheet(
         modifier = Modifier.width(304.dp),
-        drawerContainerColor = MaterialTheme.colorScheme.surface
+        drawerContainerColor = MaterialTheme.colorScheme.surface,
+        windowInsets = WindowInsets(0, 0, 0, 0)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -486,10 +491,16 @@ private fun DrawerContent(
                         )
                     )
             ) {
+                val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 20.dp)
+                        .padding(
+                            start = 24.dp,
+                            end = 24.dp,
+                            top = statusBarTop + 16.dp,
+                            bottom = 20.dp
+                        )
                 ) {
                     // Avatar with gradient ring + premium badge
                     Box {
@@ -765,7 +776,9 @@ private fun DrawerContent(
                 labelColor = MaterialTheme.colorScheme.error
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(
+                16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ))
         }
     }
 

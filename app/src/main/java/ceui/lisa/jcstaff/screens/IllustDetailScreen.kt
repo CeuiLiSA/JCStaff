@@ -32,7 +32,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -171,24 +170,20 @@ fun IllustDetailScreen(
             containerColor = Color.Transparent
         ) { paddingValues ->
             val gridState = rememberPersistentLazyStaggeredGridState("illust_detail_$illustId")
-            val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
             val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
             val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-            val density = LocalDensity.current
-            val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
-            val horizontalPadding = if (gridSpacingEnabled) 8.dp else 0.dp
 
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
                 contentPadding = PaddingValues(
-                    start = horizontalPadding,
-                    end = horizontalPadding,
+                    start = 0.dp,
+                    end = 0.dp,
                     top = 0.dp,
                     bottom = paddingValues.calculateBottomPadding() + 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(spacing),
-                verticalItemSpacing = spacing,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalItemSpacing = 4.dp,
                 modifier = Modifier.fillMaxSize()
             ) {
                 // 图片区域 - 可折叠

@@ -53,7 +53,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -267,13 +266,8 @@ private fun SearchResults(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
     val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-
-    val density = LocalDensity.current
-    val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
-    val horizontalPadding = if (gridSpacingEnabled) 8.dp else 0.dp
 
     Box(modifier = modifier) {
         when {
@@ -304,13 +298,13 @@ private fun SearchResults(
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(2),
                     contentPadding = PaddingValues(
-                        start = horizontalPadding,
-                        end = horizontalPadding,
+                        start = 8.dp,
+                        end = 8.dp,
                         top = 8.dp,
                         bottom = 16.dp
                     ),
-                    horizontalArrangement = Arrangement.spacedBy(spacing),
-                    verticalItemSpacing = spacing,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalItemSpacing = 8.dp,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(state.illusts, key = { it.id }) { illust ->

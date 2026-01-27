@@ -95,8 +95,8 @@ fun NovelList(
             else -> {
                 LazyColumn(
                     state = listState,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(novels, key = { it.id }) { novel ->
