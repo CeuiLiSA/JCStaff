@@ -76,7 +76,6 @@ fun NovelCard(
                     model = ImageRequest.Builder(context)
                         .data(coverUrl)
                         .crossfade(true)
-                        .addHeader("Referer", "https://app-api.pixiv.net/")
                         .build(),
                     contentDescription = novel.title,
                     contentScale = ContentScale.Crop,
@@ -121,15 +120,13 @@ fun NovelCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val avatarUrl = novel.user?.profile_image_urls?.medium
-                        ?: novel.user?.profile_image_urls?.px_50x50
+                    val avatarUrl = novel.user?.profile_image_urls?.findAvatarUrl()
 
                     if (avatarUrl != null) {
                         AsyncImage(
                             model = ImageRequest.Builder(context)
                                 .data(avatarUrl)
                                 .crossfade(true)
-                                .addHeader("Referer", "https://app-api.pixiv.net/")
                                 .build(),
                             contentDescription = novel.user?.name,
                             modifier = Modifier

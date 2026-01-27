@@ -51,7 +51,6 @@ fun UserAvatarSection(
                 model = ImageRequest.Builder(context)
                     .data(profile.background_image_url)
                     .crossfade(true)
-                    .addHeader("Referer", "https://app-api.pixiv.net/")
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -91,9 +90,8 @@ fun UserAvatarSection(
             } else {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(user?.profile_image_urls?.medium)
+                        .data(user?.profile_image_urls?.findAvatarUrl())
                         .crossfade(true)
-                        .addHeader("Referer", "https://app-api.pixiv.net/")
                         .build(),
                     contentDescription = user?.name,
                     contentScale = ContentScale.Crop,

@@ -145,6 +145,15 @@
     <string name="remove_tag_title">移除標籤</string>
     <string name="remove_tag_message">移除「%1$s」後，該標籤將不再作為搜尋關鍵字，搜尋結果會隨之更新。</string>
 
+    <!-- Account Management -->
+    <string name="add_account">新增帳號</string>
+    <string name="switch_account">切換帳號</string>
+    <string name="remove_account">移除帳號</string>
+    <string name="remove_account_title">移除帳號</string>
+    <string name="remove_account_message">確定要移除帳號「%1$s」嗎？該帳號的所有本機資料（瀏覽歷史、設定、快取）將被刪除。</string>
+    <string name="account_switched">已切換到 %1$s</string>
+    <string name="last_account_warning">這是最後一個帳號，移除後將返回登入頁面。</string>
+
     <!-- Novel -->
     <string name="tab_illust">插畫</string>
     <string name="tab_novel">小說</string>

@@ -1,9 +1,18 @@
 package ceui.lisa.jcstaff.home
 
 import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,13 +37,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,25 +60,34 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.auth.AccountEntry
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -89,6 +112,11 @@ fun HomeScreen(
     animatedContentScope: AnimatedContentScope?,
     currentUser: User?,
     onLogoutClick: () -> Unit,
+    allAccounts: List<AccountEntry> = emptyList(),
+    activeUserId: Long? = null,
+    onSwitchAccount: (Long) -> Unit = {},
+    onAddAccount: () -> Unit = {},
+    onRemoveAccount: (Long) -> Unit = {},
     recommendedViewModel: RecommendedViewModel = viewModel(),
     trendingViewModel: TrendingViewModel = viewModel(),
     followingViewModel: FollowingViewModel = viewModel(),
@@ -123,6 +151,26 @@ fun HomeScreen(
         drawerContent = {
             DrawerContent(
                 user = currentUser,
+                allAccounts = allAccounts,
+                activeUserId = activeUserId,
+                onSwitchAccount = { userId ->
+                    coroutineScope.launch {
+                        drawerState.close()
+                        onSwitchAccount(userId)
+                    }
+                },
+                onAddAccount = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        onAddAccount()
+                    }
+                },
+                onRemoveAccount = { userId ->
+                    coroutineScope.launch {
+                        drawerState.close()
+                        onRemoveAccount(userId)
+                    }
+                },
                 onUserProfileClick = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -330,14 +378,14 @@ private fun UserAvatar(
 ) {
     val context = LocalContext.current
 
-    if (user?.profile_image_urls?.medium != null) {
+    val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
+    if (avatarUrl != null) {
         AsyncImage(
             model = ImageRequest.Builder(context)
-                .data(user.profile_image_urls.medium)
+                .data(avatarUrl)
                 .crossfade(true)
-                .addHeader("Referer", "https://app-api.pixiv.net/")
                 .build(),
-            contentDescription = user.name,
+            contentDescription = user?.name,
             modifier = modifier
                 .size(size.dp)
                 .clip(CircleShape)
@@ -362,8 +410,52 @@ private fun UserAvatar(
 }
 
 @Composable
+private fun AccountAvatarSmall(
+    avatarUrl: String?,
+    name: String,
+    size: Int = 32,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    if (avatarUrl != null) {
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(avatarUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = name,
+            modifier = modifier
+                .size(size.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .size(size.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = name,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size((size * 0.6).dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun DrawerContent(
     user: User?,
+    allAccounts: List<AccountEntry>,
+    activeUserId: Long?,
+    onSwitchAccount: (Long) -> Unit,
+    onAddAccount: () -> Unit,
+    onRemoveAccount: (Long) -> Unit,
     onUserProfileClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onFollowingClick: () -> Unit,
@@ -371,115 +463,368 @@ private fun DrawerContent(
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
+    var accountListExpanded by remember { mutableStateOf(false) }
+    var showRemoveDialog by remember { mutableStateOf<AccountEntry?>(null) }
+    val context = LocalContext.current
+
     ModalDrawerSheet(
-        modifier = Modifier.width(300.dp)
+        modifier = Modifier.width(304.dp),
+        drawerContainerColor = MaterialTheme.colorScheme.surface
     ) {
-        // User header
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(24.dp)
-        ) {
-            UserAvatar(user = user, size = 64)
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = user?.name ?: stringResource(R.string.not_logged_in),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            if (user?.account != null) {
-                Text(
-                    text = "@${user.account}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            // ── Header with gradient background ──────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                MaterialTheme.colorScheme.surface
+                            )
+                        )
+                    )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 20.dp)
+                ) {
+                    // Avatar with gradient ring + premium badge
+                    Box {
+                        val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
+                        if (avatarUrl != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(avatarUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = user?.name,
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .border(
+                                        width = 2.dp,
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                MaterialTheme.colorScheme.primary,
+                                                MaterialTheme.colorScheme.tertiary
+                                            )
+                                        ),
+                                        shape = CircleShape
+                                    )
+                                    .padding(3.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                        }
+
+                        // Premium badge
+                        if (user?.is_premium == true) {
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(24.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Verified,
+                                    contentDescription = "Premium",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.padding(3.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Name + account switcher toggle
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { accountListExpanded = !accountListExpanded }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = user?.name ?: stringResource(R.string.not_logged_in),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (user?.account != null) {
+                                Text(
+                                    text = "@${user.account}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        if (allAccounts.isNotEmpty()) {
+                            val rotation by animateFloatAsState(
+                                targetValue = if (accountListExpanded) 180f else 0f,
+                                animationSpec = tween(300),
+                                label = "arrow_rotation"
+                            )
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = stringResource(R.string.switch_account),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .graphicsLayer { rotationZ = rotation }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
+
+            // ── Account switcher (expandable) ────────────────────────
+            AnimatedVisibility(
+                visible = accountListExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                        )
+                        .padding(vertical = 8.dp)
+                ) {
+                    allAccounts.forEach { account ->
+                        val isActive = account.userId == activeUserId
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (!isActive) onSwitchAccount(account.userId)
+                                }
+                                .padding(horizontal = 24.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AccountAvatarSmall(
+                                avatarUrl = account.avatarUrl,
+                                name = account.userName,
+                                size = 36
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = account.userName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "@${account.userAccount}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            if (isActive) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Add account
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onAddAccount() }
+                            .padding(horizontal = 24.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PersonAdd,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.add_account),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Menu items ───────────────────────────────────────────
+            DrawerMenuItem(
+                icon = Icons.Default.AccountCircle,
+                label = stringResource(R.string.my_profile),
+                onClick = onUserProfileClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.Favorite,
+                label = stringResource(R.string.my_bookmarks),
+                onClick = onBookmarksClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.Person,
+                label = stringResource(R.string.my_following),
+                onClick = onFollowingClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.History,
+                label = stringResource(R.string.browse_history),
+                onClick = onBrowseHistoryClick
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // ── Footer ───────────────────────────────────────────────
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            DrawerMenuItem(
+                icon = Icons.Default.Settings,
+                label = stringResource(R.string.settings),
+                onClick = onSettingsClick
+            )
+            DrawerMenuItem(
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                label = stringResource(R.string.remove_account),
+                onClick = {
+                    val activeAccount = allAccounts.find { it.userId == activeUserId }
+                    if (activeAccount != null) {
+                        showRemoveDialog = activeAccount
+                    }
+                },
+                iconTint = MaterialTheme.colorScheme.error,
+                labelColor = MaterialTheme.colorScheme.error
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
+    }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Menu items
-        NavigationDrawerItem(
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = null
-                )
+    // Remove account confirmation dialog
+    showRemoveDialog?.let { account ->
+        AlertDialog(
+            onDismissRequest = { showRemoveDialog = null },
+            title = { Text(stringResource(R.string.remove_account_title)) },
+            text = {
+                Text(stringResource(R.string.remove_account_message, account.userName))
             },
-            label = { Text(stringResource(R.string.my_profile)) },
-            selected = false,
-            onClick = onUserProfileClick,
-            modifier = Modifier.padding(horizontal = 12.dp)
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRemoveDialog = null
+                        onRemoveAccount(account.userId)
+                    }
+                ) {
+                    Text(stringResource(R.string.remove_account))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemoveDialog = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
         )
+    }
+}
 
-        NavigationDrawerItem(
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = null
-                )
-            },
-            label = { Text(stringResource(R.string.my_bookmarks)) },
-            selected = false,
-            onClick = onBookmarksClick,
-            modifier = Modifier.padding(horizontal = 12.dp)
+@Composable
+private fun DrawerMenuItem(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    labelColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(24.dp)
         )
-
-        NavigationDrawerItem(
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null
-                )
-            },
-            label = { Text(stringResource(R.string.my_following)) },
-            selected = false,
-            onClick = onFollowingClick,
-            modifier = Modifier.padding(horizontal = 12.dp)
-        )
-
-        NavigationDrawerItem(
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null
-                )
-            },
-            label = { Text(stringResource(R.string.browse_history)) },
-            selected = false,
-            onClick = onBrowseHistoryClick,
-            modifier = Modifier.padding(horizontal = 12.dp)
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
-
-        NavigationDrawerItem(
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = null
-                )
-            },
-            label = { Text(stringResource(R.string.settings)) },
-            selected = false,
-            onClick = onSettingsClick,
-            modifier = Modifier.padding(horizontal = 12.dp)
-        )
-
-        NavigationDrawerItem(
-            icon = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = null
-                )
-            },
-            label = { Text(stringResource(R.string.logout)) },
-            selected = false,
-            onClick = onLogoutClick,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = labelColor
         )
     }
 }
@@ -636,7 +981,6 @@ private fun RankingCard(
                 model = ImageRequest.Builder(context)
                     .data(illust.image_urls?.square_medium ?: illust.previewUrl())
                     .crossfade(true)
-                    .addHeader("Referer", "https://app-api.pixiv.net/")
                     .build(),
                 contentDescription = illust.title,
                 contentScale = ContentScale.Crop,

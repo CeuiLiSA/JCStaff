@@ -39,6 +39,13 @@ data class ImageUrls(
     fun findMaxSizeUrl(): String? {
         return original ?: large ?: medium ?: square_medium ?: px_170x170 ?: px_50x50
     }
+
+    /**
+     * 获取用户头像 URL（优先使用 px_170x170，OAuth 返回的用户头像在此字段）
+     */
+    fun findAvatarUrl(): String? {
+        return px_170x170 ?: medium ?: square_medium ?: px_50x50 ?: large
+    }
 }
 
 data class Illust(

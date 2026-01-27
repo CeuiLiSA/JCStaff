@@ -102,7 +102,6 @@ fun ImageViewerScreen(
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(imageUrl)
-                        .addHeader("Referer", "https://app-api.pixiv.net/")
                         .build(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize()

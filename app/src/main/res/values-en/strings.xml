@@ -145,6 +145,15 @@
     <string name="remove_tag_title">Remove Tag</string>
     <string name="remove_tag_message">Removing \"%1$s\" will exclude it from search keywords and refresh the results.</string>
 
+    <!-- Account Management -->
+    <string name="add_account">Add Account</string>
+    <string name="switch_account">Switch Account</string>
+    <string name="remove_account">Remove Account</string>
+    <string name="remove_account_title">Remove Account</string>
+    <string name="remove_account_message">Remove account \"%1$s\"? All local data (browse history, settings, cache) for this account will be deleted.</string>
+    <string name="account_switched">Switched to %1$s</string>
+    <string name="last_account_warning">This is the last account. Removing it will return to the login screen.</string>
+
     <!-- Novel -->
     <string name="tab_illust">Illusts</string>
     <string name="tab_novel">Novels</string>

@@ -95,7 +95,6 @@ object PixivClient {
     fun resetClient() {
         _pixivApi = null
         TokenManager.clear()
-        ApiCacheManager.clearAllSync()
     }
 
     /**

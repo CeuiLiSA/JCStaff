@@ -108,7 +108,6 @@ fun ProgressiveImage(
                 model = ImageRequest.Builder(context)
                     .data(previewUrl)
                     .crossfade(true)
-                    .addHeader("Referer", "https://app-api.pixiv.net/")
                     .build(),
                 contentDescription = contentDescription,
                 contentScale = contentScale,

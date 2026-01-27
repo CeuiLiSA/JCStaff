@@ -5,15 +5,21 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+/**
+ * Global DataStore for language (shared across all accounts)
+ */
+private val Context.globalSettingsDataStore: DataStore<Preferences>
+        by preferencesDataStore(name = "settings_global")
 
 object SettingsStore {
     private val SHOW_ILLUST_INFO = booleanPreferencesKey("show_illust_info")
@@ -22,9 +28,46 @@ object SettingsStore {
     private val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
 
     private var dataStore: DataStore<Preferences>? = null
+    private var globalDataStore: DataStore<Preferences>? = null
 
+    /**
+     * Per-user DataStore 单例缓存：每个文件名只创建一个实例
+     */
+    private val dataStoreCache = mutableMapOf<String, DataStore<Preferences>>()
+
+    @Synchronized
+    private fun getOrCreateDataStore(context: Context, name: String): DataStore<Preferences> {
+        return dataStoreCache.getOrPut(name) {
+            PreferenceDataStoreFactory.create(
+                produceFile = { context.applicationContext.preferencesDataStoreFile(name) }
+            )
+        }
+    }
+
+    /**
+     * Legacy initialize (uses global settings datastore for language)
+     */
     fun initialize(context: Context) {
-        dataStore = context.dataStore
+        globalDataStore = context.globalSettingsDataStore
+        // For backward compat: if no per-user store set yet, use global for everything
+        if (dataStore == null) {
+            dataStore = globalDataStore
+        }
+    }
+
+    /**
+     * Initialize per-user settings
+     */
+    fun initialize(context: Context, userId: Long) {
+        globalDataStore = context.globalSettingsDataStore
+        dataStore = getOrCreateDataStore(context, "settings_$userId")
+    }
+
+    /**
+     * Reset per-user settings (keeps global)
+     */
+    fun reset() {
+        dataStore = globalDataStore
     }
 
     /**
@@ -73,20 +116,23 @@ object SettingsStore {
         }
     }
 
+    /**
+     * Language is global (not per-account)
+     */
     val selectedLanguage: Flow<String?>
-        get() = dataStore?.data?.map { preferences ->
+        get() = globalDataStore?.data?.map { preferences ->
             preferences[SELECTED_LANGUAGE]
         } ?: kotlinx.coroutines.flow.flowOf(null)
 
     suspend fun setSelectedLanguage(tag: String) {
-        dataStore?.edit { preferences ->
+        globalDataStore?.edit { preferences ->
             preferences[SELECTED_LANGUAGE] = tag
         }
     }
 
     fun getSelectedLanguageBlocking(): String? {
         return runBlocking {
-            dataStore?.data?.map { preferences ->
+            globalDataStore?.data?.map { preferences ->
                 preferences[SELECTED_LANGUAGE]
             }?.first()
         }

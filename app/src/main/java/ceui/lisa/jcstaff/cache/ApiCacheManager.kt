@@ -48,6 +48,23 @@ object ApiCacheManager {
     }
 
     /**
+     * 初始化缓存管理器（用户隔离）
+     */
+    fun initialize(context: Context, userId: Long) {
+        dao = AppDatabase.getInstanceForUser(context, userId).apiCacheDao()
+        Log.d(TAG, "🚀 Cache initialized for user $userId")
+        runBlocking { cleanupExpired() }
+    }
+
+    /**
+     * 重置缓存管理器
+     */
+    fun reset() {
+        dao = null
+        Log.d(TAG, "🔄 Cache reset")
+    }
+
+    /**
      * 获取缓存（检查过期）
      */
     fun getSync(key: String): CacheEntry? = runBlocking { get(key) }

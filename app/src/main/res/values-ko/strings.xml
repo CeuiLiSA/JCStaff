@@ -145,6 +145,15 @@
     <string name="remove_tag_title">태그 삭제</string>
     <string name="remove_tag_message">「%1$s」을(를) 삭제하면 검색 키워드에서 제외되고 검색 결과가 갱신됩니다.</string>
 
+    <!-- Account Management -->
+    <string name="add_account">계정 추가</string>
+    <string name="switch_account">계정 전환</string>
+    <string name="remove_account">계정 삭제</string>
+    <string name="remove_account_title">계정 삭제</string>
+    <string name="remove_account_message">「%1$s」 계정을 삭제하시겠습니까? 탐색 기록, 설정, 캐시 등 모든 로컬 데이터가 삭제됩니다.</string>
+    <string name="account_switched">%1$s(으)로 전환했습니다</string>
+    <string name="last_account_warning">마지막 계정입니다. 삭제하면 로그인 화면으로 돌아갑니다.</string>
+
     <!-- Novel -->
     <string name="tab_illust">일러스트</string>
     <string name="tab_novel">소설</string>

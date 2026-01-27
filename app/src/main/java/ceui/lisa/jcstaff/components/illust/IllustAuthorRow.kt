@@ -66,9 +66,8 @@ fun IllustAuthorRow(
     ) {
         AsyncImage(
             model = ImageRequest.Builder(context)
-                .data(user?.profile_image_urls?.medium)
+                .data(user?.profile_image_urls?.findAvatarUrl())
                 .crossfade(true)
-                .addHeader("Referer", "https://app-api.pixiv.net/")
                 .build(),
             contentDescription = user?.name,
             modifier = Modifier

@@ -128,7 +128,6 @@ fun IllustCard(
                 model = ImageRequest.Builder(context)
                     .data(previewUrl)
                     .crossfade(true)
-                    .addHeader("Referer", "https://app-api.pixiv.net/")
                     .build(),
                 contentDescription = illust.title,
                 contentScale = ContentScale.Crop,

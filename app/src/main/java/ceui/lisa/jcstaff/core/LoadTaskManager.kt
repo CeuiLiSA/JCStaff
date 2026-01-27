@@ -131,6 +131,27 @@ object LoadTaskManager {
     }
 
     /**
+     * 初始化（用户隔离）
+     */
+    fun init(context: Context, userId: Long) {
+        cacheDir = File(context.cacheDir, "image_load_cache_$userId").apply {
+            if (!exists()) mkdirs()
+        }
+        // 清除内存中的任务状态
+        resetInMemoryState()
+    }
+
+    /**
+     * 重置内存中的任务状态
+     */
+    fun resetInMemoryState() {
+        downloadJobs.values.forEach { it.cancel() }
+        downloadJobs.clear()
+        tasks.clear()
+        listenerCounts.clear()
+    }
+
+    /**
      * 获取缓存目录
      */
     private fun getCacheDir(): File {

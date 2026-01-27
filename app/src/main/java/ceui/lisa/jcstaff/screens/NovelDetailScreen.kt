@@ -136,7 +136,6 @@ fun NovelDetailScreen(
                         model = ImageRequest.Builder(context)
                             .data(coverUrl)
                             .crossfade(true)
-                            .addHeader("Referer", "https://app-api.pixiv.net/")
                             .build(),
                         contentDescription = loadedNovel.title,
                         contentScale = ContentScale.FillWidth,

@@ -47,6 +47,23 @@ object BrowseHistoryManager {
     }
 
     /**
+     * 初始化浏览历史管理器（用户隔离）
+     */
+    fun initialize(context: Context, userId: Long) {
+        dao = AppDatabase.getInstanceForUser(context, userId).browseHistoryDao()
+        Log.d(TAG, "BrowseHistoryManager initialized for user $userId")
+        scope.launch { cleanupExpired() }
+    }
+
+    /**
+     * 重置浏览历史管理器
+     */
+    fun reset() {
+        dao = null
+        Log.d(TAG, "BrowseHistoryManager reset")
+    }
+
+    /**
      * 记录浏览历史（fire-and-forget）
      */
     fun recordView(illust: Illust) {
@@ -62,7 +79,7 @@ object BrowseHistoryManager {
                     height = illust.height,
                     userId = illust.user?.id ?: 0L,
                     userName = illust.user?.name ?: "",
-                    userAvatarUrl = illust.user?.profile_image_urls?.medium,
+                    userAvatarUrl = illust.user?.profile_image_urls?.findAvatarUrl(),
                     illustJson = gson.toJson(illust),
                     viewedAt = System.currentTimeMillis()
                 )

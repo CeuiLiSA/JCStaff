@@ -6,12 +6,12 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import ceui.lisa.jcstaff.network.AccountResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.TokenManager
-import ceui.lisa.jcstaff.network.User
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -19,17 +19,35 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_prefs")
-
-class AuthRepository(private val context: Context) {
+class AuthRepository(private val context: Context, private val userId: Long? = null) {
 
     companion object {
         private val ACCOUNT_JSON = stringPreferencesKey("account_json")
+
+        /**
+         * DataStore 单例缓存：每个文件名只创建一个 DataStore 实例
+         * DataStore 要求同一文件不得存在多个活跃实例
+         */
+        private val dataStoreCache = mutableMapOf<String, DataStore<Preferences>>()
+
+        @Synchronized
+        fun getOrCreateDataStore(context: Context, name: String): DataStore<Preferences> {
+            return dataStoreCache.getOrPut(name) {
+                PreferenceDataStoreFactory.create(
+                    produceFile = { context.applicationContext.preferencesDataStoreFile(name) }
+                )
+            }
+        }
     }
 
     private val gson = Gson()
 
-    val accountFlow: Flow<AccountResponse?> = context.dataStore.data.map { preferences ->
+    private val dataStore: DataStore<Preferences> by lazy {
+        val name = if (userId != null) "auth_prefs_$userId" else "auth_prefs_temp"
+        getOrCreateDataStore(context, name)
+    }
+
+    val accountFlow: Flow<AccountResponse?> = dataStore.data.map { preferences ->
         preferences[ACCOUNT_JSON]?.let { json ->
             try {
                 gson.fromJson(json, AccountResponse::class.java)
@@ -41,7 +59,7 @@ class AuthRepository(private val context: Context) {
 
     val isLoggedIn: Flow<Boolean> = accountFlow.map { it?.access_token != null }
 
-    val currentUser: Flow<User?> = accountFlow.map { it?.user }
+    val currentUser: Flow<ceui.lisa.jcstaff.network.User?> = accountFlow.map { it?.user }
 
     suspend fun getAccessToken(): String? {
         return accountFlow.first()?.access_token
@@ -99,14 +117,14 @@ class AuthRepository(private val context: Context) {
         }
     }
 
-    private suspend fun saveAccount(account: AccountResponse) {
-        context.dataStore.edit { preferences ->
+    suspend fun saveAccount(account: AccountResponse) {
+        dataStore.edit { preferences ->
             preferences[ACCOUNT_JSON] = gson.toJson(account)
         }
     }
 
     suspend fun logout() {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences.remove(ACCOUNT_JSON)
         }
         PixivClient.resetClient()
@@ -119,8 +137,6 @@ class AuthRepository(private val context: Context) {
         }
 
         // 设置 token 刷新回调
-        // 当 TokenManager 检测到 token 过期并刷新时，会调用此回调
-        // 回调负责：1. 调用刷新 API  2. 持久化新 token
         TokenManager.setRefreshCallback { currentRefreshToken ->
             try {
                 val response = PixivClient.refreshTokenApi(currentRefreshToken)
