@@ -126,4 +126,31 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">갤러리에 저장됨</string>
     <string name="save_failed">저장 실패</string>
+
+    <!-- Tag Detail -->
+    <string name="tab_tag_illusts">일러스트</string>
+    <string name="tab_tag_novels">소설</string>
+    <string name="coming_soon">곧 출시</string>
+    <string name="add_tag">태그 추가</string>
+    <string name="enter_tag_name">태그 이름 입력</string>
+    <string name="sort_date_desc">최신순</string>
+    <string name="sort_date_asc">오래된순</string>
+    <string name="sort_popular_desc">인기순</string>
+    <string name="sort_popular_male_desc">남성 인기순</string>
+    <string name="sort_popular_female_desc">여성 인기순</string>
+    <string name="target_partial_tag">태그 부분 일치</string>
+    <string name="target_exact_tag">태그 완전 일치</string>
+    <string name="target_title_caption">제목 및 소개</string>
+    <string name="premium_sort_hint">인기순 정렬은 Pixiv 프리미엄 전용 기능입니다</string>
+    <string name="remove_tag_title">태그 삭제</string>
+    <string name="remove_tag_message">「%1$s」을(를) 삭제하면 검색 키워드에서 제외되고 검색 결과가 갱신됩니다.</string>
+
+    <!-- Novel -->
+    <string name="tab_illust">일러스트</string>
+    <string name="tab_novel">소설</string>
+    <string name="novel_chars">%1$d 자</string>
+    <string name="novel_original">오리지널</string>
+    <string name="novel_detail">소설 상세</string>
+    <string name="novel_series">시리즈</string>
+    <string name="novel_read">소설 읽기</string>
 </resources>

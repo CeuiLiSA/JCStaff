@@ -6,6 +6,8 @@ import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.HomeIllustResponse
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.IllustResponse
+import ceui.lisa.jcstaff.network.Novel
+import ceui.lisa.jcstaff.network.NovelResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,11 +30,18 @@ data class HomeUiState(
     val followingError: String? = null,
     val recommendedNextUrl: String? = null,
     val trendingNextUrl: String? = null,
-    val followingNextUrl: String? = null
+    val followingNextUrl: String? = null,
+    // Novel state
+    val recommendedNovels: List<Novel> = emptyList(),
+    val isLoadingNovels: Boolean = false,
+    val isLoadingMoreNovels: Boolean = false,
+    val novelError: String? = null,
+    val novelNextUrl: String? = null
 ) {
     val canLoadMoreRecommended: Boolean get() = recommendedNextUrl != null && !isLoadingMoreRecommended
     val canLoadMoreTrending: Boolean get() = trendingNextUrl != null && !isLoadingMoreTrending
     val canLoadMoreFollowing: Boolean get() = followingNextUrl != null && !isLoadingMoreFollowing
+    val canLoadMoreNovels: Boolean get() = novelNextUrl != null && !isLoadingMoreNovels
 }
 
 class HomeViewModel : ViewModel() {
@@ -42,12 +51,18 @@ class HomeViewModel : ViewModel() {
 
     init {
         loadRecommendedIllusts()
+        loadRecommendedNovels()
         loadTrendingIllusts()
         loadFollowingIllusts()
     }
 
     fun loadRecommendedIllusts() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoadingRecommended = true,
+                recommendedError = null
+            )
+
             // Stale-while-revalidate: 先从缓存加载旧数据
             val cachedResponse = PixivClient.getFromStaleCache(
                 path = "/v1/illust/recommended",
@@ -60,7 +75,6 @@ class HomeViewModel : ViewModel() {
             )
 
             if (cachedResponse != null) {
-                // 有缓存，立即显示（不显示 loading）
                 val illusts = cachedResponse.illusts
                 val ranking = cachedResponse.ranking_illusts
                 storeIllusts(illusts)
@@ -68,14 +82,8 @@ class HomeViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(
                     recommendedIllusts = illusts,
                     rankingIllusts = ranking,
-                    recommendedNextUrl = cachedResponse.next_url,
-                    recommendedError = null
-                )
-            } else {
-                // 无缓存，显示 loading
-                _uiState.value = _uiState.value.copy(
-                    isLoadingRecommended = true,
-                    recommendedError = null
+                    isLoadingRecommended = false,
+                    recommendedNextUrl = cachedResponse.next_url
                 )
             }
 
@@ -135,6 +143,11 @@ class HomeViewModel : ViewModel() {
 
     fun loadTrendingIllusts() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoadingTrending = true,
+                trendingError = null
+            )
+
             val cachedResponse = PixivClient.getFromStaleCache(
                 path = "/v1/illust/ranking",
                 queryParams = mapOf(
@@ -149,13 +162,8 @@ class HomeViewModel : ViewModel() {
                 storeIllusts(illusts)
                 _uiState.value = _uiState.value.copy(
                     trendingIllusts = illusts,
-                    trendingNextUrl = cachedResponse.next_url,
-                    trendingError = null
-                )
-            } else {
-                _uiState.value = _uiState.value.copy(
-                    isLoadingTrending = true,
-                    trendingError = null
+                    isLoadingTrending = false,
+                    trendingNextUrl = cachedResponse.next_url
                 )
             }
 
@@ -209,6 +217,11 @@ class HomeViewModel : ViewModel() {
 
     fun loadFollowingIllusts() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoadingFollowing = true,
+                followingError = null
+            )
+
             // Stale-while-revalidate: 先从缓存加载旧数据
             val cachedResponse = PixivClient.getFromStaleCache(
                 path = "/v2/illust/follow",
@@ -217,19 +230,12 @@ class HomeViewModel : ViewModel() {
             )
 
             if (cachedResponse != null) {
-                // 有缓存，立即显示（不显示 loading）
                 val illusts = cachedResponse.illusts
                 storeIllusts(illusts)
                 _uiState.value = _uiState.value.copy(
                     followingIllusts = illusts,
-                    followingNextUrl = cachedResponse.next_url,
-                    followingError = null
-                )
-            } else {
-                // 无缓存，显示 loading
-                _uiState.value = _uiState.value.copy(
-                    isLoadingFollowing = true,
-                    followingError = null
+                    isLoadingFollowing = false,
+                    followingNextUrl = cachedResponse.next_url
                 )
             }
 
@@ -284,6 +290,75 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    // ===== Novel =====
+
+    fun loadRecommendedNovels() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoadingNovels = true,
+                novelError = null
+            )
+
+            val cachedResponse = PixivClient.getFromStaleCache(
+                path = "/v1/novel/recommended",
+                queryParams = mapOf(
+                    "include_ranking_illusts" to "false",
+                    "filter" to "for_ios"
+                ),
+                clazz = NovelResponse::class.java
+            )
+
+            if (cachedResponse != null) {
+                storeNovels(cachedResponse.novels)
+                _uiState.value = _uiState.value.copy(
+                    recommendedNovels = cachedResponse.novels,
+                    isLoadingNovels = false,
+                    novelNextUrl = cachedResponse.next_url
+                )
+            }
+
+            try {
+                val response = PixivClient.pixivApi.getRecommendedNovels()
+                storeNovels(response.novels)
+                _uiState.value = _uiState.value.copy(
+                    recommendedNovels = response.novels,
+                    isLoadingNovels = false,
+                    novelNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoadingNovels = false,
+                    novelError = if (_uiState.value.recommendedNovels.isEmpty()) {
+                        e.message ?: "加载失败"
+                    } else null
+                )
+            }
+        }
+    }
+
+    fun loadMoreNovels() {
+        val nextUrl = _uiState.value.novelNextUrl ?: return
+        if (_uiState.value.isLoadingMoreNovels) return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingMoreNovels = true)
+            try {
+                val response = PixivClient.pixivApi.getNextPageNovels(nextUrl)
+                storeNovels(response.novels)
+                _uiState.value = _uiState.value.copy(
+                    recommendedNovels = _uiState.value.recommendedNovels + response.novels,
+                    isLoadingMoreNovels = false,
+                    novelNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoadingMoreNovels = false,
+                    novelError = e.message ?: "加载更多失败"
+                )
+            }
+        }
+    }
+
     /**
      * 将插画列表存入 ObjectStore
      * 同时存储关联的 User
@@ -297,8 +372,18 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    private fun storeNovels(novels: List<Novel>) {
+        novels.forEach { novel ->
+            ObjectStore.put(novel)
+            novel.user?.let { user ->
+                ObjectStore.put(user)
+            }
+        }
+    }
+
     fun refresh() {
         loadRecommendedIllusts()
+        loadRecommendedNovels()
         loadTrendingIllusts()
         loadFollowingIllusts()
     }

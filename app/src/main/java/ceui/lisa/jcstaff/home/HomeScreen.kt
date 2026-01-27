@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,10 +69,15 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import ceui.lisa.jcstaff.components.IllustGrid
+import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.User
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -91,6 +97,7 @@ fun HomeScreen(
     animatedContentScope: AnimatedContentScope?,
     currentUser: User?,
     onIllustClick: (IllustClickData) -> Unit,
+    onNovelClick: (Novel) -> Unit,
     onSearchClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
@@ -240,6 +247,7 @@ fun HomeScreen(
                 val recommendedGridState = rememberPersistentLazyStaggeredGridState("home_recommended")
                 val trendingGridState = rememberPersistentLazyStaggeredGridState("home_trending")
                 val followingGridState = rememberPersistentLazyStaggeredGridState("home_following")
+                val novelListState = rememberLazyListState()
 
                 HorizontalPager(
                     state = pagerState,
@@ -248,43 +256,16 @@ fun HomeScreen(
                         .padding(innerPadding)
                 ) { page ->
                     when (page) {
-                        0 -> IllustGrid(
-                            illusts = uiState.recommendedIllusts,
-                            onIllustClick = { illust ->
-                                onIllustClick(IllustClickData(
-                                    id = illust.id,
-                                    title = illust.title ?: "",
-                                    previewUrl = illust.previewUrl(),
-                                    aspectRatio = illust.aspectRatio()
-                                ))
-                            },
+                        0 -> DiscoverPage(
+                            uiState = uiState,
+                            homeViewModel = homeViewModel,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedContentScope = animatedContentScope,
-                            isLoading = uiState.isLoadingRecommended,
-                            isLoadingMore = uiState.isLoadingMoreRecommended,
-                            canLoadMore = uiState.canLoadMoreRecommended,
-                            error = uiState.recommendedError,
-                            onRefresh = { homeViewModel.loadRecommendedIllusts() },
-                            onLoadMore = { homeViewModel.loadMoreRecommended() },
                             selectionManager = selectionManager,
-                            gridState = recommendedGridState,
-                            headerContent = if (uiState.rankingIllusts.isNotEmpty()) {
-                                {
-                                    item(span = StaggeredGridItemSpan.FullLine) {
-                                        RankingCarousel(
-                                            illusts = uiState.rankingIllusts,
-                                            onIllustClick = { illust ->
-                                                onIllustClick(IllustClickData(
-                                                    id = illust.id,
-                                                    title = illust.title ?: "",
-                                                    previewUrl = illust.previewUrl(),
-                                                    aspectRatio = illust.aspectRatio()
-                                                ))
-                                            }
-                                        )
-                                    }
-                                }
-                            } else null
+                            recommendedGridState = recommendedGridState,
+                            novelListState = novelListState,
+                            onIllustClick = onIllustClick,
+                            onNovelClick = onNovelClick
                         )
                         1 -> IllustGrid(
                             illusts = uiState.trendingIllusts,
@@ -500,6 +481,105 @@ private fun DrawerContent(
             onClick = onLogoutClick,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
         )
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun DiscoverPage(
+    uiState: HomeUiState,
+    homeViewModel: HomeViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope?,
+    selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
+    recommendedGridState: androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState,
+    novelListState: androidx.compose.foundation.lazy.LazyListState,
+    onIllustClick: (IllustClickData) -> Unit,
+    onNovelClick: (Novel) -> Unit
+) {
+    val innerPagerState = rememberPagerState(pageCount = { 2 })
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Inner TabRow for Illusts / Novels
+        TabRow(
+            selectedTabIndex = innerPagerState.currentPage,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            Tab(
+                selected = innerPagerState.currentPage == 0,
+                onClick = {
+                    coroutineScope.launch { innerPagerState.animateScrollToPage(0) }
+                },
+                text = { Text(stringResource(R.string.tab_illust)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 1,
+                onClick = {
+                    coroutineScope.launch { innerPagerState.animateScrollToPage(1) }
+                },
+                text = { Text(stringResource(R.string.tab_novel)) }
+            )
+        }
+
+        // Inner HorizontalPager
+        HorizontalPager(
+            state = innerPagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { innerPage ->
+            when (innerPage) {
+                0 -> IllustGrid(
+                    illusts = uiState.recommendedIllusts,
+                    onIllustClick = { illust ->
+                        onIllustClick(IllustClickData(
+                            id = illust.id,
+                            title = illust.title ?: "",
+                            previewUrl = illust.previewUrl(),
+                            aspectRatio = illust.aspectRatio()
+                        ))
+                    },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope,
+                    isLoading = uiState.isLoadingRecommended,
+                    isLoadingMore = uiState.isLoadingMoreRecommended,
+                    canLoadMore = uiState.canLoadMoreRecommended,
+                    error = uiState.recommendedError,
+                    onRefresh = { homeViewModel.loadRecommendedIllusts() },
+                    onLoadMore = { homeViewModel.loadMoreRecommended() },
+                    selectionManager = selectionManager,
+                    gridState = recommendedGridState,
+                    headerContent = if (uiState.rankingIllusts.isNotEmpty()) {
+                        {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                RankingCarousel(
+                                    illusts = uiState.rankingIllusts,
+                                    onIllustClick = { illust ->
+                                        onIllustClick(IllustClickData(
+                                            id = illust.id,
+                                            title = illust.title ?: "",
+                                            previewUrl = illust.previewUrl(),
+                                            aspectRatio = illust.aspectRatio()
+                                        ))
+                                    }
+                                )
+                            }
+                        }
+                    } else null
+                )
+                1 -> NovelList(
+                    novels = uiState.recommendedNovels,
+                    onNovelClick = onNovelClick,
+                    isLoading = uiState.isLoadingNovels,
+                    isLoadingMore = uiState.isLoadingMoreNovels,
+                    canLoadMore = uiState.canLoadMoreNovels,
+                    error = uiState.novelError,
+                    onRefresh = { homeViewModel.loadRecommendedNovels() },
+                    onLoadMore = { homeViewModel.loadMoreNovels() },
+                    listState = novelListState
+                )
+            }
+        }
     }
 }
 

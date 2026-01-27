@@ -133,6 +133,42 @@ data class UserPreviewResponse(
     val next_url: String? = null
 ) : Serializable
 
+data class Novel(
+    val id: Long,
+    val title: String? = null,
+    val caption: String? = null,
+    val create_date: String? = null,
+    val image_urls: ImageUrls? = null,
+    val is_bookmarked: Boolean? = null,
+    val is_muted: Boolean? = null,
+    val is_mypixiv_only: Boolean? = null,
+    val is_original: Boolean? = null,
+    val is_x_restricted: Boolean? = null,
+    val page_count: Int? = null,
+    val restrict: Int? = null,
+    val series: NovelSeries? = null,
+    val tags: List<Tag>? = null,
+    val text_length: Int? = null,
+    val total_bookmarks: Int? = null,
+    val total_comments: Int? = null,
+    val total_view: Int? = null,
+    val user: User? = null,
+    val visible: Boolean? = null,
+    val x_restrict: Int? = null
+) : Serializable, Storable {
+    override val storeKey: StoreKey get() = StoreKey(id, StoreType.NOVEL)
+}
+
+data class NovelSeries(
+    val id: Long = 0L,
+    val title: String? = null
+) : Serializable
+
+data class NovelResponse(
+    val novels: List<Novel> = listOf(),
+    val next_url: String? = null
+) : Serializable
+
 data class TrendingTag(
     val tag: String? = null,
     val translated_name: String? = null,
@@ -142,6 +178,10 @@ data class TrendingTag(
 data class TrendingTagsResponse(
     val trend_tags: List<TrendingTag> = listOf(),
     val next_url: String? = null
+) : Serializable
+
+data class SingleNovelResponse(
+    val novel: Novel? = null,
 ) : Serializable
 
 data class SingleIllustResponse(

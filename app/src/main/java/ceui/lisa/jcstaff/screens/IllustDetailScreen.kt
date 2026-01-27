@@ -36,8 +36,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import ceui.lisa.jcstaff.R
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.IllustCard
@@ -58,6 +58,7 @@ import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.network.Tag
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
@@ -74,6 +75,7 @@ fun IllustDetailScreen(
     onRelatedIllustClick: ((Illust) -> Unit)? = null,
     onImageClick: ((previewUrl: String, originalUrl: String?, sharedElementKey: String) -> Unit)? = null,
     onUserClick: ((Long) -> Unit)? = null,
+    onTagClick: ((Tag) -> Unit)? = null,
     relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
     // 从 ObjectStore 获取缓存数据
@@ -271,17 +273,12 @@ fun IllustDetailScreen(
                         )
                     }
 
-                    // 元信息区域
-                    item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
-                        IllustMetaInfo(illust = loadedIllust)
-                    }
-
                     // 标签
                     if (!loadedIllust.tags.isNullOrEmpty()) {
                         item(key = "tags", span = StaggeredGridItemSpan.FullLine) {
                             IllustTags(
                                 tags = loadedIllust.tags,
-                                onTagClick = { /* TODO: 搜索标签 */ }
+                                onTagClick = { tag -> onTagClick?.invoke(tag) }
                             )
                         }
                     }
@@ -291,6 +288,12 @@ fun IllustDetailScreen(
                         item(key = "caption", span = StaggeredGridItemSpan.FullLine) {
                             IllustCaption(caption = loadedIllust.caption)
                         }
+                    }
+
+
+                    // 元信息区域
+                    item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
+                        IllustMetaInfo(illust = loadedIllust)
                     }
                 }
 

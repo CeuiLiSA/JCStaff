@@ -34,7 +34,9 @@ interface PixivApi {
         @Query("search_target") searchTarget: String = "partial_match_for_tags",
         @Query("sort") sort: String = "date_desc",
         @Query("filter") filter: String = "for_ios",
-        @Query("offset") offset: Int? = null
+        @Query("offset") offset: Int? = null,
+        @Query("include_translated_tag_results") includeTranslatedTagResults: Boolean = true,
+        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
     ): IllustResponse
 
     @GET("/v1/illust/detail")
@@ -108,6 +110,37 @@ interface PixivApi {
         @Field("user_id") userId: Long
     ): Unit
 
+    // ===== Novel Endpoints =====
+
+    @GET("/v1/novel/recommended")
+    suspend fun getRecommendedNovels(
+        @Query("include_ranking_illusts") includeRanking: Boolean = false,
+        @Query("filter") filter: String = "for_ios"
+    ): NovelResponse
+
+    @GET("/v1/novel/detail")
+    suspend fun getNovelDetail(
+        @Query("novel_id") novelId: Long
+    ): SingleNovelResponse
+
+    @GET("/v1/novel/follow")
+    suspend fun getFollowingNovels(
+        @Query("restrict") restrict: String = "public"
+    ): NovelResponse
+
+    @FormUrlEncoded
+    @POST("/v2/novel/bookmark/add")
+    suspend fun addNovelBookmark(
+        @Field("novel_id") novelId: Long,
+        @Field("restrict") restrict: String = "public"
+    ): Unit
+
+    @FormUrlEncoded
+    @POST("/v1/novel/bookmark/delete")
+    suspend fun deleteNovelBookmark(
+        @Field("novel_id") novelId: Long
+    ): Unit
+
     /**
      * 通用 GET 请求，用于加载 next_url 分页
      */
@@ -116,4 +149,7 @@ interface PixivApi {
 
     @GET
     suspend fun getNextPageHomeIllusts(@Url nextUrl: String): HomeIllustResponse
+
+    @GET
+    suspend fun getNextPageNovels(@Url nextUrl: String): NovelResponse
 }

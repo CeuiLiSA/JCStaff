@@ -126,4 +126,31 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">已保存到相册</string>
     <string name="save_failed">保存失败</string>
+
+    <!-- Tag Detail -->
+    <string name="tab_tag_illusts">插画</string>
+    <string name="tab_tag_novels">小说</string>
+    <string name="coming_soon">即将推出</string>
+    <string name="add_tag">添加标签</string>
+    <string name="enter_tag_name">输入标签名称</string>
+    <string name="sort_date_desc">最新</string>
+    <string name="sort_date_asc">最旧</string>
+    <string name="sort_popular_desc">热度</string>
+    <string name="sort_popular_male_desc">男性热度</string>
+    <string name="sort_popular_female_desc">女性热度</string>
+    <string name="target_partial_tag">标签部分一致</string>
+    <string name="target_exact_tag">标签完全一致</string>
+    <string name="target_title_caption">标题和简介</string>
+    <string name="premium_sort_hint">按热度排序为 Pixiv Premium 专属功能</string>
+    <string name="remove_tag_title">移除标签</string>
+    <string name="remove_tag_message">移除「%1$s」后，该标签将不再作为搜索关键字，搜索结果会随之更新。</string>
+
+    <!-- Novel -->
+    <string name="tab_illust">插画</string>
+    <string name="tab_novel">小说</string>
+    <string name="novel_chars">%1$d 字</string>
+    <string name="novel_original">原创</string>
+    <string name="novel_detail">小说详情</string>
+    <string name="novel_series">系列</string>
+    <string name="novel_read">阅读小说</string>
 </resources>

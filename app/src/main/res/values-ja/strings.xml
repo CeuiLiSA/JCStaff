@@ -126,4 +126,31 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">アルバムに保存しました</string>
     <string name="save_failed">保存に失敗しました</string>
+
+    <!-- Tag Detail -->
+    <string name="tab_tag_illusts">イラスト</string>
+    <string name="tab_tag_novels">小説</string>
+    <string name="coming_soon">近日公開</string>
+    <string name="add_tag">タグを追加</string>
+    <string name="enter_tag_name">タグ名を入力</string>
+    <string name="sort_date_desc">新しい順</string>
+    <string name="sort_date_asc">古い順</string>
+    <string name="sort_popular_desc">人気順</string>
+    <string name="sort_popular_male_desc">男性人気順</string>
+    <string name="sort_popular_female_desc">女性人気順</string>
+    <string name="target_partial_tag">タグ部分一致</string>
+    <string name="target_exact_tag">タグ完全一致</string>
+    <string name="target_title_caption">タイトル・キャプション</string>
+    <string name="premium_sort_hint">人気順は Pixiv プレミアム限定機能です</string>
+    <string name="remove_tag_title">タグを削除</string>
+    <string name="remove_tag_message">「%1$s」を削除すると、検索キーワードから除外され、検索結果が更新されます。</string>
+
+    <!-- Novel -->
+    <string name="tab_illust">イラスト</string>
+    <string name="tab_novel">小説</string>
+    <string name="novel_chars">%1$d 文字</string>
+    <string name="novel_original">オリジナル</string>
+    <string name="novel_detail">小説詳細</string>
+    <string name="novel_series">シリーズ</string>
+    <string name="novel_read">小説を読む</string>
 </resources>

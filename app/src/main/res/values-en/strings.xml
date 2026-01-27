@@ -126,4 +126,31 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">Saved to gallery</string>
     <string name="save_failed">Save failed</string>
+
+    <!-- Tag Detail -->
+    <string name="tab_tag_illusts">Illusts</string>
+    <string name="tab_tag_novels">Novels</string>
+    <string name="coming_soon">Coming Soon</string>
+    <string name="add_tag">Add Tag</string>
+    <string name="enter_tag_name">Enter tag name</string>
+    <string name="sort_date_desc">Newest</string>
+    <string name="sort_date_asc">Oldest</string>
+    <string name="sort_popular_desc">Popular</string>
+    <string name="sort_popular_male_desc">Popular (Male)</string>
+    <string name="sort_popular_female_desc">Popular (Female)</string>
+    <string name="target_partial_tag">Partial Tag Match</string>
+    <string name="target_exact_tag">Exact Tag Match</string>
+    <string name="target_title_caption">Title &amp; Caption</string>
+    <string name="premium_sort_hint">Sorting by popularity is a Pixiv Premium feature</string>
+    <string name="remove_tag_title">Remove Tag</string>
+    <string name="remove_tag_message">Removing \"%1$s\" will exclude it from search keywords and refresh the results.</string>
+
+    <!-- Novel -->
+    <string name="tab_illust">Illusts</string>
+    <string name="tab_novel">Novels</string>
+    <string name="novel_chars">%1$d chars</string>
+    <string name="novel_original">Original</string>
+    <string name="novel_detail">Novel Detail</string>
+    <string name="novel_series">Series</string>
+    <string name="novel_read">Read Novel</string>
 </resources>

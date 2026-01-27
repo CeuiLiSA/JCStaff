@@ -1,5 +1,7 @@
 package ceui.lisa.jcstaff.navigation
 
+import ceui.lisa.jcstaff.network.Tag
+
 sealed interface NavRoute {
     data object Landing : NavRoute
     data object Home : NavRoute
@@ -19,4 +21,6 @@ sealed interface NavRoute {
     ) : NavRoute
     data object BrowseHistory : NavRoute
     data class UserProfile(val userId: Long) : NavRoute
+    data class TagDetail(val tag: Tag) : NavRoute
+    data class NovelDetail(val novelId: Long) : NavRoute
 }

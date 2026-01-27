@@ -45,6 +45,8 @@ import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
+import ceui.lisa.jcstaff.screens.NovelDetailScreen
+import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.LoadTaskManager
@@ -218,6 +220,9 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                 aspectRatio = data.aspectRatio
                             ))
                         },
+                        onNovelClick = { novel ->
+                            backStack.add(NavRoute.NovelDetail(novelId = novel.id))
+                        },
                         onSearchClick = {
                             backStack.add(NavRoute.Search)
                         },
@@ -290,6 +295,43 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                         },
                         onUserClick = { userId ->
                             backStack.add(NavRoute.UserProfile(userId = userId))
+                        },
+                        onTagClick = { tag ->
+                            backStack.add(NavRoute.TagDetail(tag = tag))
+                        }
+                    )
+                }
+                is NavRoute.TagDetail -> {
+                    val isPremium = (authState as? AuthState.Authenticated)?.user?.is_premium == true
+                    TagDetailScreen(
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedContentScope = this@AnimatedContent,
+                        tag = route.tag,
+                        isPremium = isPremium,
+                        onBackClick = {
+                            backStack.removeLast()
+                        },
+                        onIllustClick = { illust ->
+                            backStack.add(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        }
+                    )
+                }
+                is NavRoute.NovelDetail -> {
+                    NovelDetailScreen(
+                        novelId = route.novelId,
+                        onBackClick = {
+                            backStack.removeLast()
+                        },
+                        onUserClick = { userId ->
+                            backStack.add(NavRoute.UserProfile(userId = userId))
+                        },
+                        onTagClick = { tag ->
+                            backStack.add(NavRoute.TagDetail(tag = tag))
                         }
                     )
                 }

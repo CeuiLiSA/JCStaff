@@ -5,6 +5,8 @@ import ceui.lisa.jcstaff.cache.ApiCacheManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.Strictness
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -129,11 +131,13 @@ object PixivClient {
         val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
         val cached = ApiCacheManager.getStale(cacheKey) ?: return null
 
-        return try {
-            val json = String(cached.responseBody, Charsets.UTF_8)
-            gson.fromJson(json, clazz)
-        } catch (e: Exception) {
-            null
+        return withContext(Dispatchers.Default) {
+            try {
+                val json = String(cached.responseBody, Charsets.UTF_8)
+                gson.fromJson(json, clazz)
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 

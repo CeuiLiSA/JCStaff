@@ -27,6 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -192,9 +195,21 @@ fun IllustGrid(
     }
 
     if (onRefresh != null) {
+        var userPulled by remember { mutableStateOf(false) }
+
+        // 当 isLoading 结束时，重置 userPulled
+        LaunchedEffect(isLoading) {
+            if (!isLoading) userPulled = false
+        }
+
         PullToRefreshBox(
-            isRefreshing = isLoading,
-            onRefresh = onRefresh,
+            isRefreshing = userPulled && isLoading,
+            onRefresh = {
+                if (!isLoading) {
+                    userPulled = true
+                    onRefresh()
+                }
+            },
             modifier = modifier.fillMaxSize()
         ) {
             content()
