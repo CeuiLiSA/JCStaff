@@ -51,6 +51,7 @@ import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LanguageSelectionScreen
 import ceui.lisa.jcstaff.screens.NovelDetailScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
+import ceui.lisa.jcstaff.screens.ShaderDemoScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
@@ -351,6 +352,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                     animatedContentScope = this@AnimatedContent,
                                     userId = route.userId
                                 )
+                            }
+
+                            is NavRoute.ShaderDemo -> {
+                                ShaderDemoScreen()
                             }
                         }
                     }

@@ -48,4 +48,7 @@ sealed interface NavRoute {
     data class NovelDetail(val novelId: Long) : NavRoute {
         override val stableKey = "NovelDetail_$novelId"
     }
+    data object ShaderDemo : NavRoute {
+        override val stableKey = "ShaderDemo"
+    }
 }

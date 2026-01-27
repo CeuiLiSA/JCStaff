@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
@@ -209,6 +210,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         navViewModel.navigate(NavRoute.Settings)
+                    }
+                },
+                onShaderDemoClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.navigate(NavRoute.ShaderDemo)
                     }
                 },
                 onLogoutClick = {
@@ -467,6 +474,7 @@ private fun DrawerContent(
     onFollowingClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onShaderDemoClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     var accountListExpanded by remember { mutableStateOf(false) }
@@ -764,6 +772,11 @@ private fun DrawerContent(
                 icon = Icons.Default.Settings,
                 label = stringResource(R.string.settings),
                 onClick = onSettingsClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.AutoAwesome,
+                label = "Shader Demo",
+                onClick = onShaderDemoClick
             )
             DrawerMenuItem(
                 icon = Icons.Default.BugReport,
