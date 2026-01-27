@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,16 +35,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * 所有已注册账号
+     * 所有已注册账号（Eagerly 启动，确保启动时尽早读取）
      */
     val allAccounts: StateFlow<List<AccountEntry>> = AccountRegistry.allAccounts
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /**
      * 当前活跃用户 ID
+     * 使用 MutableStateFlow 在 init 中提前设置，避免 UI 侧 key(null) → key(realId) 导致全量重建
      */
-    val activeUserId: StateFlow<Long?> = AccountRegistry.activeUserId
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    private val _activeUserId = MutableStateFlow<Long?>(null)
+    val activeUserId: StateFlow<Long?> = _activeUserId.asStateFlow()
 
     /**
      * 认证状态：基于当前活跃会话的 AuthRepository
@@ -51,18 +53,53 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
+    // 持续同步 AccountRegistry 的 activeUserId（用于账号切换等后续变更）
     init {
         viewModelScope.launch {
-            // 执行迁移
-            AccountMigration.migrateIfNeeded(application)
+            AccountRegistry.activeUserId.collect { _activeUserId.value = it }
+        }
+    }
 
-            // 获取活跃用户
-            val activeId = AccountRegistry.getActiveUserId()
-            if (activeId != null) {
-                // 初始化会话
-                AccountSessionManager.initializeSession(application, activeId)
-                refreshAuthState()
-            } else {
+    init {
+        // 整条初始化链都在 IO 线程执行，避免 Main↔IO 反复切换的开销
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 执行迁移
+                AccountMigration.migrateIfNeeded(application)
+
+                // 获取活跃用户
+                val activeId = AccountRegistry.getActiveUserId()
+                if (activeId != null) {
+                    // 提前设置 activeUserId，使 UI 侧 key(activeUserId) 首次即为正确值，
+                    // 避免 key(null) → key(realId) 导致 HomeScreen 全量销毁重建
+                    _activeUserId.value = activeId
+
+                    // 快速路径：加载 auth token 并直接拿到账号数据
+                    val account = AccountSessionManager.initializeAuth(application, activeId)
+
+                    // 立即设置认证状态（不再通过 flow collect，零延迟）
+                    _authState.value = if (account?.access_token != null) {
+                        AuthState.Authenticated(account.user)
+                    } else {
+                        AuthState.NotAuthenticated
+                    }
+
+                    // 后台初始化服务（数据库、缓存等）
+                    launch {
+                        try {
+                            AccountSessionManager.initializeServices(application, activeId)
+                        } catch (e: Exception) {
+                            android.util.Log.e("AuthViewModel", "Service initialization failed", e)
+                        }
+                    }
+
+                    // 后台持续同步认证状态（处理 token 刷新等）
+                    launch { refreshAuthState() }
+                } else {
+                    _authState.value = AuthState.NotAuthenticated
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("AuthViewModel", "Session initialization failed", e)
                 _authState.value = AuthState.NotAuthenticated
             }
         }
@@ -168,8 +205,13 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     fun switchAccount(userId: Long) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            AccountSessionManager.switchAccount(context, userId)
-            refreshAuthState()
+            try {
+                AccountSessionManager.switchAccount(context, userId)
+                refreshAuthState()
+            } catch (e: Exception) {
+                android.util.Log.e("AuthViewModel", "Switch account failed", e)
+                _authState.value = AuthState.NotAuthenticated
+            }
         }
     }
 
@@ -179,12 +221,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     fun removeAccount(userId: Long) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val hasRemaining = AccountSessionManager.removeAccount(context, userId)
-            if (hasRemaining) {
-                refreshAuthState()
-            } else {
+            try {
+                val hasRemaining = AccountSessionManager.removeAccount(context, userId)
+                if (hasRemaining) {
+                    refreshAuthState()
+                } else {
+                    _authState.value = AuthState.NotAuthenticated
+                    _loginState.value = LoginState.Idle
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("AuthViewModel", "Remove account failed", e)
                 _authState.value = AuthState.NotAuthenticated
-                _loginState.value = LoginState.Idle
             }
         }
     }

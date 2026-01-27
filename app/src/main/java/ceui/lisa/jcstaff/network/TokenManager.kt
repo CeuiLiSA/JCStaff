@@ -1,13 +1,12 @@
 package ceui.lisa.jcstaff.network
 
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Token 管理器
@@ -129,7 +128,7 @@ object TokenManager {
     fun isTokenExpiredError(responseBody: String?): Boolean {
         if (responseBody == null) return false
         return responseBody.contains("invalid_grant") ||
-               responseBody.contains("Invalid refresh token") ||
-               responseBody.contains("Error occurred at the OAuth process")
+                responseBody.contains("Invalid refresh token") ||
+                responseBody.contains("Error occurred at the OAuth process")
     }
 }

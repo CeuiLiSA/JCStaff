@@ -2,7 +2,9 @@ package ceui.lisa.jcstaff.cache
 
 import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -42,8 +44,8 @@ object ApiCacheManager {
             dao = AppDatabase.getInstance(context).apiCacheDao()
             Log.d(TAG, "🚀 Cache initialized with Room database")
 
-            // 启动时清理过期缓存
-            runBlocking { cleanupExpired() }
+            // 启动时异步清理过期缓存，不阻塞主线程
+            CoroutineScope(Dispatchers.IO).launch { cleanupExpired() }
         }
     }
 
@@ -53,7 +55,7 @@ object ApiCacheManager {
     fun initialize(context: Context, userId: Long) {
         dao = AppDatabase.getInstanceForUser(context, userId).apiCacheDao()
         Log.d(TAG, "🚀 Cache initialized for user $userId")
-        runBlocking { cleanupExpired() }
+        CoroutineScope(Dispatchers.IO).launch { cleanupExpired() }
     }
 
     /**

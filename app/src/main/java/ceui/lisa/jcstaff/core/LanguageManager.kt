@@ -25,6 +25,12 @@ object LanguageManager {
     private val _currentLanguage = MutableStateFlow<AppLanguage?>(null)
     val currentLanguage: StateFlow<AppLanguage?> = _currentLanguage.asStateFlow()
 
+    /**
+     * 语言是否已加载完成（区分"还没读完DataStore"和"确实没选过语言"）
+     */
+    private val _isInitialized = MutableStateFlow(false)
+    val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
+
     private val _isLanguageSelected = MutableStateFlow(false)
     val isLanguageSelected: StateFlow<Boolean> = _isLanguageSelected.asStateFlow()
 
@@ -42,6 +48,11 @@ object LanguageManager {
         } else {
             _isLanguageSelected.value = false
         }
+        _isInitialized.value = true
+    }
+
+    fun resetLanguageSelection() {
+        _isLanguageSelected.value = false
     }
 
     suspend fun setLanguage(language: AppLanguage) {

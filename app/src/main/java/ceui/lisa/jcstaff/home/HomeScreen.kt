@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Home
@@ -762,6 +764,13 @@ private fun DrawerContent(
                 icon = Icons.Default.Settings,
                 label = stringResource(R.string.settings),
                 onClick = onSettingsClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.BugReport,
+                label = "Debug: Language",
+                onClick = { LanguageManager.resetLanguageSelection() },
+                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
             DrawerMenuItem(
                 icon = Icons.AutoMirrored.Filled.ExitToApp,

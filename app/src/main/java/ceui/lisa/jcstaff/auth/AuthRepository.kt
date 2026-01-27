@@ -130,7 +130,7 @@ class AuthRepository(private val context: Context, private val userId: Long? = n
         PixivClient.resetClient()
     }
 
-    suspend fun initialize() {
+    suspend fun initialize(): AccountResponse? {
         val account = accountFlow.first()
         if (account != null) {
             PixivClient.initializeTokens(account.access_token, account.refresh_token)
@@ -158,5 +158,7 @@ class AuthRepository(private val context: Context, private val userId: Long? = n
                 )
             }
         }
+
+        return account
     }
 }

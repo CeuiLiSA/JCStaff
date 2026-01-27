@@ -4,15 +4,11 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.viewModels
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import ceui.lisa.jcstaff.network.PixivClient
-import coil.Coil
-import coil.ImageLoader
-import okhttp3.OkHttpClient
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -35,8 +31,8 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import ceui.lisa.jcstaff.auth.AccountEntry
 import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
@@ -46,18 +42,25 @@ import ceui.lisa.jcstaff.home.HomeScreen
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.navigation.NavigationViewModel
+import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.screens.BookmarksScreen
-import ceui.lisa.jcstaff.screens.IllustDetailScreen
-import ceui.lisa.jcstaff.screens.LandingScreen
-import ceui.lisa.jcstaff.screens.SettingsScreen
-import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
-import ceui.lisa.jcstaff.screens.SearchScreen
+import ceui.lisa.jcstaff.screens.IllustDetailScreen
+import ceui.lisa.jcstaff.screens.ImageViewerScreen
+import ceui.lisa.jcstaff.screens.LandingScreen
+import ceui.lisa.jcstaff.screens.LanguageSelectionScreen
 import ceui.lisa.jcstaff.screens.NovelDetailScreen
+import ceui.lisa.jcstaff.screens.SearchScreen
+import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
-import ceui.lisa.jcstaff.screens.LanguageSelectionScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
+import coil.Coil
+import coil.ImageLoader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 
 class MainActivity : AppCompatActivity() {
 
@@ -86,8 +89,14 @@ class MainActivity : AppCompatActivity() {
         // 初始化全局设置（语言等）
         SettingsStore.initialize(this)
 
-        // 初始化语言管理器
-        LanguageManager.initialize(SettingsStore.getSelectedLanguageBlocking())
+        // 提前触发 AuthViewModel 创建，使 auth 初始化与语言加载并行执行
+        authViewModel
+
+        // 异步初始化语言管理器（不再阻塞主线程）
+        lifecycleScope.launch(Dispatchers.IO) {
+            val savedTag = SettingsStore.selectedLanguage.first()
+            LanguageManager.initialize(savedTag)
+        }
 
         // 注意：per-user 的初始化（DB、缓存、浏览历史等）由 AuthViewModel → AccountSessionManager 负责
 
@@ -96,11 +105,20 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             JCStaffTheme {
+                val isInitialized by LanguageManager.isInitialized.collectAsState()
                 val isLanguageSelected by LanguageManager.isLanguageSelected.collectAsState()
-                if (isLanguageSelected) {
-                    AppNavigation(authViewModel)
-                } else {
-                    LanguageSelectionScreen()
+                when {
+                    !isInitialized -> {
+                        // 语言状态还在读取中，显示空白背景（不卡主线程）
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        )
+                    }
+
+                    isLanguageSelected -> AppNavigation(authViewModel)
+                    else -> LanguageSelectionScreen()
                 }
             }
         }
@@ -137,13 +155,19 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     LaunchedEffect(loginState) {
         when (val state = loginState) {
             is LoginState.Success -> {
-                Toast.makeText(context, context.getString(R.string.login_success), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.login_success),
+                    Toast.LENGTH_SHORT
+                ).show()
                 authViewModel.resetLoginState()
             }
+
             is LoginState.Error -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 authViewModel.resetLoginState()
             }
+
             else -> {}
         }
     }
@@ -156,16 +180,23 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                     navViewModel.clearAndNavigate(NavRoute.Home)
                 }
             }
+
             is AuthState.NotAuthenticated -> {
                 navViewModel.clearAndNavigate(NavRoute.Landing)
             }
+
             is AuthState.Loading -> {
                 // 保持当前状态，等待加载完成
             }
         }
     }
 
-    val currentRoute = navViewModel.currentRoute
+    // 在 LaunchedEffect 尚未执行时，根据 authState 同步推导初始路由，避免空白帧
+    val currentRoute = navViewModel.currentRoute ?: when (authState) {
+        is AuthState.Authenticated -> NavRoute.Home
+        is AuthState.NotAuthenticated -> NavRoute.Landing
+        else -> null
+    }
 
     BackHandler(enabled = navViewModel.canGoBack) {
         navViewModel.goBack()
@@ -215,102 +246,113 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                     label = "navigation"
                 ) { route ->
                     saveableStateHolder.SaveableStateProvider(route.stableKey) {
-                    when (route) {
-                        is NavRoute.Landing -> {
-                            LandingScreen(
-                                onLoginClick = {
-                                    authViewModel.launchLogin(context, isSignup = false)
-                                },
-                                onSignupClick = {
-                                    authViewModel.launchLogin(context, isSignup = true)
-                                }
-                            )
+                        when (route) {
+                            is NavRoute.Landing -> {
+                                LandingScreen(
+                                    onLoginClick = {
+                                        authViewModel.launchLogin(context, isSignup = false)
+                                    },
+                                    onSignupClick = {
+                                        authViewModel.launchLogin(context, isSignup = true)
+                                    }
+                                )
+                            }
+
+                            is NavRoute.Home -> {
+                                val currentUser = (authState as? AuthState.Authenticated)?.user
+                                HomeScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent,
+                                    currentUser = currentUser,
+                                    onLogoutClick = {
+                                        authViewModel.logout()
+                                    },
+                                    allAccounts = allAccounts,
+                                    activeUserId = activeUserId,
+                                    onSwitchAccount = { userId ->
+                                        authViewModel.switchAccount(userId)
+                                    },
+                                    onAddAccount = {
+                                        authViewModel.launchAddAccount(context)
+                                    },
+                                    onRemoveAccount = { userId ->
+                                        authViewModel.removeAccount(userId)
+                                    }
+                                )
+                            }
+
+                            is NavRoute.Search -> {
+                                SearchScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent
+                                )
+                            }
+
+                            is NavRoute.IllustDetail -> {
+                                IllustDetailScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent,
+                                    illustId = route.illustId,
+                                    title = route.title,
+                                    previewUrl = route.previewUrl,
+                                    aspectRatio = route.aspectRatio
+                                )
+                            }
+
+                            is NavRoute.TagDetail -> {
+                                val isPremium =
+                                    (authState as? AuthState.Authenticated)?.user?.is_premium == true
+                                TagDetailScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent,
+                                    tag = route.tag,
+                                    isPremium = isPremium
+                                )
+                            }
+
+                            is NavRoute.NovelDetail -> {
+                                NovelDetailScreen(
+                                    novelId = route.novelId
+                                )
+                            }
+
+                            is NavRoute.Bookmarks -> {
+                                BookmarksScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent,
+                                    userId = route.userId
+                                )
+                            }
+
+                            is NavRoute.Settings -> {
+                                SettingsScreen()
+                            }
+
+                            is NavRoute.ImageViewer -> {
+                                ImageViewerScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent,
+                                    imageUrl = route.imageUrl,
+                                    originalUrl = route.originalUrl,
+                                    sharedElementKey = route.sharedElementKey
+                                )
+                            }
+
+                            is NavRoute.BrowseHistory -> {
+                                BrowseHistoryScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent
+                                )
+                            }
+
+                            is NavRoute.UserProfile -> {
+                                UserProfileScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent,
+                                    userId = route.userId
+                                )
+                            }
                         }
-                        is NavRoute.Home -> {
-                            val currentUser = (authState as? AuthState.Authenticated)?.user
-                            HomeScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent,
-                                currentUser = currentUser,
-                                onLogoutClick = {
-                                    authViewModel.logout()
-                                },
-                                allAccounts = allAccounts,
-                                activeUserId = activeUserId,
-                                onSwitchAccount = { userId ->
-                                    authViewModel.switchAccount(userId)
-                                },
-                                onAddAccount = {
-                                    authViewModel.launchAddAccount(context)
-                                },
-                                onRemoveAccount = { userId ->
-                                    authViewModel.removeAccount(userId)
-                                }
-                            )
-                        }
-                        is NavRoute.Search -> {
-                            SearchScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent
-                            )
-                        }
-                        is NavRoute.IllustDetail -> {
-                            IllustDetailScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent,
-                                illustId = route.illustId,
-                                title = route.title,
-                                previewUrl = route.previewUrl,
-                                aspectRatio = route.aspectRatio
-                            )
-                        }
-                        is NavRoute.TagDetail -> {
-                            val isPremium = (authState as? AuthState.Authenticated)?.user?.is_premium == true
-                            TagDetailScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent,
-                                tag = route.tag,
-                                isPremium = isPremium
-                            )
-                        }
-                        is NavRoute.NovelDetail -> {
-                            NovelDetailScreen(
-                                novelId = route.novelId
-                            )
-                        }
-                        is NavRoute.Bookmarks -> {
-                            BookmarksScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent,
-                                userId = route.userId
-                            )
-                        }
-                        is NavRoute.Settings -> {
-                            SettingsScreen()
-                        }
-                        is NavRoute.ImageViewer -> {
-                            ImageViewerScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent,
-                                imageUrl = route.imageUrl,
-                                originalUrl = route.originalUrl,
-                                sharedElementKey = route.sharedElementKey
-                            )
-                        }
-                        is NavRoute.BrowseHistory -> {
-                            BrowseHistoryScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent
-                            )
-                        }
-                        is NavRoute.UserProfile -> {
-                            UserProfileScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedContentScope = this@AnimatedContent,
-                                userId = route.userId
-                            )
-                        }
-                    }
                     }
                 }
             }

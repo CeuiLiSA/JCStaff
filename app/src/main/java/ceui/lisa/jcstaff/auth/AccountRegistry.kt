@@ -12,7 +12,6 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import java.io.Serializable
 
 data class AccountEntry(
@@ -113,14 +112,6 @@ object AccountRegistry {
         dataStore!!.edit { prefs ->
             prefs[MIGRATION_DONE] = "true"
         }
-    }
-
-    fun getActiveUserIdBlocking(): Long? {
-        return runBlocking { getActiveUserId() }
-    }
-
-    fun getAllBlocking(): List<AccountEntry> {
-        return runBlocking { getAll() }
     }
 
     private fun getAccountsFromPrefs(prefs: Preferences): List<AccountEntry> {

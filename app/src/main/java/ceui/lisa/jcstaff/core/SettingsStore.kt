@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -131,7 +132,7 @@ object SettingsStore {
     }
 
     fun getSelectedLanguageBlocking(): String? {
-        return runBlocking {
+        return runBlocking(Dispatchers.IO) {
             globalDataStore?.data?.map { preferences ->
                 preferences[SELECTED_LANGUAGE]
             }?.first()

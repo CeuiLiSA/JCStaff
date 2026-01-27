@@ -11,6 +11,8 @@ import ceui.lisa.jcstaff.core.ScrollPositionStore
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.network.AccountResponse
 import ceui.lisa.jcstaff.network.PixivClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 账号会话生命周期协调器
@@ -31,39 +33,54 @@ object AccountSessionManager {
     fun getCurrentAuthRepository(): AuthRepository? = currentAuthRepository
 
     /**
-     * 初始化用户会话
+     * 快速初始化：仅加载 auth token，返回账号数据用于直接设置认证状态
      */
-    suspend fun initializeSession(context: Context, userId: Long) {
-        Log.d(TAG, "Initializing session for user $userId")
-
-        // 1. 创建 per-user AuthRepository 并初始化 token
+    suspend fun initializeAuth(context: Context, userId: Long): AccountResponse? = withContext(Dispatchers.IO) {
+        Log.d(TAG, "Initializing auth for user $userId")
         val authRepo = AuthRepository(context, userId)
         currentAuthRepository = authRepo
-        authRepo.initialize()
+        val account = authRepo.initialize()
+        Log.d(TAG, "Auth initialized for user $userId")
+        account
+    }
 
-        // 2. 初始化 per-user database (close old first)
+    /**
+     * 初始化各项服务（数据库、缓存、历史等），可在后台运行
+     */
+    suspend fun initializeServices(context: Context, userId: Long) = withContext(Dispatchers.IO) {
+        Log.d(TAG, "Initializing services for user $userId")
+
+        // 1. 初始化 per-user database (close old first)
         AppDatabase.closeInstance()
         AppDatabase.getInstanceForUser(context, userId)
 
-        // 3. 初始化 per-user 缓存管理器
+        // 2. 初始化 per-user 缓存管理器
         ApiCacheManager.reset()
         ApiCacheManager.initialize(context, userId)
 
-        // 4. 初始化 per-user 浏览历史
+        // 3. 初始化 per-user 浏览历史
         BrowseHistoryManager.reset()
         BrowseHistoryManager.initialize(context, userId)
 
-        // 5. 初始化 per-user 设置
+        // 4. 初始化 per-user 设置
         SettingsStore.initialize(context, userId)
 
-        // 6. 初始化 per-user 加载任务管理器
+        // 5. 初始化 per-user 加载任务管理器
         LoadTaskManager.init(context, userId)
 
-        // 7. 清除内存缓存
+        // 6. 清除内存缓存
         ObjectStore.clear()
         ScrollPositionStore.clear()
 
-        Log.d(TAG, "Session initialized for user $userId")
+        Log.d(TAG, "Services initialized for user $userId")
+    }
+
+    /**
+     * 完整初始化用户会话（auth + services）
+     */
+    suspend fun initializeSession(context: Context, userId: Long) {
+        initializeAuth(context, userId)
+        initializeServices(context, userId)
     }
 
     /**
