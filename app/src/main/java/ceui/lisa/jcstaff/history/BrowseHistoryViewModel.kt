@@ -3,7 +3,11 @@ package ceui.lisa.jcstaff.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
+import ceui.lisa.jcstaff.cache.NovelBrowseHistoryManager
+import ceui.lisa.jcstaff.cache.UserBrowseHistoryManager
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.Novel
+import ceui.lisa.jcstaff.network.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,9 +15,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 /**
- * 浏览历史状态
+ * 插画浏览历史状态
  */
-data class BrowseHistoryState(
+data class IllustHistoryState(
     val illusts: List<Illust> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null
@@ -22,30 +26,60 @@ data class BrowseHistoryState(
 }
 
 /**
+ * 小说浏览历史状态
+ */
+data class NovelHistoryState(
+    val novels: List<Novel> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: String? = null
+) {
+    val isEmpty: Boolean get() = novels.isEmpty() && !isLoading
+}
+
+/**
+ * 用户浏览历史状态
+ */
+data class UserHistoryState(
+    val users: List<User> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: String? = null
+) {
+    val isEmpty: Boolean get() = users.isEmpty() && !isLoading
+}
+
+/**
  * 浏览历史 ViewModel
  *
- * 观察 Room Flow，自动响应数据变化
+ * 观察 Room Flow，自动响应数据变化，支持插画、小说、用户三种历史
  */
 class BrowseHistoryViewModel : ViewModel() {
 
-    private val _state = MutableStateFlow(BrowseHistoryState())
-    val state: StateFlow<BrowseHistoryState> = _state.asStateFlow()
+    private val _illustState = MutableStateFlow(IllustHistoryState())
+    val illustState: StateFlow<IllustHistoryState> = _illustState.asStateFlow()
+
+    private val _novelState = MutableStateFlow(NovelHistoryState())
+    val novelState: StateFlow<NovelHistoryState> = _novelState.asStateFlow()
+
+    private val _userState = MutableStateFlow(UserHistoryState())
+    val userState: StateFlow<UserHistoryState> = _userState.asStateFlow()
 
     init {
-        observeHistory()
+        observeIllustHistory()
+        observeNovelHistory()
+        observeUserHistory()
     }
 
-    private fun observeHistory() {
+    private fun observeIllustHistory() {
         viewModelScope.launch {
             BrowseHistoryManager.getHistoryFlow()
                 .catch { e ->
-                    _state.value = _state.value.copy(
+                    _illustState.value = _illustState.value.copy(
                         isLoading = false,
                         error = e.message ?: "加载历史失败"
                     )
                 }
                 .collect { illusts ->
-                    _state.value = _state.value.copy(
+                    _illustState.value = _illustState.value.copy(
                         illusts = illusts,
                         isLoading = false,
                         error = null
@@ -54,17 +88,59 @@ class BrowseHistoryViewModel : ViewModel() {
         }
     }
 
-    /**
-     * 清空所有历史记录
-     */
-    fun clearAll() {
+    private fun observeNovelHistory() {
+        viewModelScope.launch {
+            NovelBrowseHistoryManager.getHistoryFlow()
+                .catch { e ->
+                    _novelState.value = _novelState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "加载历史失败"
+                    )
+                }
+                .collect { novels ->
+                    _novelState.value = _novelState.value.copy(
+                        novels = novels,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+        }
+    }
+
+    private fun observeUserHistory() {
+        viewModelScope.launch {
+            UserBrowseHistoryManager.getHistoryFlow()
+                .catch { e ->
+                    _userState.value = _userState.value.copy(
+                        isLoading = false,
+                        error = e.message ?: "加载历史失败"
+                    )
+                }
+                .collect { users ->
+                    _userState.value = _userState.value.copy(
+                        users = users,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+        }
+    }
+
+    fun clearIllustHistory() {
         BrowseHistoryManager.clearAll()
     }
 
-    /**
-     * 删除指定历史记录
-     */
-    fun delete(illustId: Long) {
-        BrowseHistoryManager.delete(illustId)
+    fun clearNovelHistory() {
+        NovelBrowseHistoryManager.clearAll()
+    }
+
+    fun clearUserHistory() {
+        UserBrowseHistoryManager.clearAll()
+    }
+
+    fun clearAll() {
+        BrowseHistoryManager.clearAll()
+        NovelBrowseHistoryManager.clearAll()
+        UserBrowseHistoryManager.clearAll()
     }
 }

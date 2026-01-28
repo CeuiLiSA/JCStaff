@@ -61,8 +61,11 @@
     <!-- Browse History Screen -->
     <string name="clear_history">清空历史</string>
     <string name="no_browse_history">暂无浏览历史</string>
+    <string name="no_novel_history">暂无小说浏览历史</string>
+    <string name="no_user_history">暂无用户浏览历史</string>
     <string name="clear_history_title">清空浏览历史</string>
     <string name="clear_history_message">确定要清空所有浏览历史吗？此操作无法撤销。</string>
+    <string name="tab_user">用户</string>
 
     <!-- Illust Detail -->
     <string name="expand_images">展开全部</string>

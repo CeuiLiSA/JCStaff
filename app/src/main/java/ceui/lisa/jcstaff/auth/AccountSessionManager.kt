@@ -5,6 +5,8 @@ import android.util.Log
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import ceui.lisa.jcstaff.cache.AppDatabase
 import ceui.lisa.jcstaff.cache.BrowseHistoryManager
+import ceui.lisa.jcstaff.cache.NovelBrowseHistoryManager
+import ceui.lisa.jcstaff.cache.UserBrowseHistoryManager
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.ScrollPositionStore
@@ -61,6 +63,10 @@ object AccountSessionManager {
         // 3. 初始化 per-user 浏览历史
         BrowseHistoryManager.reset()
         BrowseHistoryManager.initialize(context, userId)
+        NovelBrowseHistoryManager.reset()
+        NovelBrowseHistoryManager.initialize(context, userId)
+        UserBrowseHistoryManager.reset()
+        UserBrowseHistoryManager.initialize(context, userId)
 
         // 4. 初始化 per-user 设置
         SettingsStore.initialize(context, userId)
@@ -95,6 +101,8 @@ object AccountSessionManager {
         // 重置各管理器
         ApiCacheManager.reset()
         BrowseHistoryManager.reset()
+        NovelBrowseHistoryManager.reset()
+        UserBrowseHistoryManager.reset()
         SettingsStore.reset()
         LoadTaskManager.resetInMemoryState()
 

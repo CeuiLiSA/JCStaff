@@ -61,8 +61,11 @@
     <!-- Browse History Screen -->
     <string name="clear_history">기록 삭제</string>
     <string name="no_browse_history">탐색 기록이 없습니다</string>
+    <string name="no_novel_history">소설 탐색 기록이 없습니다</string>
+    <string name="no_user_history">사용자 탐색 기록이 없습니다</string>
     <string name="clear_history_title">탐색 기록 삭제</string>
     <string name="clear_history_message">모든 탐색 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</string>
+    <string name="tab_user">사용자</string>
 
     <!-- Illust Detail -->
     <string name="expand_images">전체 펼치기</string>

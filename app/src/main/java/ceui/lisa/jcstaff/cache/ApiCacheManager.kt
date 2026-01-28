@@ -37,19 +37,6 @@ object ApiCacheManager {
     )
 
     /**
-     * 初始化缓存管理器
-     */
-    fun initialize(context: Context) {
-        if (dao == null) {
-            dao = AppDatabase.getInstance(context).apiCacheDao()
-            Log.d(TAG, "🚀 Cache initialized with Room database")
-
-            // 启动时异步清理过期缓存，不阻塞主线程
-            CoroutineScope(Dispatchers.IO).launch { cleanupExpired() }
-        }
-    }
-
-    /**
      * 初始化缓存管理器（用户隔离）
      */
     fun initialize(context: Context, userId: Long) {
@@ -86,7 +73,8 @@ object ApiCacheManager {
             }
 
             val ageSeconds = (System.currentTimeMillis() - entity.timestamp) / 1000
-            val remainingSeconds = (CACHE_DURATION_MS - (System.currentTimeMillis() - entity.timestamp)) / 1000
+            val remainingSeconds =
+                (CACHE_DURATION_MS - (System.currentTimeMillis() - entity.timestamp)) / 1000
 
             Log.d(TAG, "✅ HIT ${shortenKey(key)}")
             Log.d(TAG, "   ├─ Age: ${ageSeconds}s")
@@ -149,7 +137,13 @@ object ApiCacheManager {
     /**
      * 存储缓存
      */
-    fun putSync(key: String, responseBody: ByteArray, contentType: String?, httpCode: Int, httpMessage: String) = runBlocking {
+    fun putSync(
+        key: String,
+        responseBody: ByteArray,
+        contentType: String?,
+        httpCode: Int,
+        httpMessage: String
+    ) = runBlocking {
         put(key, responseBody, contentType, httpCode, httpMessage)
     }
 

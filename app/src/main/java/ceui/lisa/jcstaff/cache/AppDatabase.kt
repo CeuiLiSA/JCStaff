@@ -9,8 +9,13 @@ import androidx.room.RoomDatabase
  * 应用数据库
  */
 @Database(
-    entities = [ApiCacheEntity::class, BrowseHistoryEntity::class],
-    version = 2,
+    entities = [
+        ApiCacheEntity::class,
+        BrowseHistoryEntity::class,
+        NovelBrowseHistoryEntity::class,
+        UserBrowseHistoryEntity::class
+    ],
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -19,25 +24,25 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun browseHistoryDao(): BrowseHistoryDao
 
+    abstract fun novelBrowseHistoryDao(): NovelBrowseHistoryDao
+
+    abstract fun userBrowseHistoryDao(): UserBrowseHistoryDao
+
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        fun getInstance(context: Context, databaseName: String = "jcstaff_database"): AppDatabase {
+        fun getInstanceForUser(context: Context, userId: Long): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    databaseName
+                    "jcstaff_db_$userId"
                 )
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                     .also { INSTANCE = it }
             }
-        }
-
-        fun getInstanceForUser(context: Context, userId: Long): AppDatabase {
-            return getInstance(context, "jcstaff_db_$userId")
         }
 
         fun closeInstance() {

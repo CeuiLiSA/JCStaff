@@ -61,8 +61,11 @@
     <!-- Browse History Screen -->
     <string name="clear_history">履歴を削除</string>
     <string name="no_browse_history">閲覧履歴はありません</string>
+    <string name="no_novel_history">小説の閲覧履歴はありません</string>
+    <string name="no_user_history">ユーザーの閲覧履歴はありません</string>
     <string name="clear_history_title">閲覧履歴を削除</string>
     <string name="clear_history_message">すべての閲覧履歴を削除しますか？この操作は取り消せません。</string>
+    <string name="tab_user">ユーザー</string>
 
     <!-- Illust Detail -->
     <string name="expand_images">すべて展開</string>

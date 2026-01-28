@@ -33,6 +33,7 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.cache.UserBrowseHistoryManager
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.components.FloatingTopBar
@@ -63,6 +64,11 @@ fun UserProfileScreen(
 
     LaunchedEffect(userId) {
         viewModel.loadUser(userId)
+    }
+
+    // 记录用户浏览历史
+    LaunchedEffect(state.user) {
+        state.user?.let { UserBrowseHistoryManager.recordView(it) }
     }
 
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)

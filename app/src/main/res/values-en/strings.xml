@@ -61,8 +61,11 @@
     <!-- Browse History Screen -->
     <string name="clear_history">Clear History</string>
     <string name="no_browse_history">No browse history</string>
+    <string name="no_novel_history">No novel browse history</string>
+    <string name="no_user_history">No user browse history</string>
     <string name="clear_history_title">Clear Browse History</string>
     <string name="clear_history_message">Are you sure you want to clear all browse history? This cannot be undone.</string>
+    <string name="tab_user">Users</string>
 
     <!-- Illust Detail -->
     <string name="expand_images">Expand All</string>
