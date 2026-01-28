@@ -51,4 +51,7 @@ sealed interface NavRoute {
     data object ShaderDemo : NavRoute {
         override val stableKey = "ShaderDemo"
     }
+    data object AccountManagement : NavRoute {
+        override val stableKey = "AccountManagement"
+    }
 }

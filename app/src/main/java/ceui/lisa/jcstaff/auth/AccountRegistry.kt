@@ -88,6 +88,12 @@ object AccountRegistry {
         }
     }
 
+    suspend fun clearActiveUser() {
+        dataStore!!.edit { prefs ->
+            prefs.remove(ACTIVE_USER_ID)
+        }
+    }
+
     suspend fun removeAccount(userId: Long) {
         dataStore!!.edit { prefs ->
             val current = getAccountsFromPrefs(prefs).toMutableList()

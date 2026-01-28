@@ -244,10 +244,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun logout() {
         viewModelScope.launch {
-            val activeId = AccountRegistry.getActiveUserId()
-            if (activeId != null) {
-                removeAccount(activeId)
-            }
+            AccountSessionManager.logout()
+            _authState.value = AuthState.NotAuthenticated
+            _loginState.value = LoginState.Idle
         }
     }
 

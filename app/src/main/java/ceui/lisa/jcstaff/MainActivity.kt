@@ -43,6 +43,7 @@ import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.navigation.NavigationViewModel
 import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.screens.AccountManagementScreen
 import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
@@ -263,9 +264,6 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedContentScope = this@AnimatedContent,
                                     currentUser = currentUser,
-                                    onLogoutClick = {
-                                        authViewModel.logout()
-                                    },
                                     allAccounts = allAccounts,
                                     activeUserId = activeUserId,
                                     onSwitchAccount = { userId ->
@@ -273,9 +271,6 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                     },
                                     onAddAccount = {
                                         authViewModel.launchAddAccount(context)
-                                    },
-                                    onRemoveAccount = { userId ->
-                                        authViewModel.removeAccount(userId)
                                     }
                                 )
                             }
@@ -358,6 +353,22 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
                             is NavRoute.ShaderDemo -> {
                                 ShaderDemoScreen()
+                            }
+
+                            is NavRoute.AccountManagement -> {
+                                AccountManagementScreen(
+                                    allAccounts = allAccounts,
+                                    activeUserId = activeUserId,
+                                    onAddAccount = {
+                                        authViewModel.launchAddAccount(context)
+                                    },
+                                    onRemoveAccount = { userId ->
+                                        authViewModel.removeAccount(userId)
+                                    },
+                                    onSwitchAccount = { userId ->
+                                        authViewModel.switchAccount(userId)
+                                    }
+                                )
                             }
                         }
                     }

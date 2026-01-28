@@ -119,6 +119,15 @@ object AccountSessionManager {
     }
 
     /**
+     * 退出登录（保留账号数据）
+     */
+    suspend fun logout() {
+        Log.d(TAG, "Logging out (preserving account data)")
+        teardownCurrentSession()
+        AccountRegistry.clearActiveUser()
+    }
+
+    /**
      * 切换账号
      */
     suspend fun switchAccount(context: Context, userId: Long) {

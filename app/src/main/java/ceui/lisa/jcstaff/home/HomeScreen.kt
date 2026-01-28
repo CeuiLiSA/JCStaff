@@ -29,14 +29,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
@@ -46,12 +44,10 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,7 +62,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -118,12 +113,10 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope?,
     currentUser: User?,
-    onLogoutClick: () -> Unit,
     allAccounts: List<AccountEntry> = emptyList(),
     activeUserId: Long? = null,
     onSwitchAccount: (Long) -> Unit = {},
     onAddAccount: () -> Unit = {},
-    onRemoveAccount: (Long) -> Unit = {},
     recommendedViewModel: RecommendedViewModel = viewModel(),
     trendingViewModel: TrendingViewModel = viewModel(),
     followingViewModel: FollowingViewModel = viewModel(),
@@ -172,12 +165,6 @@ fun HomeScreen(
                         onAddAccount()
                     }
                 },
-                onRemoveAccount = { userId ->
-                    coroutineScope.launch {
-                        drawerState.close()
-                        onRemoveAccount(userId)
-                    }
-                },
                 onUserProfileClick = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -216,12 +203,6 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         navViewModel.navigate(NavRoute.ShaderDemo)
-                    }
-                },
-                onLogoutClick = {
-                    coroutineScope.launch {
-                        drawerState.close()
-                        onLogoutClick()
                     }
                 }
             )
@@ -468,17 +449,14 @@ private fun DrawerContent(
     activeUserId: Long?,
     onSwitchAccount: (Long) -> Unit,
     onAddAccount: () -> Unit,
-    onRemoveAccount: (Long) -> Unit,
     onUserProfileClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onFollowingClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onShaderDemoClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onShaderDemoClick: () -> Unit
 ) {
     var accountListExpanded by remember { mutableStateOf(false) }
-    var showRemoveDialog by remember { mutableStateOf<AccountEntry?>(null) }
     val context = LocalContext.current
 
     ModalDrawerSheet(
@@ -778,25 +756,6 @@ private fun DrawerContent(
                 label = "Shader Demo",
                 onClick = onShaderDemoClick
             )
-            DrawerMenuItem(
-                icon = Icons.Default.BugReport,
-                label = "Debug: Language",
-                onClick = { LanguageManager.resetLanguageSelection() },
-                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            DrawerMenuItem(
-                icon = Icons.AutoMirrored.Filled.ExitToApp,
-                label = stringResource(R.string.remove_account),
-                onClick = {
-                    val activeAccount = allAccounts.find { it.userId == activeUserId }
-                    if (activeAccount != null) {
-                        showRemoveDialog = activeAccount
-                    }
-                },
-                iconTint = MaterialTheme.colorScheme.error,
-                labelColor = MaterialTheme.colorScheme.error
-            )
 
             Spacer(modifier = Modifier.height(
                 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -804,31 +763,6 @@ private fun DrawerContent(
         }
     }
 
-    // Remove account confirmation dialog
-    showRemoveDialog?.let { account ->
-        AlertDialog(
-            onDismissRequest = { showRemoveDialog = null },
-            title = { Text(stringResource(R.string.remove_account_title)) },
-            text = {
-                Text(stringResource(R.string.remove_account_message, account.userName))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showRemoveDialog = null
-                        onRemoveAccount(account.userId)
-                    }
-                ) {
-                    Text(stringResource(R.string.remove_account))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRemoveDialog = null }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
 }
 
 @Composable
