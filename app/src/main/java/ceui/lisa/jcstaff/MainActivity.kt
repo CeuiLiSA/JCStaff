@@ -211,8 +211,11 @@ fun AppNavigation(authViewModel: AuthViewModel) {
         return
     }
 
-    // Show loading overlay when logging in
-    if (loginState is LoginState.Loading) {
+    // Show loading overlay during the entire login flow (Loading + Success).
+    // Using early-return here removes LandingScreen from composition; if we only
+    // covered Loading, the pager would re-mount at page 0 during the brief Success
+    // → Idle → Authenticated transition, causing a visible flash of the first page.
+    if (loginState is LoginState.Loading || loginState is LoginState.Success) {
         Box(
             modifier = Modifier
                 .fillMaxSize()

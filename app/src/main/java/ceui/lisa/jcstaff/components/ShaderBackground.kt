@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.FloatState
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +20,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.graphicsLayer
 
 /**
  * Domain-warping FBM background + oscilloscope wave lines.
@@ -165,10 +168,14 @@ private fun ShaderBackgroundImpl(
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-private fun ShaderLayer(shader: RuntimeShader, time: FloatState) {
+private fun ShaderLayer(
+    shader: RuntimeShader,
+    time: FloatState,
+    modifier: Modifier = Modifier
+) {
     val brush = remember { ShaderBrush(shader) }
     Spacer(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .drawBehind {
                 shader.setFloatUniform("iResolution", size.width, size.height)
@@ -379,6 +386,11 @@ private fun TracedTunnelBackgroundImpl(
 ) {
     val shader = remember { RuntimeShader(SHADER_TRACED_TUNNEL) }
     val time = remember { mutableFloatStateOf(0f) }
+    val fadeAlpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        fadeAlpha.animateTo(1f, animationSpec = tween(durationMillis = 2000))
+    }
 
     LaunchedEffect(Unit) {
         var startNanos = 0L
@@ -391,7 +403,11 @@ private fun TracedTunnelBackgroundImpl(
     }
 
     Box(modifier = modifier) {
-        ShaderLayer(shader = shader, time = time)
+        ShaderLayer(
+            shader = shader,
+            time = time,
+            modifier = Modifier.graphicsLayer { alpha = fadeAlpha.value }
+        )
         content()
     }
 }
