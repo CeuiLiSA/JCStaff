@@ -74,6 +74,11 @@
     <string name="collapse_images">收起</string>
     <string name="related_works">相关作品</string>
     <string name="publish_date">发布时间</string>
+    <string name="just_now">刚刚</string>
+    <string name="minutes_ago">%1$d 分钟前</string>
+    <string name="hours_ago">%1$d 小时前</string>
+    <string name="days_ago">%1$d 天前</string>
+    <string name="date_format_absolute">yyyy年M月d日 HH:mm</string>
     <string name="size">尺寸</string>
     <string name="page_count">页数</string>
     <string name="page_unit">张</string>

@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.utils.formatCount
+import ceui.lisa.jcstaff.utils.formatRelativeDate
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
@@ -255,6 +256,17 @@ fun NovelCard(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                    }
+                }
+
+                // Publish date
+                novel.create_date?.let { dateStr ->
+                    formatRelativeDate(dateStr)?.let { formatted ->
+                        Text(
+                            text = formatted,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
                     }
                 }
             }

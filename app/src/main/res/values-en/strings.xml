@@ -72,6 +72,11 @@
     <string name="collapse_images">Collapse</string>
     <string name="related_works">Related Works</string>
     <string name="publish_date">Published</string>
+    <string name="just_now">Just now</string>
+    <string name="minutes_ago">%1$d min ago</string>
+    <string name="hours_ago">%1$d hr ago</string>
+    <string name="days_ago">%1$d days ago</string>
+    <string name="date_format_absolute">MMM d, yyyy HH:mm</string>
     <string name="size">Size</string>
     <string name="page_count">Pages</string>
     <string name="page_unit">p</string>
@@ -139,6 +144,7 @@
     <string name="coming_soon">Coming Soon</string>
     <string name="add_tag">Add Tag</string>
     <string name="enter_tag_name">Enter tag name</string>
+    <string name="sort_popular_preview">Popular Preview</string>
     <string name="sort_date_desc">Newest</string>
     <string name="sort_date_asc">Oldest</string>
     <string name="sort_popular_desc">Popular</string>

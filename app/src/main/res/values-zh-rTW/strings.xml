@@ -72,6 +72,11 @@
     <string name="collapse_images">收起</string>
     <string name="related_works">相關作品</string>
     <string name="publish_date">發佈時間</string>
+    <string name="just_now">剛剛</string>
+    <string name="minutes_ago">%1$d 分鐘前</string>
+    <string name="hours_ago">%1$d 小時前</string>
+    <string name="days_ago">%1$d 天前</string>
+    <string name="date_format_absolute">yyyy年M月d日 HH:mm</string>
     <string name="size">尺寸</string>
     <string name="page_count">頁數</string>
     <string name="page_unit">張</string>
@@ -139,6 +144,7 @@
     <string name="coming_soon">即將推出</string>
     <string name="add_tag">新增標籤</string>
     <string name="enter_tag_name">輸入標籤名稱</string>
+    <string name="sort_popular_preview">熱度預覽</string>
     <string name="sort_date_desc">最新</string>
     <string name="sort_date_asc">最舊</string>
     <string name="sort_popular_desc">熱度</string>

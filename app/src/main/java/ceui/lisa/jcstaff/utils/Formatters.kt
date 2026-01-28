@@ -1,5 +1,9 @@
 package ceui.lisa.jcstaff.utils
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import ceui.lisa.jcstaff.R
+import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -26,6 +30,42 @@ fun formatDate(dateStr: String): String? {
         zonedDateTime.format(formatter)
     } catch (e: Exception) {
         null
+    }
+}
+
+/**
+ * 格式化发布日期为相对时间（支持国际化）
+ * - < 1 分钟：刚刚
+ * - < 1 小时：X 分钟前
+ * - < 1 天：X 小时前
+ * - < 30 天：X 天前
+ * - >= 30 天：本地化的绝对日期时间
+ */
+@Composable
+fun formatRelativeDate(dateStr: String): String? {
+    val pattern = stringResource(R.string.date_format_absolute)
+    val zonedDateTime = ZonedDateTime.parse(dateStr)
+    val now = ZonedDateTime.now()
+    val duration = Duration.between(zonedDateTime, now)
+
+    if (duration.isNegative) {
+        val formatter = DateTimeFormatter.ofPattern(pattern, Locale.getDefault())
+        return zonedDateTime.format(formatter)
+    }
+
+    val minutes = duration.toMinutes()
+    val hours = duration.toHours()
+    val days = duration.toDays()
+
+    return when {
+        minutes < 1 -> stringResource(R.string.just_now)
+        hours < 1 -> stringResource(R.string.minutes_ago, minutes)
+        days < 1 -> stringResource(R.string.hours_ago, hours)
+        days < 30 -> stringResource(R.string.days_ago, days)
+        else -> {
+            val formatter = DateTimeFormatter.ofPattern(pattern, Locale.getDefault())
+            zonedDateTime.format(formatter)
+        }
     }
 }
 

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.MetaInfoRow
 import ceui.lisa.jcstaff.network.Illust
-import ceui.lisa.jcstaff.utils.formatDate
+import ceui.lisa.jcstaff.utils.formatRelativeDate
 
 /**
  * 作品元信息组件
@@ -45,7 +45,7 @@ fun IllustMetaInfo(
     ) {
         // 发布时间
         illust.create_date?.let { dateStr ->
-            val formattedDate = formatDate(dateStr)
+            val formattedDate = formatRelativeDate(dateStr)
             if (formattedDate != null) {
                 MetaInfoRow(
                     icon = Icons.Default.CalendarToday,

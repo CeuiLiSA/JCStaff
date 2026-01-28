@@ -72,6 +72,11 @@
     <string name="collapse_images">折りたたむ</string>
     <string name="related_works">関連作品</string>
     <string name="publish_date">投稿日</string>
+    <string name="just_now">たった今</string>
+    <string name="minutes_ago">%1$d 分前</string>
+    <string name="hours_ago">%1$d 時間前</string>
+    <string name="days_ago">%1$d 日前</string>
+    <string name="date_format_absolute">yyyy年M月d日 HH:mm</string>
     <string name="size">サイズ</string>
     <string name="page_count">ページ数</string>
     <string name="page_unit">枚</string>
@@ -139,6 +144,7 @@
     <string name="coming_soon">近日公開</string>
     <string name="add_tag">タグを追加</string>
     <string name="enter_tag_name">タグ名を入力</string>
+    <string name="sort_popular_preview">人気プレビュー</string>
     <string name="sort_date_desc">新しい順</string>
     <string name="sort_date_asc">古い順</string>
     <string name="sort_popular_desc">人気順</string>

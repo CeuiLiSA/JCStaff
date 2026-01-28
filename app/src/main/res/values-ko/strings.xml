@@ -72,6 +72,11 @@
     <string name="collapse_images">접기</string>
     <string name="related_works">관련 작품</string>
     <string name="publish_date">게시일</string>
+    <string name="just_now">방금</string>
+    <string name="minutes_ago">%1$d분 전</string>
+    <string name="hours_ago">%1$d시간 전</string>
+    <string name="days_ago">%1$d일 전</string>
+    <string name="date_format_absolute">yyyy년 M월 d일 HH:mm</string>
     <string name="size">크기</string>
     <string name="page_count">페이지 수</string>
     <string name="page_unit">장</string>
@@ -139,6 +144,7 @@
     <string name="coming_soon">곧 출시</string>
     <string name="add_tag">태그 추가</string>
     <string name="enter_tag_name">태그 이름 입력</string>
+    <string name="sort_popular_preview">인기 미리보기</string>
     <string name="sort_date_desc">최신순</string>
     <string name="sort_date_asc">오래된순</string>
     <string name="sort_popular_desc">인기순</string>

@@ -58,6 +58,7 @@ import ceui.lisa.jcstaff.core.StoreType
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.Tag
+import ceui.lisa.jcstaff.utils.formatRelativeDate
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
@@ -238,15 +239,16 @@ fun NovelDetailScreen(
             }
 
             // Publish date
-            loadedNovel.create_date?.let { date ->
-                val displayDate = date.take(10)
-                Text(
-                    text = "${stringResource(R.string.publish_date)}: $displayDate",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+            loadedNovel.create_date?.let { dateStr ->
+                formatRelativeDate(dateStr)?.let { formatted ->
+                    Text(
+                        text = "${stringResource(R.string.publish_date)}: $formatted",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
 
             // Tags (reuse IllustTags)
