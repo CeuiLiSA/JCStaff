@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -59,9 +60,9 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.components.IllustGrid
+import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.rememberSelectionManager
-import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.tagdetail.SearchSort
 import ceui.lisa.jcstaff.tagdetail.SearchTarget
@@ -75,14 +76,16 @@ fun TagDetailScreen(
     animatedContentScope: AnimatedContentScope,
     tag: Tag,
     isPremium: Boolean,
+    initialTab: Int = 0,
     viewModel: TagDetailViewModel = viewModel(key = "tag_detail_${tag.name}")
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
     val selectionManager = rememberSelectionManager()
-    val pagerState = rememberPagerState(pageCount = { 2 })
+    val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val novelListState = rememberLazyListState()
 
     var showAddTagDialog by remember { mutableStateOf(false) }
     var tagPendingRemoval by remember { mutableStateOf<Tag?>(null) }
@@ -214,7 +217,6 @@ fun TagDetailScreen(
                                 onRefresh = { viewModel.refresh() },
                                 onLoadMore = { viewModel.loadMore() },
                                 selectionManager = selectionManager,
-                                gridStateKey = "tag_detail_${tag.name}",
                                 headerContent = {
                                     item(
                                         key = "search_filter_bar",
@@ -238,14 +240,33 @@ fun TagDetailScreen(
                             )
                         }
                         1 -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.coming_soon),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                SearchFilterBar(
+                                    sort = state.novelSort,
+                                    searchTarget = state.novelSearchTarget,
+                                    isPremium = isPremium,
+                                    onSortChanged = { viewModel.setNovelSort(it) },
+                                    onSearchTargetChanged = { viewModel.setNovelSearchTarget(it) },
+                                    onPremiumRequired = {
+                                        coroutineScope.launch {
+                                            snackbarHostState.currentSnackbarData?.dismiss()
+                                            snackbarHostState.showSnackbar(premiumHint)
+                                        }
+                                    }
+                                )
+                                NovelList(
+                                    novels = state.novels,
+                                    onNovelClick = { novel ->
+                                        navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
+                                    isLoading = state.isNovelLoading,
+                                    isLoadingMore = state.isNovelLoadingMore,
+                                    canLoadMore = state.canLoadMoreNovels,
+                                    error = state.novelError,
+                                    onRefresh = { viewModel.refreshNovels() },
+                                    onLoadMore = { viewModel.loadMoreNovels() },
+                                    listState = novelListState
                                 )
                             }
                         }

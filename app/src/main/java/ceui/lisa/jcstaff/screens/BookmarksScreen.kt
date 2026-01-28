@@ -94,8 +94,7 @@ fun BookmarksScreen(
                 error = state.error,
                 onRefresh = { viewModel.refresh() },
                 onLoadMore = { viewModel.loadMore() },
-                selectionManager = selectionManager,
-                gridStateKey = "bookmarks_$userId"
+                selectionManager = selectionManager
             )
         }
 

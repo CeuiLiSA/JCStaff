@@ -28,6 +28,11 @@ interface PixivApi {
         @Query("filter") filter: String = "for_ios"
     ): TrendingTagsResponse
 
+    @GET("/v1/trending-tags/novel")
+    suspend fun getTrendingNovelTags(
+        @Query("filter") filter: String = "for_ios"
+    ): TrendingTagsResponse
+
     @GET("/v1/search/illust")
     suspend fun searchIllusts(
         @Query("word") word: String,
@@ -109,6 +114,16 @@ interface PixivApi {
     suspend fun unfollowUser(
         @Field("user_id") userId: Long
     ): Unit
+
+    @GET("/v1/search/novel")
+    suspend fun searchNovels(
+        @Query("word") word: String,
+        @Query("search_target") searchTarget: String = "partial_match_for_tags",
+        @Query("sort") sort: String = "date_desc",
+        @Query("filter") filter: String = "for_ios",
+        @Query("include_translated_tag_results") includeTranslatedTagResults: Boolean = true,
+        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
+    ): NovelResponse
 
     // ===== Novel Endpoints =====
 

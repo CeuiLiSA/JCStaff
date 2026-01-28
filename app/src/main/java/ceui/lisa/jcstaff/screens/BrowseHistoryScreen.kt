@@ -235,8 +235,7 @@ private fun IllustHistoryPage(
             animatedContentScope = animatedContentScope,
             isLoading = illustState.isLoading,
             error = illustState.error,
-            selectionManager = selectionManager,
-            gridStateKey = "browse_history_illust"
+            selectionManager = selectionManager
         )
     }
 }

@@ -28,6 +28,8 @@
     <string name="daily_ranking">每日排行</string>
     <string name="tab_discover">发现</string>
     <string name="tab_trending">排行</string>
+    <string name="tab_trending_illust">插画</string>
+    <string name="tab_trending_novel">小说</string>
     <string name="tab_recommended">推荐</string>
     <string name="tab_following">关注</string>
     <string name="search">搜索</string>

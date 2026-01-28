@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.SelectionManager
 import ceui.lisa.jcstaff.core.SettingsStore
-import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
 import ceui.lisa.jcstaff.network.Illust
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -75,7 +74,6 @@ fun IllustGrid(
     selectionManager: SelectionManager? = null,
     // Grid 配置
     columns: Int = 2,
-    gridStateKey: String? = null,
     gridState: LazyStaggeredGridState? = null,
     contentPadding: PaddingValues? = null,
     // 自定义头部内容
@@ -91,12 +89,9 @@ fun IllustGrid(
     val defaultContentPadding = if (gridSpacingEnabled) PaddingValues(8.dp) else PaddingValues(0.dp)
     val finalContentPadding = contentPadding ?: defaultContentPadding
 
-    // Grid state: 优先使用传入的 state，其次使用 key 创建持久化 state，最后使用默认 state
-    val actualGridState = gridState ?: if (gridStateKey != null) {
-        rememberPersistentLazyStaggeredGridState(gridStateKey)
-    } else {
-        rememberLazyStaggeredGridState()
-    }
+    // Grid state: 优先使用外部传入的 state，否则使用标准 rememberLazyStaggeredGridState
+    // rememberLazyStaggeredGridState 内部使用 rememberSaveable，配合 SaveableStateProvider 自动保持滚动位置
+    val actualGridState = gridState ?: rememberLazyStaggeredGridState()
 
     // 检测是否滚动到底部，触发加载更多
     if (onLoadMore != null) {

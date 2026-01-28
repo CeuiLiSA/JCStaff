@@ -39,7 +39,7 @@ import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.user.UserProfileHeader
 import ceui.lisa.jcstaff.core.SettingsStore
-import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.profile.UserProfileViewModel
@@ -74,7 +74,7 @@ fun UserProfileScreen(
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
     val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
 
-    val gridState = rememberPersistentLazyStaggeredGridState("user_profile_$userId")
+    val gridState = rememberLazyStaggeredGridState()
 
     LaunchedEffect(gridState, state.canLoadMore) {
         snapshotFlow {

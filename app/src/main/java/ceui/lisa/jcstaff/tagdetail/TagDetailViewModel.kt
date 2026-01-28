@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,19 +34,31 @@ enum class SearchTarget(val apiValue: String, @StringRes val labelRes: Int) {
 
 data class TagDetailState(
     val tags: List<Tag> = emptyList(),
+    // Illust search state
     val illusts: List<Illust> = emptyList(),
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
     val error: String? = null,
     val nextUrl: String? = null,
     val sort: SearchSort = SearchSort.DATE_DESC,
-    val searchTarget: SearchTarget = SearchTarget.PARTIAL_MATCH_FOR_TAGS
+    val searchTarget: SearchTarget = SearchTarget.PARTIAL_MATCH_FOR_TAGS,
+    // Novel search state
+    val novels: List<Novel> = emptyList(),
+    val isNovelLoading: Boolean = false,
+    val isNovelLoadingMore: Boolean = false,
+    val novelError: String? = null,
+    val novelNextUrl: String? = null,
+    val novelSort: SearchSort = SearchSort.DATE_DESC,
+    val novelSearchTarget: SearchTarget = SearchTarget.PARTIAL_MATCH_FOR_TAGS
 ) {
     val searchWord: String
         get() = tags.mapNotNull { it.name }.joinToString(" ")
 
     val canLoadMore: Boolean
         get() = nextUrl != null && !isLoadingMore
+
+    val canLoadMoreNovels: Boolean
+        get() = novelNextUrl != null && !isNovelLoadingMore
 }
 
 class TagDetailViewModel : ViewModel() {
@@ -59,8 +72,13 @@ class TagDetailViewModel : ViewModel() {
         if (isInitialized) return
         isInitialized = true
         val defaultSort = if (isPremium) SearchSort.POPULAR_DESC else SearchSort.DATE_DESC
-        _state.value = _state.value.copy(tags = listOf(initialTag), sort = defaultSort)
+        _state.value = _state.value.copy(
+            tags = listOf(initialTag),
+            sort = defaultSort,
+            novelSort = defaultSort
+        )
         search()
+        searchNovels()
     }
 
     fun addTag(tag: Tag) {
@@ -68,6 +86,7 @@ class TagDetailViewModel : ViewModel() {
         if (current.any { it.name == tag.name }) return
         _state.value = _state.value.copy(tags = current + tag)
         search()
+        searchNovels()
     }
 
     fun removeTag(tag: Tag) {
@@ -76,6 +95,7 @@ class TagDetailViewModel : ViewModel() {
         if (updated.isEmpty()) return
         _state.value = _state.value.copy(tags = updated)
         search()
+        searchNovels()
     }
 
     fun setSort(sort: SearchSort) {
@@ -88,6 +108,18 @@ class TagDetailViewModel : ViewModel() {
         if (_state.value.searchTarget == target) return
         _state.value = _state.value.copy(searchTarget = target)
         search()
+    }
+
+    fun setNovelSort(sort: SearchSort) {
+        if (_state.value.novelSort == sort) return
+        _state.value = _state.value.copy(novelSort = sort)
+        searchNovels()
+    }
+
+    fun setNovelSearchTarget(target: SearchTarget) {
+        if (_state.value.novelSearchTarget == target) return
+        _state.value = _state.value.copy(novelSearchTarget = target)
+        searchNovels()
     }
 
     fun search() {
@@ -123,6 +155,39 @@ class TagDetailViewModel : ViewModel() {
         }
     }
 
+    fun searchNovels() {
+        val word = _state.value.searchWord
+        if (word.isBlank()) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isNovelLoading = true,
+                novelError = null,
+                novels = emptyList(),
+                novelNextUrl = null
+            )
+
+            try {
+                val response = PixivClient.pixivApi.searchNovels(
+                    word = word,
+                    sort = _state.value.novelSort.apiValue,
+                    searchTarget = _state.value.novelSearchTarget.apiValue
+                )
+                storeNovels(response.novels)
+                _state.value = _state.value.copy(
+                    novels = response.novels,
+                    isNovelLoading = false,
+                    novelNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isNovelLoading = false,
+                    novelError = e.message
+                )
+            }
+        }
+    }
+
     fun loadMore() {
         val nextUrl = _state.value.nextUrl ?: return
         if (_state.value.isLoadingMore) return
@@ -147,12 +212,45 @@ class TagDetailViewModel : ViewModel() {
         }
     }
 
+    fun loadMoreNovels() {
+        val nextUrl = _state.value.novelNextUrl ?: return
+        if (_state.value.isNovelLoadingMore) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isNovelLoadingMore = true)
+
+            try {
+                val response = PixivClient.pixivApi.getNextPageNovels(nextUrl)
+                storeNovels(response.novels)
+                _state.value = _state.value.copy(
+                    novels = _state.value.novels + response.novels,
+                    isNovelLoadingMore = false,
+                    novelNextUrl = response.next_url
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isNovelLoadingMore = false,
+                    novelError = e.message
+                )
+            }
+        }
+    }
+
     fun refresh() = search()
+
+    fun refreshNovels() = searchNovels()
 
     private fun storeIllusts(illusts: List<Illust>) {
         illusts.forEach { illust ->
             ObjectStore.put(illust)
             illust.user?.let { user -> ObjectStore.put(user) }
+        }
+    }
+
+    private fun storeNovels(novels: List<Novel>) {
+        novels.forEach { novel ->
+            ObjectStore.put(novel)
+            novel.user?.let { user -> ObjectStore.put(user) }
         }
     }
 }

@@ -42,7 +42,7 @@ sealed interface NavRoute {
     data class UserProfile(val userId: Long) : NavRoute {
         override val stableKey = "UserProfile_$userId"
     }
-    data class TagDetail(val tag: Tag) : NavRoute {
+    data class TagDetail(val tag: Tag, val initialTab: Int = 0) : NavRoute {
         override val stableKey = "TagDetail_${tag.name}"
     }
     data class NovelDetail(val novelId: Long) : NavRoute {

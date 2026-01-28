@@ -300,7 +300,8 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedContentScope = this@AnimatedContent,
                                     tag = route.tag,
-                                    isPremium = isPremium
+                                    isPremium = isPremium,
+                                    initialTab = route.initialTab
                                 )
                             }
 

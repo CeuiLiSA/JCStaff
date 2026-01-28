@@ -9,7 +9,6 @@ import ceui.lisa.jcstaff.cache.NovelBrowseHistoryManager
 import ceui.lisa.jcstaff.cache.UserBrowseHistoryManager
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
-import ceui.lisa.jcstaff.core.ScrollPositionStore
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.network.AccountResponse
 import ceui.lisa.jcstaff.network.PixivClient
@@ -76,7 +75,6 @@ object AccountSessionManager {
 
         // 6. 清除内存缓存
         ObjectStore.clear()
-        ScrollPositionStore.clear()
 
         Log.d(TAG, "Services initialized for user $userId")
     }
@@ -108,7 +106,6 @@ object AccountSessionManager {
 
         // 清除内存缓存
         ObjectStore.clear()
-        ScrollPositionStore.clear()
 
         // 重置网络客户端
         PixivClient.resetClient()

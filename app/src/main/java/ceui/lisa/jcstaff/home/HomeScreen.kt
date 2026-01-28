@@ -27,9 +27,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import ceui.lisa.jcstaff.core.rememberPersistentLazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -48,6 +54,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -102,6 +109,8 @@ import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.Tag
+import ceui.lisa.jcstaff.network.TrendingTag
 import ceui.lisa.jcstaff.network.User
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -118,13 +127,13 @@ fun HomeScreen(
     onSwitchAccount: (Long) -> Unit = {},
     onAddAccount: () -> Unit = {},
     recommendedViewModel: RecommendedViewModel = viewModel(),
-    trendingViewModel: TrendingViewModel = viewModel(),
+    trendingTagsViewModel: TrendingTagsViewModel = viewModel(),
     followingViewModel: FollowingViewModel = viewModel(),
     novelsViewModel: RecommendedNovelsViewModel = viewModel()
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val recommendedState by recommendedViewModel.state.collectAsState()
-    val trendingState by trendingViewModel.state.collectAsState()
+    val trendingTagsState by trendingTagsViewModel.state.collectAsState()
     val followingState by followingViewModel.state.collectAsState()
 
     val pagerState = rememberPagerState(pageCount = { 3 })
@@ -137,10 +146,9 @@ fun HomeScreen(
         selectionManager.clearSelection()
     }
 
-    // 当前页面的 illusts
+    // 当前页面的 illusts（用于选择模式）
     val currentIllusts = when (pagerState.currentPage) {
         0 -> recommendedState.illusts
-        1 -> trendingState.illusts
         2 -> followingState.illusts
         else -> emptyList()
     }
@@ -283,10 +291,9 @@ fun HomeScreen(
                     }
                 }
             ) { innerPadding ->
-                // 为三个 Tab 分别创建持久化的滚动状态
-                val recommendedGridState = rememberPersistentLazyStaggeredGridState("home_recommended")
-                val trendingGridState = rememberPersistentLazyStaggeredGridState("home_trending")
-                val followingGridState = rememberPersistentLazyStaggeredGridState("home_following")
+                // 在 Pager 外部提升滚动状态，配合 SaveableStateProvider 自动持久化
+                val recommendedGridState = rememberLazyStaggeredGridState()
+                val followingGridState = rememberLazyStaggeredGridState()
                 val novelListState = rememberLazyListState()
 
                 HorizontalPager(
@@ -306,26 +313,13 @@ fun HomeScreen(
                             novelListState = novelListState
                         )
                         1 -> {
-                            IllustGrid(
-                                illusts = trendingState.illusts,
-                                onIllustClick = { illust ->
-                                    navViewModel.navigate(NavRoute.IllustDetail(
-                                        illustId = illust.id,
-                                        title = illust.title ?: "",
-                                        previewUrl = illust.previewUrl(),
-                                        aspectRatio = illust.aspectRatio()
-                                    ))
-                                },
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedContentScope = animatedContentScope,
-                                isLoading = trendingState.isLoading,
-                                isLoadingMore = trendingState.isLoadingMore,
-                                canLoadMore = trendingState.canLoadMore,
-                                error = trendingState.error,
-                                onRefresh = { trendingViewModel.load() },
-                                onLoadMore = { trendingViewModel.loadMore() },
-                                selectionManager = selectionManager,
-                                gridState = trendingGridState
+                            TrendingTagsPage(
+                                trendingTagsState = trendingTagsState,
+                                onRefreshIllust = { trendingTagsViewModel.loadIllustTags() },
+                                onRefreshNovel = { trendingTagsViewModel.loadNovelTags() },
+                                onTagClick = { tag, initialTab ->
+                                    navViewModel.navigate(NavRoute.TagDetail(tag = tag, initialTab = initialTab))
+                                }
                             )
                         }
                         2 -> {
@@ -897,6 +891,224 @@ private fun DiscoverPage(
                     listState = novelListState
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TrendingTagsPage(
+    trendingTagsState: TrendingTagsUiState,
+    onRefreshIllust: () -> Unit,
+    onRefreshNovel: () -> Unit,
+    onTagClick: (Tag, Int) -> Unit
+) {
+    val innerPagerState = rememberPagerState(pageCount = { 2 })
+    val coroutineScope = rememberCoroutineScope()
+    // 在 Pager 外部提升 grid 滚动状态，页面切换时不会丢失
+    val illustGridState = rememberLazyGridState()
+    val novelGridState = rememberLazyGridState()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = innerPagerState.currentPage,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            Tab(
+                selected = innerPagerState.currentPage == 0,
+                onClick = {
+                    coroutineScope.launch { innerPagerState.animateScrollToPage(0) }
+                },
+                text = { Text(stringResource(R.string.tab_trending_illust)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 1,
+                onClick = {
+                    coroutineScope.launch { innerPagerState.animateScrollToPage(1) }
+                },
+                text = { Text(stringResource(R.string.tab_trending_novel)) }
+            )
+        }
+
+        HorizontalPager(
+            state = innerPagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            when (page) {
+                0 -> TrendingTagGrid(
+                    tags = trendingTagsState.illustTags,
+                    isLoading = trendingTagsState.isIllustLoading,
+                    error = trendingTagsState.illustError,
+                    onRefresh = onRefreshIllust,
+                    onTagClick = { tag -> onTagClick(tag, 0) },
+                    gridState = illustGridState
+                )
+                1 -> TrendingTagGrid(
+                    tags = trendingTagsState.novelTags,
+                    isLoading = trendingTagsState.isNovelLoading,
+                    error = trendingTagsState.novelError,
+                    onRefresh = onRefreshNovel,
+                    onTagClick = { tag -> onTagClick(tag, 1) },
+                    gridState = novelGridState
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrendingTagGrid(
+    tags: List<TrendingTag>,
+    isLoading: Boolean,
+    error: String?,
+    onRefresh: () -> Unit,
+    onTagClick: (Tag) -> Unit,
+    gridState: LazyGridState = rememberLazyGridState()
+) {
+    if (isLoading && tags.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (error != null && tags.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onRefresh),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.load_error),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        return
+    }
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        state = gridState,
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // First item spans full width
+        if (tags.isNotEmpty()) {
+            item(
+                key = "${tags[0].tag}_${tags[0].illust?.id ?: 0}_hero",
+                span = { GridItemSpan(3) }
+            ) {
+                TrendingTagCard(
+                    tag = tags[0],
+                    isFirst = true,
+                    onClick = {
+                        val navTag = Tag(
+                            name = tags[0].tag,
+                            translated_name = tags[0].translated_name
+                        )
+                        onTagClick(navTag)
+                    }
+                )
+            }
+        }
+
+        // Remaining items in 3-column grid
+        val remaining = if (tags.size > 1) tags.subList(1, tags.size) else emptyList()
+        itemsIndexed(
+            items = remaining,
+            key = { index, tag -> "${tag.tag}_${tag.illust?.id ?: (index + 1)}" }
+        ) { _, tag ->
+            TrendingTagCard(
+                tag = tag,
+                isFirst = false,
+                onClick = {
+                    val navTag = Tag(
+                        name = tag.tag,
+                        translated_name = tag.translated_name
+                    )
+                    onTagClick(navTag)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrendingTagCard(
+    tag: TrendingTag,
+    isFirst: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val imageUrl = tag.illust?.image_urls?.large
+        ?: tag.illust?.image_urls?.medium
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+    ) {
+        // Background image
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(imageUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = tag.tag,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Dark scrim overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.6f)
+                        ),
+                        startY = 0f,
+                        endY = Float.POSITIVE_INFINITY
+                    )
+                )
+        )
+
+        // Tag text
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp)
+        ) {
+            if (!tag.translated_name.isNullOrEmpty()) {
+                Text(
+                    text = tag.translated_name,
+                    style = if (isFirst) MaterialTheme.typography.bodyMedium
+                            else MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                text = "#${tag.tag ?: ""}",
+                style = if (isFirst) MaterialTheme.typography.titleMedium
+                        else MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
