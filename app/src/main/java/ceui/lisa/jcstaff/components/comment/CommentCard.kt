@@ -141,15 +141,22 @@ fun CommentCard(
 }
 
 @Composable
-fun CommentText(text: String) {
+fun CommentText(
+    text: String,
+    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyMedium,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: androidx.compose.ui.text.style.TextOverflow = androidx.compose.ui.text.style.TextOverflow.Clip
+) {
     val parts = parseCommentWithEmojis(text)
     val hasEmojis = parts.any { it is CommentPart.EmojiPart }
 
     if (!hasEmojis) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            style = style,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = maxLines,
+            overflow = overflow
         )
         return
     }
@@ -168,6 +175,9 @@ fun CommentText(text: String) {
         }
     }
 
+    val emojiSize = style.fontSize.takeIf { it != androidx.compose.ui.unit.TextUnit.Unspecified }
+        ?: 14.sp
+    val emojiSizeDp = (emojiSize.value + 6).dp
     val inlineContent = mutableMapOf<String, InlineTextContent>()
     var idx = 0
     parts.forEach { part ->
@@ -175,8 +185,8 @@ fun CommentText(text: String) {
             val emoji = part.emoji
             inlineContent["emoji_$idx"] = InlineTextContent(
                 placeholder = Placeholder(
-                    width = 24.sp,
-                    height = 24.sp,
+                    width = emojiSize * 1.5f,
+                    height = emojiSize * 1.5f,
                     placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter
                 )
             ) {
@@ -187,7 +197,7 @@ fun CommentText(text: String) {
                         .build(),
                     contentDescription = emoji.name,
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(emojiSizeDp)
                         .clip(RoundedCornerShape(4.dp))
                 )
             }
@@ -198,8 +208,10 @@ fun CommentText(text: String) {
     Text(
         text = annotatedString,
         inlineContent = inlineContent,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface
+        style = style,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = maxLines,
+        overflow = overflow
     )
 }
 
@@ -267,10 +279,9 @@ fun CompactCommentCard(
                     modifier = Modifier.height(48.dp)
                 )
             } else if (comment.comment != null) {
-                Text(
+                CommentText(
                     text = comment.comment,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
