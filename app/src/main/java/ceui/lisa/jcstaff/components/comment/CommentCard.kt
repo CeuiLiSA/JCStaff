@@ -30,6 +30,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Comment
 import ceui.lisa.jcstaff.utils.CommentPart
@@ -185,7 +186,9 @@ fun CommentText(text: String) {
                         .crossfade(true)
                         .build(),
                     contentDescription = emoji.name,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(4.dp))
                 )
             }
             idx++
@@ -212,7 +215,7 @@ fun CompactCommentCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
         AsyncImage(
@@ -251,6 +254,8 @@ fun CompactCommentCard(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(6.dp))
 
             if (comment.stamp != null) {
                 AsyncImage(
