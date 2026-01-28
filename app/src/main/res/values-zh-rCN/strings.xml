@@ -181,6 +181,8 @@
     <string name="reply_hint">回复 %1$s…</string>
     <string name="comment_hint">写下你的评论…</string>
     <string name="n_replies">%1$d 条回复</string>
+    <string name="copy_comment">复制评论</string>
+    <string name="comment_copied">评论已复制</string>
 
     <!-- Novel -->
     <string name="tab_illust">插画</string>

@@ -181,6 +181,8 @@
     <string name="reply_hint">%1$s に返信…</string>
     <string name="comment_hint">コメントを入力…</string>
     <string name="n_replies">%1$d 件の返信</string>
+    <string name="copy_comment">コメントをコピー</string>
+    <string name="comment_copied">コメントをコピーしました</string>
 
     <!-- Novel -->
     <string name="tab_illust">イラスト</string>

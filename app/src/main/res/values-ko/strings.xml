@@ -181,6 +181,8 @@
     <string name="reply_hint">%1$s에게 답글…</string>
     <string name="comment_hint">댓글을 입력하세요…</string>
     <string name="n_replies">답글 %1$d개</string>
+    <string name="copy_comment">댓글 복사</string>
+    <string name="comment_copied">댓글이 복사되었습니다</string>
 
     <!-- Novel -->
     <string name="tab_illust">일러스트</string>

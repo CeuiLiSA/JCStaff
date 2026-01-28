@@ -1,5 +1,8 @@
 package ceui.lisa.jcstaff.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -28,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -59,7 +64,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
@@ -67,6 +71,7 @@ import ceui.lisa.jcstaff.comment.CommentViewModel
 import ceui.lisa.jcstaff.components.comment.CommentCard
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.network.Comment
 import ceui.lisa.jcstaff.utils.getAllEmojis
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -90,6 +95,7 @@ fun CommentScreen(
     var inputText by rememberSaveable { mutableStateOf("") }
     var showEmojiPicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<Long?>(null) }
+    var actionMenuComment by remember { mutableStateOf<Comment?>(null) }
 
     val listState = rememberLazyListState()
 
@@ -139,6 +145,72 @@ fun CommentScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = null }) {
                     Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Long press action menu
+    actionMenuComment?.let { comment ->
+        AlertDialog(
+            onDismissRequest = { actionMenuComment = null },
+            confirmButton = {},
+            text = {
+                Column {
+                    // Copy comment
+                    if (!comment.comment.isNullOrBlank()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("comment", comment.comment))
+                                    Toast.makeText(context, context.getString(R.string.comment_copied), Toast.LENGTH_SHORT).show()
+                                    actionMenuComment = null
+                                }
+                                .padding(vertical = 14.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ContentCopy,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = stringResource(R.string.copy_comment),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    // Delete comment (only for own comments)
+                    if (comment.user.id == currentUserId) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val id = comment.id
+                                    actionMenuComment = null
+                                    showDeleteDialog = id
+                                }
+                                .padding(vertical = 14.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = stringResource(R.string.delete_comment),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
             }
         )
@@ -354,42 +426,35 @@ fun CommentScreen(
             }
 
             items(state.comments, key = { "comment_${it.id}" }) { comment ->
+                val isExpanded = state.expandedReplies.containsKey(comment.id)
+                val isLoadingReplies = state.loadingReplies.contains(comment.id)
+
                 CommentCard(
                     comment = comment,
                     currentUserId = currentUserId,
                     isChild = false,
+                    showViewReplies = comment.has_replies && !isExpanded,
                     onReply = { commentViewModel.setReplyTarget(comment) },
-                    onDelete = { showDeleteDialog = comment.id },
+                    onViewReplies = if (comment.has_replies) {
+                        { commentViewModel.expandReplies(comment.id) }
+                    } else null,
+                    onLongClick = { actionMenuComment = comment },
                     onUserClick = { userId ->
                         navViewModel.navigate(NavRoute.UserProfile(userId = userId))
                     }
                 )
 
-                // View replies button
-                if (comment.has_replies) {
-                    val isExpanded = state.expandedReplies.containsKey(comment.id)
-                    val isLoadingReplies = state.loadingReplies.contains(comment.id)
-
-                    Row(
-                        modifier = Modifier.padding(start = 68.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                // Loading replies indicator
+                if (isLoadingReplies) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 68.dp, top = 4.dp, bottom = 4.dp)
                     ) {
-                        TextButton(
-                            onClick = { commentViewModel.expandReplies(comment.id) }
-                        ) {
-                            if (isLoadingReplies) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text(
-                                text = stringResource(R.string.view_replies),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
                     }
                 }
 
@@ -402,7 +467,7 @@ fun CommentScreen(
                             currentUserId = currentUserId,
                             isChild = true,
                             onReply = { commentViewModel.setReplyTarget(reply) },
-                            onDelete = { showDeleteDialog = reply.id },
+                            onLongClick = { actionMenuComment = reply },
                             onUserClick = { userId ->
                                 navViewModel.navigate(NavRoute.UserProfile(userId = userId))
                             },

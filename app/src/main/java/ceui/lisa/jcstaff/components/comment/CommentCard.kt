@@ -1,7 +1,9 @@
 package ceui.lisa.jcstaff.components.comment
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +33,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Comment
 import ceui.lisa.jcstaff.utils.CommentPart
@@ -39,13 +41,16 @@ import ceui.lisa.jcstaff.utils.parseCommentWithEmojis
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CommentCard(
     comment: Comment,
     currentUserId: Long,
     isChild: Boolean = false,
+    showViewReplies: Boolean = false,
     onReply: () -> Unit,
-    onDelete: () -> Unit,
+    onViewReplies: (() -> Unit)? = null,
+    onLongClick: () -> Unit,
     onUserClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -55,6 +60,10 @@ fun CommentCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick
+            )
             .padding(
                 start = if (isChild) 48.dp else 16.dp,
                 end = 16.dp,
@@ -118,7 +127,10 @@ fun CommentCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 TextButton(onClick = onReply) {
                     Text(
                         text = stringResource(R.string.add_comment),
@@ -126,12 +138,12 @@ fun CommentCard(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                if (comment.user.id == currentUserId) {
-                    TextButton(onClick = onDelete) {
+                if (showViewReplies && onViewReplies != null) {
+                    TextButton(onClick = onViewReplies) {
                         Text(
-                            text = stringResource(R.string.delete_comment),
+                            text = stringResource(R.string.view_replies),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
