@@ -3,8 +3,10 @@ package ceui.lisa.jcstaff.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -44,7 +46,9 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    onLogoutClick: () -> Unit = {}
+) {
     val navViewModel = LocalNavigationViewModel.current
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
     val cornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
@@ -194,6 +198,19 @@ fun SettingsScreen() {
                     }
                 )
             }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 退出登录
+            Text(
+                text = stringResource(R.string.logout),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onLogoutClick)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+            )
         }
     }
 

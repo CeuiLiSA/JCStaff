@@ -324,7 +324,11 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                             }
 
                             is NavRoute.Settings -> {
-                                SettingsScreen()
+                                SettingsScreen(
+                                    onLogoutClick = {
+                                        authViewModel.logout()
+                                    }
+                                )
                             }
 
                             is NavRoute.ImageViewer -> {
