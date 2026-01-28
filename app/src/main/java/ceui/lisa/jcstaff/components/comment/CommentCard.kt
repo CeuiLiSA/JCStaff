@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -81,7 +82,16 @@ fun CommentCard(
             modifier = Modifier
                 .size(avatarSize)
                 .clip(CircleShape)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                .border(
+                    1.dp,
+                    Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary
+                        )
+                    ),
+                    CircleShape
+                )
                 .clickable { onUserClick(comment.user.id) }
         )
 
@@ -252,7 +262,16 @@ fun CompactCommentCard(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                .border(
+                    1.dp,
+                    Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary
+                        )
+                    ),
+                    CircleShape
+                )
         )
 
         Spacer(modifier = Modifier.width(10.dp))

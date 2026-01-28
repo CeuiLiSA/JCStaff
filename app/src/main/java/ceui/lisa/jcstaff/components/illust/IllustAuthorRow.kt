@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff.components.illust
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -70,8 +73,20 @@ fun IllustAuthorRow(
                 .crossfade(true)
                 .build(),
             contentDescription = user?.name,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(40.dp)
+                .border(
+                    1.dp,
+                    Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary
+                        )
+                    ),
+                    CircleShape
+                )
+                .padding(2.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )

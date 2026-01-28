@@ -96,12 +96,21 @@ fun IllustActionBar(
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            Icon(
-                imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = null,
-                tint = if (isBookmarked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
+            if (isBookmarking) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = if (isBookmarked) MaterialTheme.colorScheme.onErrorContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Icon(
+                    imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (isBookmarked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             Text(
                 text = formatCount(illust.total_bookmarks ?: 0),
                 style = MaterialTheme.typography.labelLarge,

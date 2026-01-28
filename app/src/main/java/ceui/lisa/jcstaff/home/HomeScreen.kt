@@ -413,8 +413,20 @@ private fun AccountAvatarSmall(
                 .crossfade(true)
                 .build(),
             contentDescription = name,
+            contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(size.dp)
+                .border(
+                    1.dp,
+                    Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary
+                        )
+                    ),
+                    CircleShape
+                )
+                .padding(2.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )

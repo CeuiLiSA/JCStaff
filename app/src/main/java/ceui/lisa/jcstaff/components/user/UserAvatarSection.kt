@@ -100,7 +100,12 @@ fun UserAvatarSection(
                         .clip(CircleShape)
                         .border(
                             width = 4.dp,
-                            color = MaterialTheme.colorScheme.surface,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary
+                                )
+                            ),
                             shape = CircleShape
                         )
                         .background(MaterialTheme.colorScheme.surfaceVariant)
