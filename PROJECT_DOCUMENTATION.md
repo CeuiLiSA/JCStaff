@@ -69,20 +69,24 @@ ceui.lisa.jcstaff/
 │   ├── HomeScreen.kt             # 首页界面（三 Tab + 抽屉）
 │   ├── RecommendedViewModel.kt   # 推荐插画
 │   ├── TrendingViewModel.kt      # 热门排行
+│   ├── TrendingTagsViewModel.kt  # 热门标签（ViewPager 轮播）
 │   ├── FollowingViewModel.kt     # 关注动态
 │   └── RecommendedNovelsViewModel.kt # 推荐小说
 ├── screens/                      # 各功能页面
-│   ├── LandingScreen.kt          # 登录引导页
+│   ├── LandingScreen.kt          # 登录引导页（3 页 ViewPager）
+│   ├── OnboardScreen.kt          # 引导页第 3 页（图片轮播+登录）
 │   ├── LanguageSelectionScreen.kt# 语言选择页
 │   ├── IllustDetailScreen.kt     # 插画详情页
 │   ├── ImageViewerScreen.kt      # 全屏图片查看器
 │   ├── NovelDetailScreen.kt      # 小说详情页
 │   ├── SearchScreen.kt           # 搜索页
-│   ├── TagDetailScreen.kt        # 标签详情页
+│   ├── TagDetailScreen.kt        # 标签详情页（插画+小说双 Tab）
 │   ├── UserProfileScreen.kt      # 用户主页
 │   ├── BookmarksScreen.kt        # 收藏列表
-│   ├── BrowseHistoryScreen.kt    # 浏览历史
-│   ├── SettingsScreen.kt         # 设置页
+│   ├── BrowseHistoryScreen.kt    # 浏览历史（插画+小说+用户三 Tab）
+│   ├── SettingsScreen.kt         # 设置页（含退出登录+账号管理入口）
+│   ├── AccountManagementScreen.kt# 账号管理页
+│   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（4 种效果）
 │   ├── ListScreen.kt             # 通用列表页
 │   └── DetailScreen.kt           # 通用详情页
 ├── components/                   # 可复用 UI 组件
@@ -94,7 +98,8 @@ ceui.lisa.jcstaff/
 │   ├── SelectionTopBar.kt        # 多选操作栏
 │   ├── ProgressiveImage.kt       # 渐进式图片
 │   ├── MetaInfoRow.kt            # 元信息行
-│   ├── ShaderBackground.kt       # AGSL 着色器背景
+│   ├── ShaderBackground.kt       # AGSL 着色器背景（含 TracedTunnel）
+│   ├── UserHistoryCard.kt        # 用户浏览历史卡片
 │   ├── illust/                   # 插画详情组件
 │   │   ├── CollapsibleImageSection.kt  # 可折叠图片区域
 │   │   ├── IllustActionBar.kt    # 收藏/下载操作栏
@@ -136,7 +141,11 @@ ceui.lisa.jcstaff/
 ### 1. 登录与认证系统
 
 #### 用户视角
-- 首次打开 App 选择语言后进入登录页
+- 首次打开 App 进入 **3 页引导流程**（HorizontalPager）：
+  - **第 1 页 — 欢迎页**：Traced Tunnel 着色器动态背景 + 渐变遮罩，展示应用名称和欢迎语
+  - **第 2 页 — 语言选择**：选择显示语言（中/繁中/英/日/韩）
+  - **第 3 页 — 登录轮播**：Pixiv 作品幻灯片背景，提供登录/注册按钮
+- 底部有页面指示器（圆点），支持左右滑动切换
 - 点击「登录」或「注册」跳转至 Pixiv 官方网页完成授权
 - 授权完成后自动返回 App，显示首页内容
 - 支持同时登录多个账号，在抽屉中切换
@@ -226,7 +235,7 @@ ceui.lisa.jcstaff/
 - **推荐 Tab**：展示 Pixiv 推荐的插画，顶部有每日排行轮播，下方有推荐插画/推荐小说的子 Tab
 - **热门 Tab**：展示每日排行榜插画
 - **关注 Tab**：展示已关注画师的最新作品
-- 左侧抽屉显示用户信息、多账号切换、快捷入口
+- 左侧抽屉显示用户信息、多账号切换、快捷入口（浏览历史、收藏、设置、Shader Demo）
 
 #### 实现原理
 
@@ -245,9 +254,10 @@ ModalNavigationDrawer（侧滑抽屉）
         └── Tab 2: IllustGrid（关注动态）
 ```
 
-**四个独立 ViewModel** 分别管理各 Tab 数据：
+**五个独立 ViewModel** 分别管理各 Tab 数据：
 - `RecommendedViewModel` — 推荐插画 + 每日排行
 - `TrendingViewModel` — 热门排行
+- `TrendingTagsViewModel` — 热门标签（横向轮播卡片）
 - `FollowingViewModel` — 关注动态
 - `RecommendedNovelsViewModel` — 推荐小说
 
@@ -344,14 +354,20 @@ ModalNavigationDrawer（侧滑抽屉）
 #### 用户视角
 - 从插画详情页点击标签进入
 - 顶部显示标签名和翻译名
-- 展示该标签下的所有作品
+- **双 Tab 页面**（HorizontalPager + TabRow）：
+  - **插画 Tab**：展示该标签下的插画作品（瀑布流）
+  - **小说 Tab**：展示该标签下的小说作品（线性列表）
+- 支持筛选条件：排序方式（Dropdown）、搜索目标（FilterChip）
+- 支持添加/移除额外标签进行组合搜索（InputChip）
 - Premium 用户可按热度排序，普通用户按时间排序
+- 可通过 `initialTab` 参数指定初始 Tab
 
 #### 实现原理
 
-- `TagDetailViewModel` 接收 `Tag` 对象
+- `TagDetailViewModel` 接收 `Tag` 对象，管理 `SearchSort`、`SearchTarget` 等筛选状态
 - 普通用户使用 `sort=date_desc`，Premium 用户使用 `sort=popular_desc`
-- 使用通用 `IllustGrid` 组件展示结果
+- 插画使用 `IllustGrid` 组件，小说使用 `NovelList` 组件
+- 导航路由 `NavRoute.TagDetail(tag, initialTab)` 支持指定打开时的初始 Tab
 
 ---
 
@@ -415,17 +431,22 @@ ModalNavigationDrawer（侧滑抽屉）
 
 #### 用户视角
 - 在抽屉菜单中进入「浏览历史」
-- 展示最近浏览过的插画，按时间排序
-- 支持多选批量下载
+- **三 Tab 页面**（HorizontalPager + TabRow）：
+  - **插画 Tab**：展示最近浏览过的插画，瀑布流展示，支持多选批量下载
+  - **小说 Tab**：展示最近浏览过的小说，线性列表展示
+  - **用户 Tab**：展示最近浏览过的用户主页，使用 `UserHistoryCard` 卡片
+- 每个 Tab 独立支持「清空历史」操作（带确认对话框）
+- 按时间排序
 
 #### 实现原理
 
 - `BrowseHistoryManager` 使用 Room 数据库记录浏览：
-  - 每次进入插画详情页时 `recordView(illust)` 写入记录
-  - 包含插画 ID、标题、预览图 URL、作者信息、时间戳
-  - 重复浏览同一作品时更新时间戳（REPLACE 策略）
+  - 每次进入插画/小说/用户详情页时分别调用对应的 `recordView()` 写入记录
+  - 包含 ID、标题、预览图 URL、作者信息、时间戳
+  - 重复浏览同一内容时更新时间戳（REPLACE 策略）
   - 启动时异步清理 30 天前的旧记录
-- `BrowseHistoryViewModel` 从数据库读取并转换为 `Illust` 对象
+- `BrowseHistoryViewModel` 管理三种历史状态：`illustState`、`novelState`、`userState`
+- 各 Tab 分别使用 `IllustHistoryPage`、`NovelHistoryPage`、`UserHistoryPage` 组件
 
 ---
 
@@ -498,10 +519,12 @@ ModalNavigationDrawer（侧滑抽屉）
 ### 15. 设置页
 
 #### 用户视角
+- 切换显示语言（弹窗选择）
 - 开关：是否在卡片上显示标题和作者名
 - 滑块：卡片圆角大小（0~24dp）
 - 开关：是否开启瀑布流间距
-- 切换显示语言
+- 账号管理入口（跳转至 AccountManagementScreen）
+- 退出登录按钮（底部红色按钮，带确认对话框）
 
 #### 实现原理
 
@@ -512,6 +535,68 @@ ModalNavigationDrawer（侧滑抽屉）
   - `selectedLanguage` — 字符串，全局语言设置
 - 每个设置项都是 `Flow`，UI 通过 `collectAsState()` 实时响应变化
 - per-user 设置和全局设置（语言）分开存储
+- 账号管理通过 `NavRoute.AccountManagement` 导航
+- 退出登录通过 `authViewModel.logout()` 回调
+
+---
+
+### 16. 账号管理页
+
+#### 用户视角
+- 从设置页点击「账号管理」进入
+- 顶部显示当前活跃账号（头像 + 用户名 + @handle + 勾选标记）
+- 下方列出其他已登录账号，点击可快速切换
+- 每个非活跃账号右侧有删除按钮，点击弹出确认对话框
+- 底部有「添加账号」入口
+
+#### 实现原理
+
+- `AccountManagementScreen` 接收 `allAccounts`、`activeUserId` 等状态
+- 使用 `LazyColumn` 展示账号列表，按活跃/非活跃分组（`SectionHeader`）
+- `AccountCard` 组件展示头像（Coil AsyncImage）、用户名、@handle
+- 删除账号通过 `AlertDialog` 确认后调用 `authViewModel.removeAccount(userId)`
+- 切换账号通过 `authViewModel.switchAccount(userId)` 触发全局会话重建
+
+---
+
+### 17. AGSL 着色器演示页
+
+#### 用户视角
+- 从首页抽屉菜单中点击「Shader Demo」进入
+- 全屏沉浸式展示，左右滑动切换不同着色器效果
+- 底部显示效果名称和页面指示器
+- 当前包含 4 种效果：
+  - **Neon Plasma** — 霓虹等离子体流动效果
+  - **Fire Storm** — 火焰风暴效果
+  - **Traced Tunnel** — 光线追踪隧道效果
+  - **Magic Circle** — 旋转发光魔法阵（多层同心圆、符文标记、六芒星/八芒星几何图案、粒子火花、能量流动）
+
+#### 实现原理
+
+- `ShaderDemoScreen.kt` 包含所有着色器 AGSL 源码（作为 `const val` 字符串常量）
+- 使用 `HorizontalPager` 实现左右滑动切换
+- `ShaderCanvas` 组件：
+  - 创建 `RuntimeShader(shaderSrc)` 实例
+  - 通过 `LaunchedEffect` + `withFrameNanos` 驱动时间变量
+  - 使用 `ShaderBrush` + `drawBehind` 进行 GPU 加速渲染（不触发 recomposition）
+  - 每帧设置 `iResolution` 和 `iTime` uniform 变量
+- 着色器算法采用 SDF（Signed Distance Field）技术绘制几何图形
+- 需要 Android 13+（`@RequiresApi(Build.VERSION_CODES.TIRAMISU)`）
+
+---
+
+### 18. 热门标签 ViewPager
+
+#### 用户视角
+- 在首页推荐 Tab 中以横向轮播展示热门标签
+- 每个标签卡片显示标签名称和预览图
+- 点击标签进入 TagDetail 页面查看该标签下的作品
+
+#### 实现原理
+
+- `TrendingTagsViewModel` 调用 API 获取热门标签列表
+- 使用 `LazyRow` 或水平滑动组件展示标签卡片
+- 点击导航至 `NavRoute.TagDetail(tag)`
 
 ---
 
@@ -536,25 +621,29 @@ class NavigationViewModel : ViewModel() {
 **优势：**
 - 使用 Compose `SnapshotStateList` 自动触发重组
 - 路由是类型安全的 `sealed interface`，参数直接嵌入
-- `AnimatedContent` 实现页面切换动画
+- `AnimatedContent` 实现页面切换动画（`fadeIn togetherWith fadeOut`）
+- `SharedTransitionLayout` 包裹全部页面，支持跨页共享元素过渡
 - `SaveableStateProvider(route.stableKey)` 保存每个页面的 UI 状态
 - 通过 `CompositionLocalProvider` 全局提供 `navViewModel`
+- `key(activeUserId)` 在账号切换时强制重建所有页面和 ViewModel
 
 **路由定义：**
 
 | 路由 | 参数 | 说明 |
 |------|------|------|
-| `Landing` | 无 | 登录引导页 |
+| `Landing` | 无 | 登录引导页（3 页 ViewPager） |
 | `Home` | 无 | 首页 |
 | `Search` | 无 | 搜索页 |
 | `IllustDetail` | illustId, title, previewUrl, aspectRatio | 插画详情 |
 | `ImageViewer` | imageUrl, originalUrl, sharedElementKey | 全屏看图 |
 | `NovelDetail` | novelId | 小说详情 |
-| `TagDetail` | tag (Tag 对象) | 标签详情 |
+| `TagDetail` | tag (Tag 对象), initialTab | 标签详情（插画+小说双 Tab） |
 | `UserProfile` | userId | 用户主页 |
 | `Bookmarks` | userId | 收藏列表 |
-| `BrowseHistory` | 无 | 浏览历史 |
+| `BrowseHistory` | 无 | 浏览历史（插画+小说+用户三 Tab） |
 | `Settings` | 无 | 设置页 |
+| `ShaderDemo` | 无 | AGSL 着色器演示 |
+| `AccountManagement` | 无 | 账号管理 |
 
 ---
 
@@ -632,11 +721,13 @@ class NavigationViewModel : ViewModel() {
 
 ---
 
-### AGSL 着色器背景
+### AGSL 着色器系统
 
-**ShaderBackground.kt** 使用 Android 13+ 的 AGSL (Android Graphics Shading Language) 实现动态背景效果：
+项目在多处使用 Android 13+ 的 AGSL (Android Graphics Shading Language) 实现 GPU 加速的动态视觉效果：
 
-**算法：**
+#### ShaderBackground.kt — 动态背景组件
+
+**`AnimatedShaderBackground`：**
 1. **Domain Warping FBM（分形布朗运动域扭曲）：**
    - 5 层 octave 的 FBM 噪声
    - 两级域扭曲：`q = fbm(uv)` → `r = fbm(uv + q)` → `f = fbm(uv + r)`
@@ -651,6 +742,18 @@ class NavigationViewModel : ViewModel() {
    - 两条螺旋缠绕的波纹线（青蓝色 + 品红色）
    - 主螺旋 + 多次谐波叠加
    - 使用 `smoothstep` 实现线条发光效果
+
+**`TracedTunnelBackground`：** 光线追踪隧道效果，用于 Landing Screen 的沉浸式动态背景。接受 `content` lambda 参数，可在着色器上层叠加 UI 内容。
+
+#### ShaderDemoScreen.kt — 着色器演示页
+
+包含 4 种独立的 AGSL 着色器效果：
+- **Neon Plasma**：正弦波叠加产生的霓虹等离子体色彩流动
+- **Fire Storm**：基于噪声的火焰模拟效果
+- **Traced Tunnel**：复用 `SHADER_TRACED_TUNNEL` 的隧道穿行效果
+- **Magic Circle**：多层旋转魔法阵，使用 SDF 绘制同心圆环、六芒星/八芒星几何、符文标记，配合粒子火花和能量流动
+
+另外还包含备用着色器常量（Voronoi、Aurora、Galaxy、Sakura Card 等），未在入口列表中启用。
 
 **降级方案：** Android 13 以下设备使用静态渐变背景作为兜底。
 
@@ -685,10 +788,13 @@ onCreate()
     └── setContent {
         └── JCStaffTheme {
             ├── !isInitialized → 空白（语言加载中）
-            ├── isLanguageSelected → AppNavigation()
-            │   ├── authState == Loading → 转圈（认证中）
-            │   └── authState == Authenticated → HomeScreen
-            └── else → LanguageSelectionScreen()
+            └── isInitialized → AppNavigation()
+                ├── authState == Loading → 转圈（认证中）
+                ├── authState == Authenticated → HomeScreen
+                └── authState == NotAuthenticated → LandingScreen
+                    ├── Page 0: 欢迎页（Traced Tunnel 背景）
+                    ├── Page 1: 语言选择
+                    └── Page 2: 登录轮播（OnboardScreen）
         }
     }
 ```
@@ -714,10 +820,12 @@ onCreate()
 
 | 指标 | 数值 |
 |------|------|
-| Kotlin 源文件数 | 86 |
-| 页面数 | 12 |
-| ViewModel 数 | 10+ |
+| Kotlin 源文件数 | 96 |
+| 页面数 | 16 |
+| ViewModel 数 | 12+ |
 | API 接口数 | 20+ |
 | 支持语言 | 5 (中/繁中/英/日/韩) |
 | Room Entity | 2 (ApiCache, BrowseHistory) |
 | OkHttp Interceptor | 4 |
+| AGSL 着色器效果 | 4 (Neon Plasma, Fire Storm, Traced Tunnel, Magic Circle) |
+| 导航路由数 | 13 |
