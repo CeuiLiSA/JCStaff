@@ -4,10 +4,8 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,15 +16,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,17 +48,31 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LanguageSelectionScreen() {
+    AnimatedShaderBackground(modifier = Modifier.fillMaxSize()) {
+        LanguageSelectionContent()
+    }
+}
+
+@Composable
+fun LanguageSelectionContent(onConfirm: () -> Unit = {}) {
     val coroutineScope = rememberCoroutineScope()
     val systemDefault = remember { AppLanguage.fromSystemLocale() }
     var selected by remember { mutableStateOf(systemDefault) }
 
-    AnimatedShaderBackground(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Dark frosted panel
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.Black.copy(alpha = 0.55f))
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Icon
             Icon(
@@ -80,6 +89,7 @@ fun LanguageSelectionScreen() {
                 text = "Select Language",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
@@ -93,79 +103,76 @@ fun LanguageSelectionScreen() {
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Language list card — glassmorphism style
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White.copy(alpha = 0.10f)
+            // Language list
+            val languages = AppLanguage.entries
+            val selectedIndex = languages.indexOf(selected)
+            val density = LocalDensity.current
+            var itemHeightPx by remember { mutableIntStateOf(0) }
+
+            val animatedOffset by animateDpAsState(
+                targetValue = with(density) { (itemHeightPx * selectedIndex).toDp() },
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
                 ),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                label = "highlightOffset"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.08f))
+                    .padding(vertical = 4.dp)
             ) {
-                val languages = AppLanguage.entries
-                val selectedIndex = languages.indexOf(selected)
-                val density = LocalDensity.current
-                var itemHeightPx by remember { mutableIntStateOf(0) }
+                // Sliding highlight indicator
+                if (itemHeightPx > 0) {
+                    Box(
+                        modifier = Modifier
+                            .offset(y = animatedOffset)
+                            .fillMaxWidth()
+                            .height(with(density) { itemHeightPx.toDp() })
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.15f))
+                    )
+                }
 
-                val animatedOffset by animateDpAsState(
-                    targetValue = with(density) { (itemHeightPx * selectedIndex).toDp() },
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    label = "highlightOffset"
-                )
-
-                Box(modifier = Modifier.padding(vertical = 4.dp)) {
-                    // Sliding highlight indicator
-                    if (itemHeightPx > 0) {
-                        Box(
-                            modifier = Modifier
-                                .offset(y = animatedOffset)
-                                .fillMaxWidth()
-                                .height(with(density) { itemHeightPx.toDp() })
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color.White.copy(alpha = 0.18f))
+                // Language items
+                Column {
+                    languages.forEach { language ->
+                        LanguageItem(
+                            language = language,
+                            isSelected = language == selected,
+                            onClick = { selected = language },
+                            onMeasured = { height ->
+                                if (itemHeightPx == 0) itemHeightPx = height
+                            }
                         )
-                    }
-
-                    // Language items
-                    Column {
-                        languages.forEach { language ->
-                            LanguageItem(
-                                language = language,
-                                isSelected = language == selected,
-                                onClick = { selected = language },
-                                onMeasured = { height ->
-                                    if (itemHeightPx == 0) itemHeightPx = height
-                                }
-                            )
-                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Confirm button
             Button(
                 onClick = {
                     coroutineScope.launch {
                         LanguageManager.setLanguage(selected)
+                        onConfirm()
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.15f),
-                    contentColor = Color.White
-                ),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                )
             ) {
                 Text(
                     text = "OK",

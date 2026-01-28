@@ -25,6 +25,9 @@
     <string name="please_login_to_continue">請登入 Pixiv 帳號以繼續</string>
     <string name="landing_welcome">探索無限創意</string>
     <string name="landing_description">發現來自全球創作者的精彩插畫作品</string>
+    <string name="welcome_headline">每一筆，都是靈感的起點</string>
+    <string name="welcome_body">數百萬來自全球創作者的插畫作品匯聚於此。瀏覽趨勢、收藏佳作、追蹤喜愛的創作者——開啟屬於你的創意之旅</string>
+    <string name="welcome_start">開始探索</string>
 
     <!-- Home Screen -->
     <string name="daily_ranking">每日排行</string>

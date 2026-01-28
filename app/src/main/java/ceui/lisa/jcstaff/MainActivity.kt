@@ -48,7 +48,6 @@ import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
-import ceui.lisa.jcstaff.screens.LanguageSelectionScreen
 import ceui.lisa.jcstaff.screens.NovelDetailScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
 import ceui.lisa.jcstaff.screens.ShaderDemoScreen
@@ -107,19 +106,15 @@ class MainActivity : AppCompatActivity() {
         setContent {
             JCStaffTheme {
                 val isInitialized by LanguageManager.isInitialized.collectAsState()
-                val isLanguageSelected by LanguageManager.isLanguageSelected.collectAsState()
-                when {
-                    !isInitialized -> {
-                        // 语言状态还在读取中，显示空白背景（不卡主线程）
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.background)
-                        )
-                    }
-
-                    isLanguageSelected -> AppNavigation(authViewModel)
-                    else -> LanguageSelectionScreen()
+                if (!isInitialized) {
+                    // 语言状态还在读取中，显示空白背景（不卡主线程）
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    )
+                } else {
+                    AppNavigation(authViewModel)
                 }
             }
         }

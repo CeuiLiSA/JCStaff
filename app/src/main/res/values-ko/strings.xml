@@ -25,6 +25,9 @@
     <string name="please_login_to_continue">계속하려면 Pixiv 계정으로 로그인하세요</string>
     <string name="landing_welcome">무한한 창의력 탐험</string>
     <string name="landing_description">전 세계 크리에이터의 멋진 일러스트를 발견하세요</string>
+    <string name="welcome_headline">모든 한 획이 영감의 시작</string>
+    <string name="welcome_body">전 세계 크리에이터의 수백만 일러스트가 한곳에. 트렌드를 탐색하고, 즐겨찾기를 저장하고, 좋아하는 아티스트를 팔로우하세요 — 나만의 창작 여정을 시작하세요</string>
+    <string name="welcome_start">시작하기</string>
 
     <!-- Home Screen -->
     <string name="daily_ranking">일간 랭킹</string>

@@ -25,6 +25,9 @@
     <string name="please_login_to_continue">続けるにはPixivアカウントでログインしてください</string>
     <string name="landing_welcome">無限の創造性を探索</string>
     <string name="landing_description">世界中のクリエイターによる素晴らしいイラストを発見</string>
+    <string name="welcome_headline">すべての筆跡が、インスピレーションの始まり</string>
+    <string name="welcome_body">世界中のクリエイターによる数百万のイラストがここに。トレンドを探索し、お気に入りを保存し、好きなアーティストをフォロー — あなたの創作の旅を始めよう</string>
+    <string name="welcome_start">はじめる</string>
 
     <!-- Home Screen -->
     <string name="daily_ranking">デイリーランキング</string>
