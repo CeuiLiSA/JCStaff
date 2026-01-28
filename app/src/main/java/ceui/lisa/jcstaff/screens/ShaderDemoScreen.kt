@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,7 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.FloatState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -507,18 +505,289 @@ half4 main(float2 fragCoord) {
 }
 """
 
+private const val SHADER_SAKURA_CARD = """
+uniform float2 iResolution;
+uniform float iTime;
+
+const float PI = 3.14159265;
+const float TAU = 6.28318530;
+
+float2 rot2(float2 p, float a) {
+    float c = cos(a), s = sin(a);
+    return float2(c*p.x - s*p.y, s*p.x + c*p.y);
+}
+float sdBox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) - r;
+}
+float sdSeg(float2 p, float2 a, float2 b) {
+    float2 pa = p - a, ba = b - a;
+    return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
+}
+float hsh(float n) { return fract(sin(n * 127.1) * 43758.5453); }
+float stroke(float d, float w) { return smoothstep(w + 0.002, w, d); }
+float fill(float d) { return smoothstep(0.003, 0.0, d); }
+
+float3 cardFront(float2 p, float cw, float ch, float rotA) {
+    float3 col = float3(0.98, 0.78, 0.84);
+    float d;
+
+    // Gold border
+    d = abs(sdBox(p, float2(cw - 0.010, ch - 0.010), 0.015));
+    col = mix(col, float3(0.78, 0.58, 0.38), stroke(d, 0.003));
+
+    // Corner ornaments
+    for (int i = 0; i < 4; i++) {
+        float sx = (i == 0 || i == 2) ? -1.0 : 1.0;
+        float sy = (i < 2) ? -1.0 : 1.0;
+        float2 cp = p - float2(sx * (cw - 0.032), sy * (ch - 0.032));
+        float cr = length(cp);
+        col = mix(col, float3(0.78, 0.58, 0.40), stroke(abs(cr - 0.016), 0.002));
+        col = mix(col, float3(0.92, 0.64, 0.72), fill(cr - 0.009));
+        col = mix(col, float3(0.78, 0.58, 0.40), fill(cr - 0.004));
+    }
+
+    // ── MAGIC CIRCLE ──
+    float2 mc = p - float2(0.0, -0.06);
+    float mr = length(mc);
+    float ma = atan(mc.y, mc.x);
+
+    // Outer thick pink ring
+    float outerR = 0.20;
+    d = abs(mr - outerR);
+    col = mix(col, float3(0.90, 0.50, 0.64), smoothstep(0.010, 0.007, d));
+    col = mix(col, float3(0.96, 0.74, 0.82), stroke(d, 0.001));
+    col = mix(col, float3(0.96, 0.74, 0.82), stroke(abs(d - 0.009), 0.001));
+
+    // Tick marks (zodiac-style)
+    float tickA = abs(fract((ma + PI) / TAU * 24.0 + 0.5) - 0.5);
+    float tickB = smoothstep(outerR, outerR - 0.001, mr)
+                * smoothstep(outerR - 0.010, outerR - 0.008, mr);
+    col = mix(col, float3(0.92, 0.64, 0.72), smoothstep(0.20, 0.15, tickA) * tickB * 0.7);
+
+    // Inner ring
+    float innerR = 0.16;
+    d = abs(mr - innerR);
+    col = mix(col, float3(0.92, 0.58, 0.68), stroke(d, 0.0015));
+    float inside = smoothstep(0.0, -0.005, mr - innerR);
+    col = mix(col, float3(0.97, 0.85, 0.90), inside * 0.35);
+
+    // 6-pointed star (golden yellow)
+    float starR = 0.13;
+    for (int tri = 0; tri < 2; tri++) {
+        float off = float(tri) * PI / 3.0;
+        for (int j = 0; j < 3; j++) {
+            float aS = off + float(j) * TAU / 3.0 - PI / 2.0;
+            float aE = off + float(j + 1) * TAU / 3.0 - PI / 2.0;
+            float ld = sdSeg(mc, float2(cos(aS), sin(aS)) * starR,
+                                 float2(cos(aE), sin(aE)) * starR);
+            col = mix(col, float3(0.96, 0.88, 0.40), stroke(ld, 0.004));
+        }
+    }
+
+    // Star hexagon fill
+    float hexA = mod(ma + PI / 6.0, PI / 3.0) - PI / 6.0;
+    float hexD = mr * cos(hexA) - starR * 0.48;
+    col = mix(col, float3(0.98, 0.93, 0.52), fill(-hexD) * inside * 0.55);
+
+    // Center bright
+    col = mix(col, float3(1.0, 0.96, 0.58), smoothstep(0.035, 0.015, mr));
+    col = mix(col, float3(1.0, 0.98, 0.78), smoothstep(0.015, 0.005, mr));
+
+    // Radial lines through star
+    for (int i = 0; i < 6; i++) {
+        float la = float(i) * PI / 3.0;
+        float ld = abs(dot(mc, float2(-sin(la), cos(la))));
+        float lm = smoothstep(innerR, innerR - 0.005, mr) * smoothstep(0.025, 0.03, mr);
+        col = mix(col, float3(0.92, 0.72, 0.78), stroke(ld, 0.001) * lm * 0.4);
+    }
+
+    // Holographic sheen (shifts with 3D rotation)
+    float holo = sin(ma * 3.0 + rotA * 2.0) * 0.5 + 0.5;
+    float holoM = smoothstep(outerR, outerR - 0.01, mr) * smoothstep(0.03, 0.04, mr);
+    col += float3(0.15, 0.08, 0.22) * holo * holoM * 0.15;
+
+    // ── MOON (left) ──
+    float2 moonP = mc - float2(-0.19, 0.0);
+    float moonR = length(moonP);
+    col = mix(col, float3(0.84, 0.52, 0.58), stroke(abs(moonR - 0.028), 0.002));
+    col = mix(col, float3(0.94, 0.72, 0.78),
+              fill(moonR - 0.024) * (1.0 - fill(length(moonP - float2(0.007, 0.0)) - 0.019)));
+
+    // ── SUN (right) ──
+    float2 sunP = mc - float2(0.19, 0.0);
+    float sunR = length(sunP);
+    float sunA = atan(sunP.y, sunP.x);
+    col = mix(col, float3(0.86, 0.62, 0.42), fill(sunR - 0.020));
+    float rayM = smoothstep(0.028, 0.020, sunR) * smoothstep(0.018, 0.022, sunR);
+    col = mix(col, float3(0.92, 0.70, 0.42), (sin(sunA * 8.0) * 0.5 + 0.5) * rayM);
+    col = mix(col, float3(0.82, 0.56, 0.38), stroke(abs(sunR - 0.028), 0.001));
+
+    // ── WINGS (top) ──
+    for (int s = 0; s < 2; s++) {
+        float sx = (s == 0) ? -1.0 : 1.0;
+        for (int f = 0; f < 4; f++) {
+            float fa = sx * (float(f) - 1.5) * 0.28;
+            float2 fc = float2(sx * (0.035 + float(f) * 0.014), -0.30);
+            float2 fp = rot2(p - fc, -fa);
+            float fl = 0.052 - abs(float(f) - 1.5) * 0.010;
+            float fw = 0.009;
+            float fd = length(fp / float2(fl, fw)) - 1.0;
+            col = mix(col, float3(1.0, 1.0, 1.0),
+                      smoothstep(0.0, -0.08, fd) * step(0.0, fp.x * sx) * 0.8);
+        }
+    }
+
+    // ── TOP STAR EMBLEM ──
+    float2 topP = p - float2(0.0, -0.33);
+    float topR = length(topP);
+    float topA = atan(topP.y, topP.x);
+    col = mix(col, float3(0.82, 0.64, 0.36), stroke(abs(topR - 0.018), 0.002));
+    col = mix(col, float3(0.96, 0.90, 0.52), fill(topR - 0.014));
+    float tsSh = cos(topA * 6.0) * 0.003 + 0.008;
+    col = mix(col, float3(0.98, 0.94, 0.45), fill(topR - tsSh));
+
+    // ── BOTTOM CRESCENT MOON ──
+    float2 botP = p - float2(0.0, 0.26);
+    float botR = length(botP);
+    col = mix(col, float3(0.82, 0.62, 0.42), stroke(abs(botR - 0.038), 0.002));
+    col = mix(col, float3(0.92, 0.74, 0.54), fill(botR - 0.034));
+    col = mix(col, float3(0.98, 0.78, 0.84),
+              fill(-(length(botP - float2(0.0, -0.012)) - 0.028)) * fill(botR - 0.006));
+
+    // ── WINGS (bottom) ──
+    for (int s = 0; s < 2; s++) {
+        float sx = (s == 0) ? -1.0 : 1.0;
+        for (int f = 0; f < 4; f++) {
+            float fa = sx * (float(f) - 1.5) * 0.28;
+            float2 fc = float2(sx * (0.035 + float(f) * 0.014), 0.30);
+            float2 fp = rot2(p - fc, fa);
+            float fl = 0.052 - abs(float(f) - 1.5) * 0.010;
+            float fw = 0.009;
+            float fd = length(fp / float2(fl, fw)) - 1.0;
+            col = mix(col, float3(1.0, 1.0, 1.0),
+                      smoothstep(0.0, -0.08, fd) * step(0.0, fp.x * sx) * 0.8);
+        }
+    }
+
+    // ── SAKURA BANNER ──
+    float2 banP = p - float2(0.0, 0.36);
+    float banD = sdBox(banP, float2(0.09, 0.013), 0.004);
+    col = mix(col, float3(0.78, 0.58, 0.38), stroke(abs(banD), 0.002));
+    col = mix(col, float3(0.85, 0.66, 0.44), fill(-banD));
+    // Letter placeholders
+    for (int i = 0; i < 6; i++) {
+        float2 lp = banP - float2((float(i) - 2.5) * 0.022, 0.0);
+        col = mix(col, float3(0.32, 0.20, 0.12),
+                  fill(max(abs(lp.x) - 0.005, abs(lp.y) - 0.007)));
+    }
+
+    return col;
+}
+
+float3 cardBack(float2 p, float cw, float ch) {
+    float3 col = float3(0.90, 0.58, 0.68);
+
+    // Gold border
+    float border = abs(sdBox(p, float2(cw - 0.010, ch - 0.010), 0.015));
+    col = mix(col, float3(0.78, 0.58, 0.38), stroke(border, 0.003));
+
+    // Inner lighter area
+    float inner = sdBox(p, float2(cw - 0.022, ch - 0.022), 0.012);
+    col = mix(col, float3(0.94, 0.65, 0.74), fill(-inner));
+
+    // Diamond lattice
+    float2 dp = p * 28.0;
+    float diamonds = abs(fract(dp.x + dp.y) - 0.5) + abs(fract(dp.x - dp.y) - 0.5);
+    col = mix(col, float3(0.96, 0.74, 0.82),
+              smoothstep(0.06, 0.0, abs(diamonds - 0.5)) * 0.35 * fill(-inner));
+
+    // Central medallion
+    float mr = length(p);
+    float ma = atan(p.y, p.x);
+    col = mix(col, float3(0.78, 0.56, 0.40), stroke(abs(mr - 0.15), 0.002));
+    float starSh = cos(ma * 4.0) * 0.03 + 0.11;
+    col = mix(col, float3(0.96, 0.78, 0.84), fill(mr - starSh) * fill(-mr + 0.15));
+    col = mix(col, float3(0.78, 0.56, 0.40), stroke(abs(mr - 0.06), 0.002));
+    col = mix(col, float3(0.94, 0.70, 0.78), fill(mr - 0.04));
+    float ctrStar = cos(ma * 8.0) * 0.004 + 0.018;
+    col = mix(col, float3(0.82, 0.60, 0.44), fill(mr - ctrStar));
+
+    return col;
+}
+
+half4 main(float2 fragCoord) {
+    float2 uv = (fragCoord - 0.5 * iResolution) / iResolution.y;
+    float t = iTime;
+
+    // Y-axis rotation with gentle bobbing
+    float angle = t * 0.7;
+    float ca = cos(angle);
+    float sa = sin(angle);
+    float bob = sin(t * 0.5) * 0.01;
+    float2 uvShift = float2(uv.x, uv.y - bob);
+
+    float camD = 2.2;
+    float cw = 0.24;
+    float ch = 0.42;
+
+    // Background
+    float3 bg = mix(float3(0.06, 0.03, 0.14), float3(0.04, 0.02, 0.10), uvShift.y + 0.5);
+    // Sparkle particles
+    float sp = hsh(floor(uv.x * 60.0) * 100.0 + floor(uv.y * 60.0));
+    sp = step(0.996, sp) * (0.3 + 0.3 * sin(t * 3.0 + sp * 100.0));
+    bg += float3(0.6, 0.3, 0.7) * sp;
+
+    // Inverse perspective mapping
+    float denom = ca - uvShift.x * sa / camD;
+    if (abs(denom) < 0.0005) return half4(half3(bg), 1.0);
+
+    float cardX = uvShift.x / denom;
+    float depth = 1.0 + cardX * sa / camD;
+    float cardY = uvShift.y * depth;
+    if (depth <= 0.0) return half4(half3(bg), 1.0);
+
+    float cardD = sdBox(float2(cardX, cardY), float2(cw, ch), 0.018);
+    if (cardD > 0.004) {
+        // Glow + shadow
+        float glow = smoothstep(0.06, 0.0, cardD);
+        bg += float3(0.9, 0.5, 0.7) * glow * 0.12;
+        return half4(half3(bg), 1.0);
+    }
+
+    // Determine face
+    bool isFront = denom > 0.0;
+    float2 cp = float2(isFront ? cardX : -cardX, cardY);
+
+    float3 col;
+    if (isFront) {
+        col = cardFront(cp, cw, ch, angle);
+    } else {
+        col = cardBack(cp, cw, ch);
+    }
+
+    // Lighting
+    float facing = abs(ca);
+    col *= 0.72 + 0.28 * facing;
+    col += float3(1.0, 0.95, 0.98) * pow(facing, 6.0) * 0.18;
+
+    // Card edge
+    float edgeF = smoothstep(0.004, 0.0, cardD) * smoothstep(-0.004, 0.0, cardD);
+    col = mix(col, float3(0.96, 0.92, 0.88), edgeF * (1.0 - facing) * 0.5);
+
+    return half4(half3(col), 1.0);
+}
+"""
+
 // endregion
 
 private data class ShaderEntry(val title: String, val source: String)
 
 private val shaderEntries = listOf(
     ShaderEntry("Neon Plasma", SHADER_NEON_PLASMA),
-    ShaderEntry("Voronoi Cells", SHADER_VORONOI),
-    ShaderEntry("Aurora Borealis", SHADER_AURORA),
     ShaderEntry("Fire Storm", SHADER_FIRE),
-    ShaderEntry("Galaxy Spiral", SHADER_GALAXY),
     ShaderEntry("Traced Tunnel", SHADER_TRACED_TUNNEL),
-    ShaderEntry("Magic Circle", SHADER_MAGIC_CIRCLE)
+    ShaderEntry("Magic Circle", SHADER_MAGIC_CIRCLE),
 )
 
 @Composable
@@ -528,7 +797,9 @@ fun ShaderDemoScreen() {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
