@@ -166,6 +166,22 @@
     <string name="account_switched">%1$s(으)로 전환했습니다</string>
     <string name="last_account_warning">마지막 계정입니다. 삭제하면 로그인 화면으로 돌아갑니다.</string>
 
+    <!-- Comments -->
+    <string name="comments">댓글</string>
+    <string name="no_comments">댓글이 없습니다</string>
+    <string name="add_comment">댓글 작성</string>
+    <string name="reply_to">%1$s에게 답글</string>
+    <string name="view_replies">답글 보기</string>
+    <string name="view_all_comments">모든 댓글 보기</string>
+    <string name="delete_comment">댓글 삭제</string>
+    <string name="delete_comment_confirm">이 댓글을 삭제하시겠습니까?</string>
+    <string name="comment_deleted">댓글이 삭제되었습니다</string>
+    <string name="comment_posted">댓글이 게시되었습니다</string>
+    <string name="comment_failed">댓글 실패</string>
+    <string name="reply_hint">%1$s에게 답글…</string>
+    <string name="comment_hint">댓글을 입력하세요…</string>
+    <string name="n_replies">답글 %1$d개</string>
+
     <!-- Novel -->
     <string name="tab_illust">일러스트</string>
     <string name="tab_novel">소설</string>

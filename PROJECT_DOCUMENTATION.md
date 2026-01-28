@@ -86,6 +86,7 @@ ceui.lisa.jcstaff/
 │   ├── BrowseHistoryScreen.kt    # 浏览历史（插画+小说+用户三 Tab）
 │   ├── SettingsScreen.kt         # 设置页（含退出登录+账号管理入口）
 │   ├── AccountManagementScreen.kt# 账号管理页
+│   ├── CommentScreen.kt          # 评论页（完整评论列表+回复+发布）
 │   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（4 种效果）
 │   ├── ListScreen.kt             # 通用列表页
 │   └── DetailScreen.kt           # 通用详情页
@@ -107,6 +108,9 @@ ceui.lisa.jcstaff/
 │   │   ├── IllustCaption.kt      # 作品简介
 │   │   ├── IllustMetaInfo.kt     # 元数据（尺寸、日期等）
 │   │   └── IllustTags.kt         # 标签流
+│   ├── comment/                  # 评论组件
+│   │   ├── CommentCard.kt        # 评论卡片（完整版+紧凑版）
+│   │   └── CommentPreview.kt     # 评论预览区（详情页嵌入）
 │   ├── novel/                    # 小说组件
 │   │   └── NovelActionBar.kt     # 小说操作栏
 │   └── user/                     # 用户组件
@@ -118,6 +122,8 @@ ceui.lisa.jcstaff/
 │       ├── UserWorkspaceCard.kt  # 工作环境卡片
 │       ├── WorkspaceRow.kt       # 工作环境行
 │       └── StatItem.kt           # 统计项
+├── comment/                      # 评论系统
+│   └── CommentViewModel.kt      # 评论业务逻辑与状态管理
 ├── search/                       # 搜索模块
 │   └── SearchViewModel.kt        # 搜索逻辑
 ├── profile/                      # 用户主页模块
@@ -131,7 +137,8 @@ ceui.lisa.jcstaff/
 │   ├── Theme.kt                  # 主题配置
 │   └── Type.kt                   # 字体排版
 └── utils/                        # 工具类
-    └── Formatters.kt             # 格式化工具
+    ├── Formatters.kt             # 格式化工具
+    └── EmojiUtils.kt             # Pixiv 评论表情工具
 ```
 
 ---
@@ -600,6 +607,46 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
+### 19. 评论系统
+
+#### 用户视角
+- 在插画详情页和小说详情页底部显示评论预览（最多 3 条）
+- 点击「查看全部评论」进入完整评论页面
+- 支持发表评论、回复他人评论、删除自己的评论
+- 评论中支持 Pixiv 表情（38 种），通过表情选择器插入
+- 评论支持查看子回复（展开/折叠）
+- 删除评论需确认对话框
+
+#### 实现原理
+
+**评论 API 端点：**
+- `GET /v3/illust/comments` — 获取插画评论
+- `GET /v3/novel/comments` — 获取小说评论
+- `GET /v2/{type}/comment/replies` — 获取回复评论
+- `POST /v1/illust/comment/add` — 发表插画评论
+- `POST /v1/novel/comment/add` — 发表小说评论
+- `POST /v1/{type}/comment/delete` — 删除评论
+- `GET next_url` — 评论分页加载
+
+**缓存策略：**
+- `CommentViewModel.commentsCache` 使用 `MutableMap<String, List<Comment>>` 缓存评论列表
+- 详情页的 `CommentPreviewSection` 预取并缓存第一页评论
+- 进入完整评论页时复用缓存，避免重复请求
+
+**表情系统：**
+- `EmojiUtils.kt` 定义 38 种 Pixiv 表情，映射名称到 PNG 资源文件
+- 表情 URL 格式：`https://s.pximg.net/common/images/emoji/{code}.png`
+- `parseCommentWithEmojis()` 使用正则解析评论文本为文字和表情片段
+- 使用 Compose `InlineTextContent` 实现文字中内联表情图片
+
+**MD3 设计规范：**
+- 评论卡片：40dp 头像 + 用户名 + 相对时间 + 评论内容/贴图
+- 子回复：48dp 左缩进、32dp 头像、`surfaceContainerLow` 背景
+- 底部输入栏：表情选择器 + 文本框 + 发送按钮
+- 表情选择器：6 列网格、48dp 单元格、`surfaceContainerHigh` 背景
+
+---
+
 ## 架构深入解析
 
 ### 导航系统
@@ -644,6 +691,7 @@ class NavigationViewModel : ViewModel() {
 | `Settings` | 无 | 设置页 |
 | `ShaderDemo` | 无 | AGSL 着色器演示 |
 | `AccountManagement` | 无 | 账号管理 |
+| `CommentDetail` | objectId, objectType | 评论页面（插画/小说共用） |
 
 ---
 
@@ -820,12 +868,12 @@ onCreate()
 
 | 指标 | 数值 |
 |------|------|
-| Kotlin 源文件数 | 96 |
-| 页面数 | 16 |
-| ViewModel 数 | 12+ |
-| API 接口数 | 20+ |
+| Kotlin 源文件数 | 101 |
+| 页面数 | 17 |
+| ViewModel 数 | 13+ |
+| API 接口数 | 27+ |
 | 支持语言 | 5 (中/繁中/英/日/韩) |
 | Room Entity | 2 (ApiCache, BrowseHistory) |
 | OkHttp Interceptor | 4 |
 | AGSL 着色器效果 | 4 (Neon Plasma, Fire Storm, Traced Tunnel, Magic Circle) |
-| 导航路由数 | 13 |
+| 导航路由数 | 14 |

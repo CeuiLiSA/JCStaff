@@ -46,6 +46,7 @@ import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.screens.AccountManagementScreen
 import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
+import ceui.lisa.jcstaff.screens.CommentScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
@@ -369,6 +370,15 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                     onSwitchAccount = { userId ->
                                         authViewModel.switchAccount(userId)
                                     }
+                                )
+                            }
+
+                            is NavRoute.CommentDetail -> {
+                                val currentUserId = (authState as? AuthState.Authenticated)?.user?.id ?: 0L
+                                CommentScreen(
+                                    objectId = route.objectId,
+                                    objectType = route.objectType,
+                                    currentUserId = currentUserId
                                 )
                             }
                         }

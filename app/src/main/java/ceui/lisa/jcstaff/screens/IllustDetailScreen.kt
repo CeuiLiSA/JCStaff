@@ -43,6 +43,7 @@ import ceui.lisa.jcstaff.cache.BrowseHistoryManager
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
+import ceui.lisa.jcstaff.components.comment.CommentPreviewSection
 import ceui.lisa.jcstaff.components.illust.CollapsibleImageSection
 import ceui.lisa.jcstaff.components.illust.IllustActionBar
 import ceui.lisa.jcstaff.components.illust.IllustAuthorRow
@@ -297,6 +298,20 @@ fun IllustDetailScreen(
                     // 元信息区域
                     item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
                         IllustMetaInfo(illust = loadedIllust)
+                    }
+
+                    // 评论预览
+                    item(key = "comment_preview", span = StaggeredGridItemSpan.FullLine) {
+                        CommentPreviewSection(
+                            objectId = illustId,
+                            objectType = "illust",
+                            onViewAll = {
+                                navViewModel.navigate(NavRoute.CommentDetail(
+                                    objectId = illustId,
+                                    objectType = "illust"
+                                ))
+                            }
+                        )
                     }
                 }
 

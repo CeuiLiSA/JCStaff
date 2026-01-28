@@ -54,4 +54,10 @@ sealed interface NavRoute {
     data object AccountManagement : NavRoute {
         override val stableKey = "AccountManagement"
     }
+    data class CommentDetail(
+        val objectId: Long,
+        val objectType: String  // "illust" or "novel"
+    ) : NavRoute {
+        override val stableKey = "CommentDetail_${objectType}_$objectId"
+    }
 }

@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.components.comment.CommentPreviewSection
 import ceui.lisa.jcstaff.components.illust.IllustAuthorRow
 import ceui.lisa.jcstaff.components.illust.IllustCaption
 import ceui.lisa.jcstaff.components.illust.IllustTags
@@ -266,6 +267,18 @@ fun NovelDetailScreen(
                 IllustCaption(caption = loadedNovel.caption)
                 Spacer(modifier = Modifier.height(16.dp))
             }
+
+            // Comment preview
+            CommentPreviewSection(
+                objectId = novelId,
+                objectType = "novel",
+                onViewAll = {
+                    navViewModel.navigate(NavRoute.CommentDetail(
+                        objectId = novelId,
+                        objectType = "novel"
+                    ))
+                }
+            )
 
             // Bottom spacing
             Spacer(modifier = Modifier.height(32.dp))

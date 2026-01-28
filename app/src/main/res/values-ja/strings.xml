@@ -166,6 +166,22 @@
     <string name="account_switched">%1$s に切り替えました</string>
     <string name="last_account_warning">これが最後のアカウントです。削除するとログイン画面に戻ります。</string>
 
+    <!-- Comments -->
+    <string name="comments">コメント</string>
+    <string name="no_comments">コメントはありません</string>
+    <string name="add_comment">コメントする</string>
+    <string name="reply_to">%1$s に返信</string>
+    <string name="view_replies">返信を見る</string>
+    <string name="view_all_comments">すべてのコメントを見る</string>
+    <string name="delete_comment">コメントを削除</string>
+    <string name="delete_comment_confirm">このコメントを削除しますか？</string>
+    <string name="comment_deleted">コメントを削除しました</string>
+    <string name="comment_posted">コメントを投稿しました</string>
+    <string name="comment_failed">コメントの投稿に失敗</string>
+    <string name="reply_hint">%1$s に返信…</string>
+    <string name="comment_hint">コメントを入力…</string>
+    <string name="n_replies">%1$d 件の返信</string>
+
     <!-- Novel -->
     <string name="tab_illust">イラスト</string>
     <string name="tab_novel">小説</string>

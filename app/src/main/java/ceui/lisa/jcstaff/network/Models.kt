@@ -265,3 +265,26 @@ data class Workspace(
     val comment: String? = null,
     val workspace_image_url: String? = null
 ) : Serializable
+
+data class Comment(
+    val comment: String? = null,
+    val date: String? = null,
+    val has_replies: Boolean = false,
+    val id: Long = 0,
+    val stamp: Stamp? = null,
+    val user: User = User()
+) : Serializable
+
+data class Stamp(
+    val stamp_id: Long = 0,
+    val stamp_url: String? = null
+) : Serializable
+
+data class CommentResponse(
+    val comments: List<Comment> = listOf(),
+    val next_url: String? = null
+) : Serializable
+
+data class PostCommentResponse(
+    val comment: Comment? = null
+) : Serializable

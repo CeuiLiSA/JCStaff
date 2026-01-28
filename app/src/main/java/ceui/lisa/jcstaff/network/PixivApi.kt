@@ -4,6 +4,7 @@ import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Url
 
@@ -174,6 +175,47 @@ interface PixivApi {
         @Field("novel_id") novelId: Long
     ): Unit
 
+    // ===== Comment Endpoints =====
+
+    @GET("/v3/illust/comments")
+    suspend fun getIllustComments(
+        @Query("illust_id") illustId: Long
+    ): CommentResponse
+
+    @GET("/v3/novel/comments")
+    suspend fun getNovelComments(
+        @Query("novel_id") novelId: Long
+    ): CommentResponse
+
+    @GET("/v2/{type}/comment/replies")
+    suspend fun getCommentReplies(
+        @Path("type") type: String,
+        @Query("comment_id") commentId: Long
+    ): CommentResponse
+
+    @FormUrlEncoded
+    @POST("/v1/illust/comment/add")
+    suspend fun postIllustComment(
+        @Field("illust_id") illustId: Long,
+        @Field("comment") comment: String,
+        @Field("parent_comment_id") parentCommentId: Long? = null
+    ): PostCommentResponse
+
+    @FormUrlEncoded
+    @POST("/v1/novel/comment/add")
+    suspend fun postNovelComment(
+        @Field("novel_id") novelId: Long,
+        @Field("comment") comment: String,
+        @Field("parent_comment_id") parentCommentId: Long? = null
+    ): PostCommentResponse
+
+    @FormUrlEncoded
+    @POST("/v1/{type}/comment/delete")
+    suspend fun deleteComment(
+        @Path("type") type: String,
+        @Field("comment_id") commentId: Long
+    ): Unit
+
     /**
      * 通用 GET 请求，用于加载 next_url 分页
      */
@@ -185,4 +227,7 @@ interface PixivApi {
 
     @GET
     suspend fun getNextPageNovels(@Url nextUrl: String): NovelResponse
+
+    @GET
+    suspend fun getNextPageComments(@Url nextUrl: String): CommentResponse
 }

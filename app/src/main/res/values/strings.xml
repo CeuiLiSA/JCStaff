@@ -175,6 +175,22 @@
     <string name="confirm">确定</string>
     <string name="last_account_warning">这是最后一个账号，移除后将返回登录页面。</string>
 
+    <!-- Comments -->
+    <string name="comments">评论</string>
+    <string name="no_comments">暂无评论</string>
+    <string name="add_comment">发表评论</string>
+    <string name="reply_to">回复 %1$s</string>
+    <string name="view_replies">查看回复</string>
+    <string name="view_all_comments">查看全部评论</string>
+    <string name="delete_comment">删除评论</string>
+    <string name="delete_comment_confirm">确定要删除这条评论吗？</string>
+    <string name="comment_deleted">评论已删除</string>
+    <string name="comment_posted">评论已发布</string>
+    <string name="comment_failed">评论失败</string>
+    <string name="reply_hint">回复 %1$s…</string>
+    <string name="comment_hint">写下你的评论…</string>
+    <string name="n_replies">%1$d 条回复</string>
+
     <!-- Novel -->
     <string name="tab_illust">插画</string>
     <string name="tab_novel">小说</string>
