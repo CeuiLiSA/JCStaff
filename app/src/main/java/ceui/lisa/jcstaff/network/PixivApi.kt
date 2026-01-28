@@ -115,6 +115,24 @@ interface PixivApi {
         @Field("user_id") userId: Long
     ): Unit
 
+    @GET("/v1/search/popular-preview/illust")
+    suspend fun popularPreviewIllusts(
+        @Query("word") word: String,
+        @Query("search_target") searchTarget: String = "partial_match_for_tags",
+        @Query("filter") filter: String = "for_ios",
+        @Query("include_translated_tag_results") includeTranslatedTagResults: Boolean = true,
+        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
+    ): IllustResponse
+
+    @GET("/v1/search/popular-preview/novel")
+    suspend fun popularPreviewNovels(
+        @Query("word") word: String,
+        @Query("search_target") searchTarget: String = "partial_match_for_tags",
+        @Query("filter") filter: String = "for_ios",
+        @Query("include_translated_tag_results") includeTranslatedTagResults: Boolean = true,
+        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
+    ): NovelResponse
+
     @GET("/v1/search/novel")
     suspend fun searchNovels(
         @Query("word") word: String,

@@ -353,7 +353,11 @@ private fun SearchFilterBar(
                 onDismissRequest = { sortExpanded = false }
             ) {
                 SearchSort.entries.forEach { option ->
-                    val enabled = !option.premiumOnly || isPremium
+                    val enabled = when {
+                        option.premiumOnly -> isPremium
+                        option.nonPremiumOnly -> !isPremium
+                        else -> true
+                    }
                     DropdownMenuItem(
                         text = {
                             Text(
@@ -370,7 +374,9 @@ private fun SearchFilterBar(
                                 sortExpanded = false
                             } else {
                                 sortExpanded = false
-                                onPremiumRequired()
+                                if (option.premiumOnly) {
+                                    onPremiumRequired()
+                                }
                             }
                         }
                     )

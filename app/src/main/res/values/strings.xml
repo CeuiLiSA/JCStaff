@@ -141,6 +141,7 @@
     <string name="coming_soon">即将推出</string>
     <string name="add_tag">添加标签</string>
     <string name="enter_tag_name">输入标签名称</string>
+    <string name="sort_popular_preview">热度预览</string>
     <string name="sort_date_desc">最新</string>
     <string name="sort_date_asc">最旧</string>
     <string name="sort_popular_desc">热度</string>

@@ -17,8 +17,10 @@ import kotlinx.coroutines.launch
 enum class SearchSort(
     val apiValue: String,
     @StringRes val labelRes: Int,
-    val premiumOnly: Boolean = false
+    val premiumOnly: Boolean = false,
+    val nonPremiumOnly: Boolean = false
 ) {
+    POPULAR_PREVIEW("popular_preview", R.string.sort_popular_preview, nonPremiumOnly = true),
     DATE_DESC("date_desc", R.string.sort_date_desc),
     DATE_ASC("date_asc", R.string.sort_date_asc),
     POPULAR_DESC("popular_desc", R.string.sort_popular_desc, premiumOnly = true),
@@ -71,7 +73,7 @@ class TagDetailViewModel : ViewModel() {
     fun init(initialTag: Tag, isPremium: Boolean = false) {
         if (isInitialized) return
         isInitialized = true
-        val defaultSort = if (isPremium) SearchSort.POPULAR_DESC else SearchSort.DATE_DESC
+        val defaultSort = if (isPremium) SearchSort.POPULAR_DESC else SearchSort.POPULAR_PREVIEW
         _state.value = _state.value.copy(
             tags = listOf(initialTag),
             sort = defaultSort,
@@ -135,11 +137,18 @@ class TagDetailViewModel : ViewModel() {
             )
 
             try {
-                val response = PixivClient.pixivApi.searchIllusts(
-                    word = word,
-                    sort = _state.value.sort.apiValue,
-                    searchTarget = _state.value.searchTarget.apiValue
-                )
+                val response = if (_state.value.sort == SearchSort.POPULAR_PREVIEW) {
+                    PixivClient.pixivApi.popularPreviewIllusts(
+                        word = word,
+                        searchTarget = _state.value.searchTarget.apiValue
+                    )
+                } else {
+                    PixivClient.pixivApi.searchIllusts(
+                        word = word,
+                        sort = _state.value.sort.apiValue,
+                        searchTarget = _state.value.searchTarget.apiValue
+                    )
+                }
                 storeIllusts(response.illusts)
                 _state.value = _state.value.copy(
                     illusts = response.illusts,
@@ -168,11 +177,18 @@ class TagDetailViewModel : ViewModel() {
             )
 
             try {
-                val response = PixivClient.pixivApi.searchNovels(
-                    word = word,
-                    sort = _state.value.novelSort.apiValue,
-                    searchTarget = _state.value.novelSearchTarget.apiValue
-                )
+                val response = if (_state.value.novelSort == SearchSort.POPULAR_PREVIEW) {
+                    PixivClient.pixivApi.popularPreviewNovels(
+                        word = word,
+                        searchTarget = _state.value.novelSearchTarget.apiValue
+                    )
+                } else {
+                    PixivClient.pixivApi.searchNovels(
+                        word = word,
+                        sort = _state.value.novelSort.apiValue,
+                        searchTarget = _state.value.novelSearchTarget.apiValue
+                    )
+                }
                 storeNovels(response.novels)
                 _state.value = _state.value.copy(
                     novels = response.novels,
