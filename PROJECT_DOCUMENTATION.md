@@ -66,12 +66,17 @@ ceui.lisa.jcstaff/
 │   ├── NavRoutes.kt              # 路由定义
 │   └── NavigationViewModel.kt    # 导航栈管理
 ├── home/                         # 首页
-│   ├── HomeScreen.kt             # 首页界面（三 Tab + 抽屉）
-│   ├── RecommendedViewModel.kt   # 推荐插画
-│   ├── TrendingViewModel.kt      # 热门排行
-│   ├── TrendingTagsViewModel.kt  # 热门标签（ViewPager 轮播）
-│   ├── FollowingViewModel.kt     # 关注动态
-│   └── RecommendedNovelsViewModel.kt # 推荐小说
+│   ├── HomeScreen.kt             # 首页界面（三 Tab + 抽屉 + 嵌套 ViewPager）
+│   ├── RecommendedViewModel.kt   # 推荐插画（旧版，保留兼容）
+│   ├── RecommendedContentViewModel.kt # 推荐插画/漫画（带 contentType 参数）
+│   ├── RecommendedNovelsViewModel.kt # 推荐小说
+│   ├── RecommendedUsersViewModel.kt  # 推荐作者
+│   ├── TrendingViewModel.kt      # 热门排行（旧版）
+│   ├── TrendingTagsViewModel.kt  # 热门标签（插画漫画 + 小说）
+│   ├── FollowingViewModel.kt     # 关注的插画/漫画新作
+│   ├── FollowingNovelsViewModel.kt   # 关注的小说新作
+│   ├── LatestContentViewModel.kt # 全站最新插画/漫画/小说
+│   └── RankingViewModel.kt       # 排行榜详情
 ├── screens/                      # 各功能页面
 │   ├── LandingScreen.kt          # 登录引导页（3 页 ViewPager）
 │   ├── OnboardScreen.kt          # 引导页第 3 页（图片轮播+登录）
@@ -87,6 +92,7 @@ ceui.lisa.jcstaff/
 │   ├── SettingsScreen.kt         # 设置页（含退出登录+账号管理入口）
 │   ├── AccountManagementScreen.kt# 账号管理页
 │   ├── CommentScreen.kt          # 评论页（完整评论列表+回复+发布）
+│   ├── RankingDetailScreen.kt    # 排行榜详情页（多模式 + 日期选择）
 │   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（4 种效果）
 │   ├── ListScreen.kt             # 通用列表页
 │   └── DetailScreen.kt           # 通用详情页
@@ -239,9 +245,19 @@ ceui.lisa.jcstaff/
 ### 3. 首页（三 Tab + 抽屉）
 
 #### 用户视角
-- **推荐 Tab**：展示 Pixiv 推荐的插画，顶部有每日排行轮播，下方有推荐插画/推荐小说的子 Tab
-- **热门 Tab**：展示每日排行榜插画
-- **关注 Tab**：展示已关注画师的最新作品
+- **推荐 Tab**：展示 Pixiv 推荐内容，包含三个子 Tab：
+  - **插画**：顶部排行榜轮播（可点击进入完整排行榜）+ 瀑布流推荐
+  - **漫画**：顶部排行榜轮播 + 瀑布流推荐
+  - **小说**：小说推荐列表
+- **发现 Tab**：探索入口，包含三个子 Tab：
+  - **插画漫画标签**：热门标签网格（首个全宽展示）
+  - **小说标签**：小说热门标签网格
+  - **推荐作者**：可能喜欢的作者列表（含示例作品）
+- **新作 Tab**：基于时间线的最新内容，包含四个子 Tab：
+  - **关注插画漫画**：已关注画师的最新插画/漫画
+  - **关注小说**：已关注作者的最新小说
+  - **最新插画漫画**：全站最新插画/漫画
+  - **最新小说**：全站最新小说
 - 左侧抽屉显示用户信息、多账号切换、快捷入口（浏览历史、收藏、设置、Shader Demo）
 
 #### 实现原理
@@ -251,24 +267,58 @@ ceui.lisa.jcstaff/
 ModalNavigationDrawer（侧滑抽屉）
 └── Scaffold
     ├── TopAppBar（用户头像 + 搜索按钮）
-    ├── BottomNavigation（推荐 / 热门 / 关注）
-    └── HorizontalPager（三个 Tab 页面）
-        ├── Tab 0: DiscoverPage
-        │   └── HorizontalPager（插画 / 小说 子Tab）
-        │       ├── IllustGrid + RankingCarousel
-        │       └── NovelList
-        ├── Tab 1: IllustGrid（热门排行）
-        └── Tab 2: IllustGrid（关注动态）
+    ├── BottomNavigation（推荐 / 发现 / 新作）
+    └── HorizontalPager（三个 Tab 页面，userScrollEnabled=false）
+        ├── Tab 0: RecommendedTabPage
+        │   └── HorizontalPager（插画 / 漫画 / 小说）
+        │       ├── IllustGrid + RankingCarousel（插画）
+        │       ├── IllustGrid + RankingCarousel（漫画）
+        │       └── NovelList（小说）
+        ├── Tab 1: DiscoverTabPage
+        │   └── HorizontalPager（插画漫画标签 / 小说标签 / 推荐作者）
+        │       ├── TrendingTagGrid（插画漫画）
+        │       ├── TrendingTagGrid（小说）
+        │       └── RecommendedUsersList
+        └── Tab 2: NewWorksTabPage
+            └── HorizontalPager（关注插画漫画 / 关注小说 / 最新插画漫画 / 最新小说）
+                ├── IllustGrid（关注插画漫画）
+                ├── NovelList（关注小说）
+                ├── IllustGrid（最新插画漫画）
+                └── NovelList（最新小说）
 ```
 
-**五个独立 ViewModel** 分别管理各 Tab 数据：
-- `RecommendedViewModel` — 推荐插画 + 每日排行
-- `TrendingViewModel` — 热门排行
-- `TrendingTagsViewModel` — 热门标签（横向轮播卡片）
-- `FollowingViewModel` — 关注动态
+**多个独立 ViewModel** 分别管理各页面数据：
+- `RecommendedContentViewModel` — 推荐插画/漫画 + 对应排行榜（带 contentType 参数）
 - `RecommendedNovelsViewModel` — 推荐小说
+- `TrendingTagsViewModel` — 热门标签（插画漫画 + 小说）
+- `RecommendedUsersViewModel` — 推荐作者列表
+- `FollowingViewModel` — 关注的插画/漫画新作
+- `FollowingNovelsViewModel` — 关注的小说新作
+- `LatestIllustsViewModel` — 全站最新插画/漫画（带 contentType 参数）
+- `LatestNovelsViewModel` — 全站最新小说
+- `RankingViewModel` — 排行榜详情页（带 mode 参数）
 
 每个 ViewModel 在 `init` 时自动加载数据，采用 **Stale-While-Revalidate** 策略：先展示过期缓存，再后台请求最新数据。
+
+**性能说明：** HorizontalPager 是懒加载的，默认只组合当前页和相邻页（`beyondBoundsPageCount = 0`），10 个子页面和 3 个子页面对性能影响几乎相同。
+
+---
+
+### 3.1 排行榜详情页
+
+#### 用户视角
+- 从推荐页的排行榜轮播点击「查看完整排行榜」进入
+- 顶部可切换排行榜模式（日榜/周榜/月榜/AI日榜/男性向/女性向/原创/新人）
+- 漫画有独立的排行榜模式（漫画日榜/周榜/月榜/新人）
+- 顶部有日期选择按钮，可查看历史排行榜（最早 2008-08-01）
+- 瀑布流展示排行榜内容，支持下拉刷新和无限加载
+
+#### 实现原理
+
+- `RankingDetailScreen` 使用 `ScrollableTabRow` + `HorizontalPager` 展示多个排行榜模式
+- `RankingViewModel` 接收 `mode` 参数，调用 `getRankingIllusts(mode, date)` API
+- 日期选择使用 Android `DatePickerDialog`，支持 2008-08-01 到昨天的范围
+- 导航路由 `NavRoute.RankingDetail(objectType)` 区分插画和漫画排行榜
 
 ---
 
@@ -692,6 +742,7 @@ class NavigationViewModel : ViewModel() {
 | `ShaderDemo` | 无 | AGSL 着色器演示 |
 | `AccountManagement` | 无 | 账号管理 |
 | `CommentDetail` | objectId, objectType | 评论页面（插画/小说共用） |
+| `RankingDetail` | objectType | 排行榜详情（插画/漫画） |
 
 ---
 
@@ -868,12 +919,13 @@ onCreate()
 
 | 指标 | 数值 |
 |------|------|
-| Kotlin 源文件数 | 101 |
-| 页面数 | 17 |
-| ViewModel 数 | 13+ |
-| API 接口数 | 27+ |
+| Kotlin 源文件数 | 107 |
+| 页面数 | 18 |
+| ViewModel 数 | 17+ |
+| API 接口数 | 30+ |
 | 支持语言 | 5 (中/繁中/英/日/韩) |
 | Room Entity | 2 (ApiCache, BrowseHistory) |
 | OkHttp Interceptor | 4 |
 | AGSL 着色器效果 | 4 (Neon Plasma, Fire Storm, Traced Tunnel, Magic Circle) |
-| 导航路由数 | 14 |
+| 导航路由数 | 15 |
+| 首页子页面数 | 10 (3 Tab × 内嵌 ViewPager) |

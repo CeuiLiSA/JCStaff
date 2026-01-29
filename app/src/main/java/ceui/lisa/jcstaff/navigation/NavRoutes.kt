@@ -60,4 +60,9 @@ sealed interface NavRoute {
     ) : NavRoute {
         override val stableKey = "CommentDetail_${objectType}_$objectId"
     }
+    data class RankingDetail(
+        val objectType: String  // "illust" or "manga"
+    ) : NavRoute {
+        override val stableKey = "RankingDetail_$objectType"
+    }
 }

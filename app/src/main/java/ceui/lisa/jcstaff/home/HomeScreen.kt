@@ -53,6 +53,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
@@ -68,6 +70,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
@@ -94,14 +98,18 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -112,8 +120,11 @@ import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.network.TrendingTag
 import ceui.lisa.jcstaff.network.User
+import ceui.lisa.jcstaff.network.UserPreview
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -126,31 +137,16 @@ fun HomeScreen(
     activeUserId: Long? = null,
     onSwitchAccount: (Long) -> Unit = {},
     onAddAccount: () -> Unit = {},
-    recommendedViewModel: RecommendedViewModel = viewModel(),
-    trendingTagsViewModel: TrendingTagsViewModel = viewModel(),
-    followingViewModel: FollowingViewModel = viewModel(),
-    novelsViewModel: RecommendedNovelsViewModel = viewModel()
 ) {
     val navViewModel = LocalNavigationViewModel.current
-    val recommendedState by recommendedViewModel.state.collectAsState()
-    val trendingTagsState by trendingTagsViewModel.state.collectAsState()
-    val followingState by followingViewModel.state.collectAsState()
 
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val selectionManager = rememberSelectionManager()
 
-    // 返回键退出选择模式
     BackHandler(enabled = selectionManager.isSelectionMode) {
         selectionManager.clearSelection()
-    }
-
-    // 当前页面的 illusts（用于选择模式）
-    val currentIllusts = when (pagerState.currentPage) {
-        0 -> recommendedState.illusts
-        2 -> followingState.illusts
-        else -> emptyList()
     }
 
     ModalNavigationDrawer(
@@ -187,12 +183,6 @@ fun HomeScreen(
                         currentUser?.let { user ->
                             navViewModel.navigate(NavRoute.Bookmarks(userId = user.id))
                         }
-                    }
-                },
-                onFollowingClick = {
-                    coroutineScope.launch {
-                        drawerState.close()
-                        pagerState.animateScrollToPage(2)
                     }
                 },
                 onBrowseHistoryClick = {
@@ -270,93 +260,431 @@ fun HomeScreen(
                                 coroutineScope.launch { pagerState.animateScrollToPage(0) }
                             },
                             icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                            label = { Text(stringResource(R.string.tab_discover)) }
+                            label = { Text(stringResource(R.string.tab_recommended)) }
                         )
                         NavigationBarItem(
                             selected = pagerState.currentPage == 1,
                             onClick = {
                                 coroutineScope.launch { pagerState.animateScrollToPage(1) }
                             },
-                            icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null) },
-                            label = { Text(stringResource(R.string.tab_trending)) }
+                            icon = { Icon(Icons.Default.Explore, contentDescription = null) },
+                            label = { Text(stringResource(R.string.tab_discover)) }
                         )
                         NavigationBarItem(
                             selected = pagerState.currentPage == 2,
                             onClick = {
                                 coroutineScope.launch { pagerState.animateScrollToPage(2) }
                             },
-                            icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                            label = { Text(stringResource(R.string.tab_following)) }
+                            icon = { Icon(Icons.Default.FiberNew, contentDescription = null) },
+                            label = { Text(stringResource(R.string.tab_new_works)) }
                         )
                     }
                 }
             ) { innerPadding ->
-                // 在 Pager 外部提升滚动状态，配合 SaveableStateProvider 自动持久化
-                val recommendedGridState = rememberLazyStaggeredGridState()
-                val followingGridState = rememberLazyStaggeredGridState()
-                val novelListState = rememberLazyListState()
-
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(innerPadding),
+                    userScrollEnabled = false
                 ) { page ->
                     when (page) {
-                        0 -> DiscoverPage(
-                            recommendedViewModel = recommendedViewModel,
-                            novelsViewModel = novelsViewModel,
+                        0 -> RecommendedTabPage(
                             sharedTransitionScope = sharedTransitionScope,
                             animatedContentScope = animatedContentScope,
                             selectionManager = selectionManager,
-                            recommendedGridState = recommendedGridState,
-                            novelListState = novelListState
                         )
-                        1 -> {
-                            TrendingTagsPage(
-                                trendingTagsState = trendingTagsState,
-                                onRefreshIllust = { trendingTagsViewModel.loadIllustTags() },
-                                onRefreshNovel = { trendingTagsViewModel.loadNovelTags() },
-                                onTagClick = { tag, initialTab ->
-                                    navViewModel.navigate(NavRoute.TagDetail(tag = tag, initialTab = initialTab))
-                                }
-                            )
-                        }
-                        2 -> {
-                            IllustGrid(
-                                illusts = followingState.illusts,
-                                onIllustClick = { illust ->
-                                    navViewModel.navigate(NavRoute.IllustDetail(
-                                        illustId = illust.id,
-                                        title = illust.title ?: "",
-                                        previewUrl = illust.previewUrl(),
-                                        aspectRatio = illust.aspectRatio()
-                                    ))
-                                },
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedContentScope = animatedContentScope,
-                                isLoading = followingState.isLoading,
-                                isLoadingMore = followingState.isLoadingMore,
-                                canLoadMore = followingState.canLoadMore,
-                                error = followingState.error,
-                                onRefresh = { followingViewModel.load() },
-                                onLoadMore = { followingViewModel.loadMore() },
-                                selectionManager = selectionManager,
-                                gridState = followingGridState
-                            )
-                        }
+                        1 -> DiscoverTabPage()
+                        2 -> NewWorksTabPage(
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedContentScope = animatedContentScope,
+                            selectionManager = selectionManager,
+                        )
                     }
                 }
-        }
+            }
 
-            // Selection top bar overlay
             SelectionTopBar(
                 selectionManager = selectionManager,
-                allIllusts = currentIllusts
+                allIllusts = emptyList()
             )
         }
     }
 }
+
+// ==================== Tab 1: 推荐 ====================
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun RecommendedTabPage(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope?,
+    selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
+) {
+    val navViewModel = LocalNavigationViewModel.current
+    val innerPagerState = rememberPagerState(pageCount = { 3 })
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = innerPagerState.currentPage,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            Tab(
+                selected = innerPagerState.currentPage == 0,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
+                text = { Text(stringResource(R.string.tab_illust)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 1,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
+                text = { Text(stringResource(R.string.manga)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 2,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(2) } },
+                text = { Text(stringResource(R.string.tab_novel)) }
+            )
+        }
+
+        HorizontalPager(
+            state = innerPagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { innerPage ->
+            when (innerPage) {
+                0 -> {
+                    val vm: RecommendedContentViewModel = viewModel(
+                        key = "recommended_illust",
+                        factory = RecommendedContentViewModel.factory("illust")
+                    )
+                    val state by vm.state.collectAsState()
+                    IllustGrid(
+                        illusts = state.illusts,
+                        onIllustClick = { illust ->
+                            navViewModel.navigate(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope,
+                        isLoading = state.isLoading,
+                        isLoadingMore = state.isLoadingMore,
+                        canLoadMore = state.canLoadMore,
+                        error = state.error,
+                        onRefresh = { vm.refresh() },
+                        onLoadMore = { vm.loadMore() },
+                        selectionManager = selectionManager,
+                        headerContent = if (state.rankingIllusts.isNotEmpty()) {
+                            {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    RankingCarousel(
+                                        illusts = state.rankingIllusts,
+                                        onIllustClick = { illust ->
+                                            navViewModel.navigate(NavRoute.IllustDetail(
+                                                illustId = illust.id,
+                                                title = illust.title ?: "",
+                                                previewUrl = illust.previewUrl(),
+                                                aspectRatio = illust.aspectRatio()
+                                            ))
+                                        },
+                                        onViewAllClick = {
+                                            navViewModel.navigate(NavRoute.RankingDetail(objectType = "illust"))
+                                        }
+                                    )
+                                }
+                            }
+                        } else null
+                    )
+                }
+                1 -> {
+                    val vm: RecommendedContentViewModel = viewModel(
+                        key = "recommended_manga",
+                        factory = RecommendedContentViewModel.factory("manga")
+                    )
+                    val state by vm.state.collectAsState()
+                    IllustGrid(
+                        illusts = state.illusts,
+                        onIllustClick = { illust ->
+                            navViewModel.navigate(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope,
+                        isLoading = state.isLoading,
+                        isLoadingMore = state.isLoadingMore,
+                        canLoadMore = state.canLoadMore,
+                        error = state.error,
+                        onRefresh = { vm.refresh() },
+                        onLoadMore = { vm.loadMore() },
+                        selectionManager = selectionManager,
+                        headerContent = if (state.rankingIllusts.isNotEmpty()) {
+                            {
+                                item(span = StaggeredGridItemSpan.FullLine) {
+                                    RankingCarousel(
+                                        illusts = state.rankingIllusts,
+                                        onIllustClick = { illust ->
+                                            navViewModel.navigate(NavRoute.IllustDetail(
+                                                illustId = illust.id,
+                                                title = illust.title ?: "",
+                                                previewUrl = illust.previewUrl(),
+                                                aspectRatio = illust.aspectRatio()
+                                            ))
+                                        },
+                                        onViewAllClick = {
+                                            navViewModel.navigate(NavRoute.RankingDetail(objectType = "manga"))
+                                        }
+                                    )
+                                }
+                            }
+                        } else null
+                    )
+                }
+                2 -> {
+                    val vm: RecommendedNovelsViewModel = viewModel()
+                    val state by vm.state.collectAsState()
+                    NovelList(
+                        novels = state.novels,
+                        onNovelClick = { novel ->
+                            navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
+                        },
+                        isLoading = state.isLoading,
+                        isLoadingMore = state.isLoadingMore,
+                        canLoadMore = state.canLoadMore,
+                        error = state.error,
+                        onRefresh = { vm.refresh() },
+                        onLoadMore = { vm.loadMore() },
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ==================== Tab 2: 发现 ====================
+
+@Composable
+private fun DiscoverTabPage() {
+    val navViewModel = LocalNavigationViewModel.current
+    val trendingTagsViewModel: TrendingTagsViewModel = viewModel()
+    val recommendedUsersViewModel: RecommendedUsersViewModel = viewModel()
+    val trendingTagsState by trendingTagsViewModel.state.collectAsState()
+    val usersState by recommendedUsersViewModel.state.collectAsState()
+
+    val innerPagerState = rememberPagerState(pageCount = { 3 })
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = innerPagerState.currentPage,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            Tab(
+                selected = innerPagerState.currentPage == 0,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
+                text = { Text(stringResource(R.string.tab_illust_manga)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 1,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
+                text = { Text(stringResource(R.string.tab_novel)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 2,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(2) } },
+                text = { Text(stringResource(R.string.tab_recommended_users)) }
+            )
+        }
+
+        HorizontalPager(
+            state = innerPagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            when (page) {
+                0 -> TrendingTagGrid(
+                    tags = trendingTagsState.illustTags,
+                    isLoading = trendingTagsState.isIllustLoading,
+                    error = trendingTagsState.illustError,
+                    onRefresh = { trendingTagsViewModel.loadIllustTags() },
+                    onTagClick = { tag ->
+                        val navTag = Tag(name = tag.tag, translated_name = tag.translated_name)
+                        navViewModel.navigate(NavRoute.TagDetail(tag = navTag, initialTab = 0))
+                    }
+                )
+                1 -> TrendingTagGrid(
+                    tags = trendingTagsState.novelTags,
+                    isLoading = trendingTagsState.isNovelLoading,
+                    error = trendingTagsState.novelError,
+                    onRefresh = { trendingTagsViewModel.loadNovelTags() },
+                    onTagClick = { tag ->
+                        val navTag = Tag(name = tag.tag, translated_name = tag.translated_name)
+                        navViewModel.navigate(NavRoute.TagDetail(tag = navTag, initialTab = 1))
+                    }
+                )
+                2 -> RecommendedUsersList(
+                    usersState = usersState,
+                    onRefresh = { recommendedUsersViewModel.refresh() },
+                    onLoadMore = { recommendedUsersViewModel.loadMore() },
+                    onUserClick = { userId ->
+                        navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                    },
+                    onIllustClick = { illust ->
+                        navViewModel.navigate(NavRoute.IllustDetail(
+                            illustId = illust.id,
+                            title = illust.title ?: "",
+                            previewUrl = illust.previewUrl(),
+                            aspectRatio = illust.aspectRatio()
+                        ))
+                    }
+                )
+            }
+        }
+    }
+}
+
+// ==================== Tab 3: 新作 ====================
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun NewWorksTabPage(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope?,
+    selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
+) {
+    val navViewModel = LocalNavigationViewModel.current
+    val innerPagerState = rememberPagerState(pageCount = { 4 })
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = innerPagerState.currentPage,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            Tab(
+                selected = innerPagerState.currentPage == 0,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
+                text = { Text(stringResource(R.string.tab_following_illust_manga)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 1,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
+                text = { Text(stringResource(R.string.tab_following_novel)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 2,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(2) } },
+                text = { Text(stringResource(R.string.tab_latest_illust_manga)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 3,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(3) } },
+                text = { Text(stringResource(R.string.tab_latest_novel)) }
+            )
+        }
+
+        HorizontalPager(
+            state = innerPagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            when (page) {
+                0 -> {
+                    val vm: FollowingViewModel = viewModel()
+                    val state by vm.state.collectAsState()
+                    IllustGrid(
+                        illusts = state.illusts,
+                        onIllustClick = { illust ->
+                            navViewModel.navigate(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope,
+                        isLoading = state.isLoading,
+                        isLoadingMore = state.isLoadingMore,
+                        canLoadMore = state.canLoadMore,
+                        error = state.error,
+                        onRefresh = { vm.refresh() },
+                        onLoadMore = { vm.loadMore() },
+                        selectionManager = selectionManager,
+                    )
+                }
+                1 -> {
+                    val vm: FollowingNovelsViewModel = viewModel()
+                    val state by vm.state.collectAsState()
+                    NovelList(
+                        novels = state.novels,
+                        onNovelClick = { novel ->
+                            navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
+                        },
+                        isLoading = state.isLoading,
+                        isLoadingMore = state.isLoadingMore,
+                        canLoadMore = state.canLoadMore,
+                        error = state.error,
+                        onRefresh = { vm.refresh() },
+                        onLoadMore = { vm.loadMore() },
+                    )
+                }
+                2 -> {
+                    val vm: LatestIllustsViewModel = viewModel(
+                        key = "latest_illust",
+                        factory = LatestIllustsViewModel.factory("illust")
+                    )
+                    val state by vm.state.collectAsState()
+                    IllustGrid(
+                        illusts = state.illusts,
+                        onIllustClick = { illust ->
+                            navViewModel.navigate(NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            ))
+                        },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedContentScope = animatedContentScope,
+                        isLoading = state.isLoading,
+                        isLoadingMore = state.isLoadingMore,
+                        canLoadMore = state.canLoadMore,
+                        error = state.error,
+                        onRefresh = { vm.refresh() },
+                        onLoadMore = { vm.loadMore() },
+                        selectionManager = selectionManager,
+                    )
+                }
+                3 -> {
+                    val vm: LatestNovelsViewModel = viewModel()
+                    val state by vm.state.collectAsState()
+                    NovelList(
+                        novels = state.novels,
+                        onNovelClick = { novel ->
+                            navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
+                        },
+                        isLoading = state.isLoading,
+                        isLoadingMore = state.isLoadingMore,
+                        canLoadMore = state.canLoadMore,
+                        error = state.error,
+                        onRefresh = { vm.refresh() },
+                        onLoadMore = { vm.loadMore() },
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ==================== 共用组件 ====================
 
 @Composable
 private fun UserAvatar(
@@ -457,7 +785,6 @@ private fun DrawerContent(
     onAddAccount: () -> Unit,
     onUserProfileClick: () -> Unit,
     onBookmarksClick: () -> Unit,
-    onFollowingClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onShaderDemoClick: () -> Unit
@@ -732,11 +1059,6 @@ private fun DrawerContent(
                 onClick = onBookmarksClick
             )
             DrawerMenuItem(
-                icon = Icons.Default.Person,
-                label = stringResource(R.string.my_following),
-                onClick = onFollowingClick
-            )
-            DrawerMenuItem(
                 icon = Icons.Default.History,
                 label = stringResource(R.string.browse_history),
                 onClick = onBrowseHistoryClick
@@ -804,169 +1126,107 @@ private fun DrawerMenuItem(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+// ==================== Ranking Carousel ====================
+
 @Composable
-private fun DiscoverPage(
-    recommendedViewModel: RecommendedViewModel,
-    novelsViewModel: RecommendedNovelsViewModel,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope?,
-    selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
-    recommendedGridState: androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState,
-    novelListState: androidx.compose.foundation.lazy.LazyListState
+private fun RankingCarousel(
+    illusts: List<Illust>,
+    onIllustClick: (Illust) -> Unit,
+    onViewAllClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val navViewModel = LocalNavigationViewModel.current
-    val recommendedState by recommendedViewModel.state.collectAsState()
-    val novelsState by novelsViewModel.state.collectAsState()
-
-    val innerPagerState = rememberPagerState(pageCount = { 2 })
-    val coroutineScope = rememberCoroutineScope()
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Inner TabRow for Illusts / Novels
-        TabRow(
-            selectedTabIndex = innerPagerState.currentPage,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onViewAllClick)
+                .padding(start = 4.dp, end = 8.dp, top = 4.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Tab(
-                selected = innerPagerState.currentPage == 0,
-                onClick = {
-                    coroutineScope.launch { innerPagerState.animateScrollToPage(0) }
-                },
-                text = { Text(stringResource(R.string.tab_illust)) }
+            Text(
+                text = stringResource(R.string.daily_ranking),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
             )
-            Tab(
-                selected = innerPagerState.currentPage == 1,
-                onClick = {
-                    coroutineScope.launch { innerPagerState.animateScrollToPage(1) }
-                },
-                text = { Text(stringResource(R.string.tab_novel)) }
+            Text(
+                text = stringResource(R.string.view_full_ranking),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
-        // Inner HorizontalPager
-        HorizontalPager(
-            state = innerPagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { innerPage ->
-            when (innerPage) {
-                0 -> IllustGrid(
-                    illusts = recommendedState.illusts,
-                    onIllustClick = { illust ->
-                        navViewModel.navigate(NavRoute.IllustDetail(
-                            illustId = illust.id,
-                            title = illust.title ?: "",
-                            previewUrl = illust.previewUrl(),
-                            aspectRatio = illust.aspectRatio()
-                        ))
-                    },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope,
-                    isLoading = recommendedState.isLoading,
-                    isLoadingMore = recommendedState.isLoadingMore,
-                    canLoadMore = recommendedState.canLoadMore,
-                    error = recommendedState.error,
-                    onRefresh = { recommendedViewModel.refresh() },
-                    onLoadMore = { recommendedViewModel.loadMore() },
-                    selectionManager = selectionManager,
-                    gridState = recommendedGridState,
-                    headerContent = if (recommendedState.rankingIllusts.isNotEmpty()) {
-                        {
-                            item(span = StaggeredGridItemSpan.FullLine) {
-                                RankingCarousel(
-                                    illusts = recommendedState.rankingIllusts,
-                                    onIllustClick = { illust ->
-                                        navViewModel.navigate(NavRoute.IllustDetail(
-                                            illustId = illust.id,
-                                            title = illust.title ?: "",
-                                            previewUrl = illust.previewUrl(),
-                                            aspectRatio = illust.aspectRatio()
-                                        ))
-                                    }
-                                )
-                            }
-                        }
-                    } else null
-                )
-                1 -> NovelList(
-                    novels = novelsState.novels,
-                    onNovelClick = { novel ->
-                        navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
-                    },
-                    isLoading = novelsState.isLoading,
-                    isLoadingMore = novelsState.isLoadingMore,
-                    canLoadMore = novelsState.canLoadMore,
-                    error = novelsState.error,
-                    onRefresh = { novelsViewModel.refresh() },
-                    onLoadMore = { novelsViewModel.loadMore() },
-                    listState = novelListState
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            itemsIndexed(illusts, key = { _, illust -> "ranking_${illust.id}" }) { index, illust ->
+                RankingCard(
+                    illust = illust,
+                    rank = index + 1,
+                    onClick = { onIllustClick(illust) }
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 
 @Composable
-private fun TrendingTagsPage(
-    trendingTagsState: TrendingTagsUiState,
-    onRefreshIllust: () -> Unit,
-    onRefreshNovel: () -> Unit,
-    onTagClick: (Tag, Int) -> Unit
+private fun RankingCard(
+    illust: Illust,
+    rank: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val innerPagerState = rememberPagerState(pageCount = { 2 })
-    val coroutineScope = rememberCoroutineScope()
-    // 在 Pager 外部提升 grid 滚动状态，页面切换时不会丢失
-    val illustGridState = rememberLazyGridState()
-    val novelGridState = rememberLazyGridState()
+    val context = LocalContext.current
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
-            selectedTabIndex = innerPagerState.currentPage,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
-        ) {
-            Tab(
-                selected = innerPagerState.currentPage == 0,
-                onClick = {
-                    coroutineScope.launch { innerPagerState.animateScrollToPage(0) }
-                },
-                text = { Text(stringResource(R.string.tab_trending_illust)) }
+    ElevatedCard(
+        onClick = onClick,
+        modifier = modifier.width(140.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(illust.image_urls?.square_medium ?: illust.previewUrl())
+                    .crossfade(true)
+                    .build(),
+                contentDescription = illust.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.75f)
             )
-            Tab(
-                selected = innerPagerState.currentPage == 1,
-                onClick = {
-                    coroutineScope.launch { innerPagerState.animateScrollToPage(1) }
-                },
-                text = { Text(stringResource(R.string.tab_trending_novel)) }
-            )
-        }
 
-        HorizontalPager(
-            state = innerPagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            when (page) {
-                0 -> TrendingTagGrid(
-                    tags = trendingTagsState.illustTags,
-                    isLoading = trendingTagsState.isIllustLoading,
-                    error = trendingTagsState.illustError,
-                    onRefresh = onRefreshIllust,
-                    onTagClick = { tag -> onTagClick(tag, 0) },
-                    gridState = illustGridState
-                )
-                1 -> TrendingTagGrid(
-                    tags = trendingTagsState.novelTags,
-                    isLoading = trendingTagsState.isNovelLoading,
-                    error = trendingTagsState.novelError,
-                    onRefresh = onRefreshNovel,
-                    onTagClick = { tag -> onTagClick(tag, 1) },
-                    gridState = novelGridState
+            // Rank badge
+            Surface(
+                shape = RoundedCornerShape(bottomEnd = 8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                modifier = Modifier.align(Alignment.TopStart)
+            ) {
+                Text(
+                    text = "#$rank",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
         }
+
+        // Title
+        Text(
+            text = illust.title ?: "",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+        )
     }
 }
+
+// ==================== Trending Tag Grid ====================
 
 @Composable
 private fun TrendingTagGrid(
@@ -974,7 +1234,7 @@ private fun TrendingTagGrid(
     isLoading: Boolean,
     error: String?,
     onRefresh: () -> Unit,
-    onTagClick: (Tag) -> Unit,
+    onTagClick: (TrendingTag) -> Unit,
     gridState: LazyGridState = rememberLazyGridState()
 ) {
     if (isLoading && tags.isEmpty()) {
@@ -1019,13 +1279,7 @@ private fun TrendingTagGrid(
                 TrendingTagCard(
                     tag = tags[0],
                     isFirst = true,
-                    onClick = {
-                        val navTag = Tag(
-                            name = tags[0].tag,
-                            translated_name = tags[0].translated_name
-                        )
-                        onTagClick(navTag)
-                    }
+                    onClick = { onTagClick(tags[0]) }
                 )
             }
         }
@@ -1039,13 +1293,7 @@ private fun TrendingTagGrid(
             TrendingTagCard(
                 tag = tag,
                 isFirst = false,
-                onClick = {
-                    val navTag = Tag(
-                        name = tag.tag,
-                        translated_name = tag.translated_name
-                    )
-                    onTagClick(navTag)
-                }
+                onClick = { onTagClick(tag) }
             )
         }
     }
@@ -1125,86 +1373,205 @@ private fun TrendingTagCard(
     }
 }
 
-@Composable
-private fun RankingCarousel(
-    illusts: List<Illust>,
-    onIllustClick: (Illust) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(R.string.daily_ranking),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, top = 4.dp, bottom = 8.dp)
-        )
+// ==================== Recommended Users List ====================
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            itemsIndexed(illusts, key = { _, illust -> "ranking_${illust.id}" }) { index, illust ->
-                RankingCard(
-                    illust = illust,
-                    rank = index + 1,
-                    onClick = { onIllustClick(illust) }
-                )
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecommendedUsersList(
+    usersState: RecommendedUsersUiState,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    onUserClick: (Long) -> Unit,
+    onIllustClick: (Illust) -> Unit,
+    listState: LazyListState = rememberLazyListState()
+) {
+    // Detect scroll to bottom
+    LaunchedEffect(listState, usersState.canLoadMore) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisibleItem >= totalItems - 3
+        }
+            .distinctUntilChanged()
+            .filter { it && usersState.canLoadMore }
+            .collect { onLoadMore() }
+    }
+
+    val content: @Composable () -> Unit = {
+        when {
+            usersState.error != null && usersState.users.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = usersState.error,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            usersState.users.isEmpty() && usersState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            else -> {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(usersState.users, key = { it.user?.id ?: 0L }) { userPreview ->
+                        UserPreviewCard(
+                            userPreview = userPreview,
+                            onUserClick = { userPreview.user?.id?.let(onUserClick) },
+                            onIllustClick = onIllustClick
+                        )
+                    }
+                    if (usersState.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(4.dp))
+    var userPulled by remember { mutableStateOf(false) }
+    LaunchedEffect(usersState.isLoading) {
+        if (!usersState.isLoading) userPulled = false
+    }
+
+    PullToRefreshBox(
+        isRefreshing = userPulled && usersState.isLoading,
+        onRefresh = {
+            if (!usersState.isLoading) {
+                userPulled = true
+                onRefresh()
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        content()
     }
 }
 
 @Composable
-private fun RankingCard(
-    illust: Illust,
-    rank: Int,
-    onClick: () -> Unit,
+private fun UserPreviewCard(
+    userPreview: UserPreview,
+    onUserClick: () -> Unit,
+    onIllustClick: (Illust) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val user = userPreview.user ?: return
 
     ElevatedCard(
-        onClick = onClick,
-        modifier = modifier.width(140.dp),
-        shape = RoundedCornerShape(12.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Box {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(illust.image_urls?.square_medium ?: illust.previewUrl())
-                    .crossfade(true)
-                    .build(),
-                contentDescription = illust.title,
-                contentScale = ContentScale.Crop,
+        Column {
+            // User info row
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(0.75f)
-            )
-
-            // Rank badge
-            Surface(
-                shape = RoundedCornerShape(bottomEnd = 8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-                modifier = Modifier.align(Alignment.TopStart)
+                    .clickable(onClick = onUserClick)
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                val avatarUrl = user.profile_image_urls?.findAvatarUrl()
+                if (avatarUrl != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(avatarUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = user.name,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .border(
+                                width = 1.5.dp,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                            .padding(2.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "#$rank",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    text = user.name ?: "",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        }
 
-        // Title
-        Text(
-            text = illust.title ?: "",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-        )
+            // Sample illusts row
+            if (userPreview.illusts.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                ) {
+                    itemsIndexed(
+                        userPreview.illusts.take(3),
+                        key = { _, illust -> "user_preview_${user.id}_${illust.id}" }
+                    ) { _, illust ->
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(illust.image_urls?.square_medium ?: illust.previewUrl())
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = illust.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onIllustClick(illust) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }

@@ -56,6 +56,7 @@ import ceui.lisa.jcstaff.screens.ShaderDemoScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
+import ceui.lisa.jcstaff.screens.RankingDetailScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 import coil.Coil
 import coil.ImageLoader
@@ -379,6 +380,14 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                     objectId = route.objectId,
                                     objectType = route.objectType,
                                     currentUserId = currentUserId
+                                )
+                            }
+
+                            is NavRoute.RankingDetail -> {
+                                RankingDetailScreen(
+                                    objectType = route.objectType,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedContentScope = this@AnimatedContent
                                 )
                             }
                         }

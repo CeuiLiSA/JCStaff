@@ -32,6 +32,30 @@
     <string name="tab_trending_novel">小说</string>
     <string name="tab_recommended">推荐</string>
     <string name="tab_following">关注</string>
+    <string name="tab_new_works">新作</string>
+    <string name="tab_illust_manga">插画漫画</string>
+    <string name="tab_recommended_users">推荐作者</string>
+    <string name="tab_following_illust_manga">关注插画漫画</string>
+    <string name="tab_following_novel">关注小说</string>
+    <string name="tab_latest_illust_manga">最新插画漫画</string>
+    <string name="tab_latest_novel">最新小说</string>
+    <string name="view_full_ranking">查看完整排行榜</string>
+
+    <!-- Ranking -->
+    <string name="ranking">排行榜</string>
+    <string name="rank_day">日榜</string>
+    <string name="rank_week">周榜</string>
+    <string name="rank_month">月榜</string>
+    <string name="rank_day_ai">AI 日榜</string>
+    <string name="rank_day_male">男性向</string>
+    <string name="rank_day_female">女性向</string>
+    <string name="rank_week_original">原创</string>
+    <string name="rank_week_rookie">新人</string>
+    <string name="rank_day_manga">漫画日榜</string>
+    <string name="rank_week_manga">漫画周榜</string>
+    <string name="rank_month_manga">漫画月榜</string>
+    <string name="rank_week_rookie_manga">漫画新人</string>
+    <string name="select_date">选择日期</string>
     <string name="search">搜索</string>
     <string name="user_icon">用户</string>
     <string name="not_logged_in">未登录</string>

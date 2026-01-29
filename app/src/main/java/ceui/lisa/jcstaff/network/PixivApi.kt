@@ -17,9 +17,17 @@ interface PixivApi {
         @Query("filter") filter: String = "for_ios"
     ): HomeIllustResponse
 
+    @GET("/v1/{type}/recommended")
+    suspend fun getRecommendedContent(
+        @Path("type") type: String,
+        @Query("include_ranking_illusts") includeRanking: Boolean = true,
+        @Query("filter") filter: String = "for_ios"
+    ): HomeIllustResponse
+
     @GET("/v1/illust/ranking")
     suspend fun getRankingIllusts(
         @Query("mode") mode: String = "day",
+        @Query("date") date: String? = null,
         @Query("filter") filter: String = "for_ios",
         @Query("offset") offset: Int? = null
     ): IllustResponse
@@ -230,4 +238,18 @@ interface PixivApi {
 
     @GET
     suspend fun getNextPageComments(@Url nextUrl: String): CommentResponse
+
+    @GET
+    suspend fun getNextPageUserPreviews(@Url nextUrl: String): UserPreviewResponse
+
+    // ===== Latest Content Endpoints =====
+
+    @GET("/v1/illust/new")
+    suspend fun getLatestIllusts(
+        @Query("content_type") contentType: String = "illust",
+        @Query("filter") filter: String = "for_ios"
+    ): IllustResponse
+
+    @GET("/v1/novel/new")
+    suspend fun getLatestNovels(): NovelResponse
 }

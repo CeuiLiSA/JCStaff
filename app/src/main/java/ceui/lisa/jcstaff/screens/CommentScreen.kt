@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +29,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -64,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
@@ -98,6 +103,23 @@ fun CommentScreen(
     var actionMenuComment by remember { mutableStateOf<Comment?>(null) }
 
     val listState = rememberLazyListState()
+
+    val sendComment = {
+        if (inputText.isNotBlank() && !state.isPosting) {
+            val text = inputText
+            val parentId = state.replyTarget?.id
+            inputText = ""
+            showEmojiPicker = false
+            scope.launch {
+                try {
+                    commentViewModel.postComment(text, parentId)
+                    Toast.makeText(context, context.getString(R.string.comment_posted), Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(context, context.getString(R.string.comment_failed), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(objectId, objectType) {
         commentViewModel.loadComments(objectId, objectType)
@@ -242,7 +264,7 @@ fun CommentScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding()
+                    .navigationBarsPadding()
             ) {
                 // Reply target indicator
                 state.replyTarget?.let { target ->
@@ -350,26 +372,13 @@ fun CommentScreen(
                                 unfocusedIndicatorColor = Color.Transparent
                             ),
                             maxLines = 3,
-                            textStyle = MaterialTheme.typography.bodyMedium
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(onSend = { sendComment() })
                         )
 
                         IconButton(
-                            onClick = {
-                                if (inputText.isNotBlank() && !state.isPosting) {
-                                    val text = inputText
-                                    val parentId = state.replyTarget?.id
-                                    inputText = ""
-                                    showEmojiPicker = false
-                                    scope.launch {
-                                        try {
-                                            commentViewModel.postComment(text, parentId)
-                                            Toast.makeText(context, context.getString(R.string.comment_posted), Toast.LENGTH_SHORT).show()
-                                        } catch (_: Exception) {
-                                            Toast.makeText(context, context.getString(R.string.comment_failed), Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                            },
+                            onClick = { sendComment() },
                             enabled = inputText.isNotBlank() && !state.isPosting
                         ) {
                             if (state.isPosting) {
