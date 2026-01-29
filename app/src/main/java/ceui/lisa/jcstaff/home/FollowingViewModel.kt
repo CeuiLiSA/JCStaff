@@ -24,9 +24,6 @@ class FollowingViewModel : ViewModel() {
         ),
         responseClass = IllustResponse::class.java,
         loadFirstPage = { PixivClient.pixivApi.getFollowingIllusts() },
-        loadNextPage = { url -> PixivClient.pixivApi.getNextPageIllusts(url) },
-        extractItems = { it.illusts },
-        extractNextUrl = { it.next_url },
         onItemsLoaded = { illusts -> storeIllusts(illusts) }
     )
 

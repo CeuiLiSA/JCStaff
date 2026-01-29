@@ -26,9 +26,6 @@ class TrendingViewModel : ViewModel() {
         ),
         responseClass = IllustResponse::class.java,
         loadFirstPage = { PixivClient.pixivApi.getRankingIllusts(mode = "day") },
-        loadNextPage = { url -> PixivClient.pixivApi.getNextPageIllusts(url) },
-        extractItems = { it.illusts },
-        extractNextUrl = { it.next_url },
         onItemsLoaded = { illusts -> storeIllusts(illusts) }
     )
 

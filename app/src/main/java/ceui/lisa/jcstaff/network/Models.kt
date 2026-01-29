@@ -5,6 +5,14 @@ import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
 import java.io.Serializable
 
+/**
+ * 分页响应接口，所有支持分页的响应类都应实现此接口
+ */
+interface PagedResponse<T> {
+    val displayList: List<T>
+    val nextUrl: String?
+}
+
 data class AccountResponse(
     val access_token: String? = null,
     val expires_in: Int? = null,
@@ -119,14 +127,18 @@ data class Tag(
 data class IllustResponse(
     val illusts: List<Illust> = listOf(),
     val next_url: String? = null
-) : Serializable
+) : Serializable, PagedResponse<Illust> {
+    override val displayList: List<Illust> get() = illusts
+    override val nextUrl: String? get() = next_url
+}
 
 data class HomeIllustResponse(
     val illusts: List<Illust> = listOf(),
     val ranking_illusts: List<Illust> = listOf(),
     val next_url: String? = null
-) : Serializable {
-    val displayList: List<Illust> get() = ranking_illusts + illusts
+) : Serializable, PagedResponse<Illust> {
+    override val displayList: List<Illust> get() = ranking_illusts + illusts
+    override val nextUrl: String? get() = next_url
 }
 
 data class UserPreview(
@@ -138,7 +150,10 @@ data class UserPreview(
 data class UserPreviewResponse(
     val user_previews: List<UserPreview> = listOf(),
     val next_url: String? = null
-) : Serializable
+) : Serializable, PagedResponse<UserPreview> {
+    override val displayList: List<UserPreview> get() = user_previews
+    override val nextUrl: String? get() = next_url
+}
 
 data class Novel(
     val id: Long,
@@ -174,7 +189,10 @@ data class NovelSeries(
 data class NovelResponse(
     val novels: List<Novel> = listOf(),
     val next_url: String? = null
-) : Serializable
+) : Serializable, PagedResponse<Novel> {
+    override val displayList: List<Novel> get() = novels
+    override val nextUrl: String? get() = next_url
+}
 
 data class TrendingTag(
     val tag: String? = null,
@@ -283,7 +301,10 @@ data class Stamp(
 data class CommentResponse(
     val comments: List<Comment> = listOf(),
     val next_url: String? = null
-) : Serializable
+) : Serializable, PagedResponse<Comment> {
+    override val displayList: List<Comment> get() = comments
+    override val nextUrl: String? get() = next_url
+}
 
 data class PostCommentResponse(
     val comment: Comment? = null

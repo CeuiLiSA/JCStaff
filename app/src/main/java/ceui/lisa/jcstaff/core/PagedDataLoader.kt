@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.core
 
+import ceui.lisa.jcstaff.network.PagedResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,15 +38,12 @@ data class CacheConfig(
  * 使用组合而非继承，ViewModel 持有此 loader 实例
  *
  * @param T 列表项类型
- * @param R API 响应类型
+ * @param R API 响应类型，必须实现 PagedResponse<T>
  */
-class PagedDataLoader<T, R>(
+class PagedDataLoader<T, R : PagedResponse<T>>(
     private val cacheConfig: CacheConfig?,
     private val responseClass: Class<R>,
     private val loadFirstPage: suspend () -> R,
-    private val loadNextPage: suspend (String) -> R,
-    private val extractItems: (R) -> List<T>,
-    private val extractNextUrl: (R) -> String?,
     private val onItemsLoaded: (List<T>) -> Unit = {}
 ) {
     private val _state = MutableStateFlow(PagedState<T>())
@@ -65,12 +63,11 @@ class PagedDataLoader<T, R>(
                 clazz = responseClass
             )
             if (cached != null) {
-                val items = extractItems(cached)
-                onItemsLoaded(items)
+                onItemsLoaded(cached.displayList)
                 _state.value = _state.value.copy(
-                    items = items,
+                    items = cached.displayList,
                     isLoading = false,
-                    nextUrl = extractNextUrl(cached)
+                    nextUrl = cached.nextUrl
                 )
             }
         }
@@ -78,12 +75,11 @@ class PagedDataLoader<T, R>(
         // 从网络加载
         try {
             val response = loadFirstPage()
-            val items = extractItems(response)
-            onItemsLoaded(items)
+            onItemsLoaded(response.displayList)
             _state.value = _state.value.copy(
-                items = items,
+                items = response.displayList,
                 isLoading = false,
-                nextUrl = extractNextUrl(response)
+                nextUrl = response.nextUrl
             )
         } catch (e: Exception) {
             _state.value = _state.value.copy(
@@ -101,13 +97,12 @@ class PagedDataLoader<T, R>(
 
         _state.value = _state.value.copy(isLoadingMore = true)
         try {
-            val response = loadNextPage(nextUrl)
-            val items = extractItems(response)
-            onItemsLoaded(items)
+            val response = PixivClient.getNextPage(nextUrl, responseClass)
+            onItemsLoaded(response.displayList)
             _state.value = _state.value.copy(
-                items = _state.value.items + items,
+                items = _state.value.items + response.displayList,
                 isLoadingMore = false,
-                nextUrl = extractNextUrl(response)
+                nextUrl = response.nextUrl
             )
         } catch (e: Exception) {
             _state.value = _state.value.copy(

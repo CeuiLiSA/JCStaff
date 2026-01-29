@@ -3,6 +3,7 @@ package ceui.lisa.jcstaff.comment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.network.Comment
+import ceui.lisa.jcstaff.network.CommentResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,7 +78,7 @@ class CommentViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
             try {
-                val response = PixivClient.pixivApi.getNextPageComments(nextUrl)
+                val response = PixivClient.getNextPage(nextUrl, CommentResponse::class.java)
                 val updated = _state.value.comments + response.comments
                 commentsCache[cacheKey(objectType, objectId)] = updated
                 _state.value = _state.value.copy(

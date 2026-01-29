@@ -23,9 +23,6 @@ class RecommendedNovelsViewModel : ViewModel() {
         ),
         responseClass = NovelResponse::class.java,
         loadFirstPage = { PixivClient.pixivApi.getRecommendedNovels() },
-        loadNextPage = { url -> PixivClient.pixivApi.getNextPageNovels(url) },
-        extractItems = { it.novels },
-        extractNextUrl = { it.next_url },
         onItemsLoaded = { novels -> storeNovels(novels) }
     )
 

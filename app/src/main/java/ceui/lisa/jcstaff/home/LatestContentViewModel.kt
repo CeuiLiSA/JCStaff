@@ -30,9 +30,6 @@ class LatestIllustsViewModel(private val contentType: String = "illust") : ViewM
         ),
         responseClass = IllustResponse::class.java,
         loadFirstPage = { PixivClient.pixivApi.getLatestIllusts(contentType) },
-        loadNextPage = { url -> PixivClient.pixivApi.getNextPageIllusts(url) },
-        extractItems = { it.illusts },
-        extractNextUrl = { it.next_url },
         onItemsLoaded = { illusts -> storeIllusts(illusts) }
     )
 
@@ -83,9 +80,6 @@ class LatestNovelsViewModel : ViewModel() {
         ),
         responseClass = NovelResponse::class.java,
         loadFirstPage = { PixivClient.pixivApi.getLatestNovels() },
-        loadNextPage = { url -> PixivClient.pixivApi.getNextPageNovels(url) },
-        extractItems = { it.novels },
-        extractNextUrl = { it.next_url },
         onItemsLoaded = { novels -> storeNovels(novels) }
     )
 

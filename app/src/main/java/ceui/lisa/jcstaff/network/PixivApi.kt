@@ -226,21 +226,10 @@ interface PixivApi {
 
     /**
      * 通用 GET 请求，用于加载 next_url 分页
+     * 返回原始 ResponseBody，由调用方用 Gson 解析成具体类型
      */
     @GET
-    suspend fun getNextPageIllusts(@Url nextUrl: String): IllustResponse
-
-    @GET
-    suspend fun getNextPageHomeIllusts(@Url nextUrl: String): HomeIllustResponse
-
-    @GET
-    suspend fun getNextPageNovels(@Url nextUrl: String): NovelResponse
-
-    @GET
-    suspend fun getNextPageComments(@Url nextUrl: String): CommentResponse
-
-    @GET
-    suspend fun getNextPageUserPreviews(@Url nextUrl: String): UserPreviewResponse
+    suspend fun getNextPage(@Url nextUrl: String): okhttp3.ResponseBody
 
     // ===== Latest Content Endpoints =====
 

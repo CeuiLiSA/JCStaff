@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.IllustResponse
 import ceui.lisa.jcstaff.network.Novel
+import ceui.lisa.jcstaff.network.NovelResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.Tag
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -212,7 +214,7 @@ class TagDetailViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoadingMore = true)
 
             try {
-                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
+                val response = PixivClient.getNextPage(nextUrl, IllustResponse::class.java)
                 storeIllusts(response.illusts)
                 _state.value = _state.value.copy(
                     illusts = _state.value.illusts + response.illusts,
@@ -236,7 +238,7 @@ class TagDetailViewModel : ViewModel() {
             _state.value = _state.value.copy(isNovelLoadingMore = true)
 
             try {
-                val response = PixivClient.pixivApi.getNextPageNovels(nextUrl)
+                val response = PixivClient.getNextPage(nextUrl, NovelResponse::class.java)
                 storeNovels(response.novels)
                 _state.value = _state.value.copy(
                     novels = _state.value.novels + response.novels,

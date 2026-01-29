@@ -119,6 +119,21 @@ object PixivClient {
     }
 
     /**
+     * 通用分页加载方法
+     * 使用 next_url 加载下一页数据，返回解析后的响应对象
+     * @param nextUrl 下一页的 URL
+     * @param clazz 响应类型
+     * @return 解析后的响应对象
+     */
+    suspend fun <T> getNextPage(nextUrl: String, clazz: Class<T>): T {
+        val responseBody = pixivApi.getNextPage(nextUrl)
+        return withContext(Dispatchers.Default) {
+            val json = responseBody.string()
+            gson.fromJson(json, clazz)
+        }
+    }
+
+    /**
      * 从缓存获取数据（即使过期也返回，用于 stale-while-revalidate）
      * @param path API 路径，如 "/v1/illust/recommended"
      * @param queryParams 查询参数

@@ -98,7 +98,7 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingMore = true)
             try {
-                val response = PixivClient.pixivApi.getNextPageHomeIllusts(nextUrl)
+                val response = PixivClient.getNextPage(nextUrl, HomeIllustResponse::class.java)
                 storeIllusts(response.displayList)
                 _state.value = _state.value.copy(
                     illusts = _state.value.illusts + response.displayList,

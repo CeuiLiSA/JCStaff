@@ -53,6 +53,7 @@ ceui.lisa.jcstaff/
 │   └── BrowseHistoryDao.kt       # 浏览历史 DAO
 ├── core/                         # 核心工具
 │   ├── ObjectStore.kt            # 全局响应式对象池
+│   ├── PagedDataLoader.kt        # 通用分页数据加载器
 │   ├── SettingsStore.kt          # 用户设置（DataStore）
 │   ├── LanguageManager.kt        # 多语言管理
 │   ├── AppLanguage.kt            # 语言定义
@@ -777,6 +778,56 @@ class NavigationViewModel : ViewModel() {
 
 **Stale-While-Revalidate：**
 各 ViewModel 使用 `PixivClient.getFromStaleCache()` 先展示过期缓存数据，同时发起网络请求更新。用户看到的是：旧数据立即显示 → 新数据刷入替换。
+
+**通用分页加载：**
+使用单一的 `getNextPage(@Url nextUrl: String): ResponseBody` 端点处理所有分页请求，由 `PixivClient.getNextPage(url, clazz)` 解析为具体类型。
+
+---
+
+### PagedDataLoader — 通用分页数据加载器
+
+**设计思想：** 消除各 ViewModel 中重复的分页加载逻辑。
+
+```kotlin
+// PagedResponse 接口约束所有分页响应类型
+interface PagedResponse<T> {
+    val displayList: List<T>
+    val nextUrl: String?
+}
+
+// 响应类实现接口
+data class IllustResponse(
+    val illusts: List<Illust>,
+    val next_url: String?
+) : PagedResponse<Illust> {
+    override val displayList get() = illusts
+    override val nextUrl get() = next_url
+}
+
+// PagedDataLoader 通过泛型约束自动提取数据
+class PagedDataLoader<T, R : PagedResponse<T>>(
+    private val cacheConfig: CacheConfig?,
+    private val responseClass: Class<R>,
+    private val loadFirstPage: suspend () -> R,
+    private val onItemsLoaded: (List<T>) -> Unit = {}
+)
+```
+
+**ViewModel 使用示例：**
+```kotlin
+private val loader = PagedDataLoader(
+    cacheConfig = CacheConfig(path = "/v2/illust/follow", ...),
+    responseClass = IllustResponse::class.java,
+    loadFirstPage = { PixivClient.pixivApi.getFollowingIllusts() },
+    onItemsLoaded = { storeIllusts(it) }
+)
+val state: StateFlow<PagedState<Illust>> = loader.state
+```
+
+**优势：**
+- 无需传入 `extractItems`、`extractNextUrl`、`loadNextPage` — 全部由接口约束自动推导
+- 统一的缓存加载、网络加载、错误处理逻辑
+- `PagedState<T>` 提供 `items`、`isLoading`、`isLoadingMore`、`canLoadMore` 等标准状态
 
 ---
 

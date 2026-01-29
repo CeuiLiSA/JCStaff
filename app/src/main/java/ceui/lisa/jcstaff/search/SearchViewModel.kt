@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.IllustResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -94,7 +95,7 @@ class SearchViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoadingMore = true)
 
             try {
-                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
+                val response = PixivClient.getNextPage(nextUrl, IllustResponse::class.java)
                 storeIllusts(response.illusts)
 
                 _state.value = _state.value.copy(

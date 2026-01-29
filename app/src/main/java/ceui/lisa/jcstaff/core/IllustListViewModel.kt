@@ -110,7 +110,7 @@ class IllustListViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoadingMore = true)
 
             try {
-                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
+                val response = PixivClient.getNextPage(nextUrl, IllustResponse::class.java)
 
                 // 存入 ObjectStore
                 storeIllusts(response.illusts)

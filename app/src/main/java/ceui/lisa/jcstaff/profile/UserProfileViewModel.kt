@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.IllustResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.User
 import ceui.lisa.jcstaff.network.UserProfile
@@ -113,7 +114,7 @@ class UserProfileViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoadingMore = true)
 
             try {
-                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
+                val response = PixivClient.getNextPage(nextUrl, IllustResponse::class.java)
                 storeIllusts(response.illusts)
 
                 _state.value = _state.value.copy(

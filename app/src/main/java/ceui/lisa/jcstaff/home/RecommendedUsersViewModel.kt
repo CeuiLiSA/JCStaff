@@ -23,9 +23,6 @@ class RecommendedUsersViewModel : ViewModel() {
         ),
         responseClass = UserPreviewResponse::class.java,
         loadFirstPage = { PixivClient.pixivApi.getRecommendedUsers() },
-        loadNextPage = { url -> PixivClient.pixivApi.getNextPageUserPreviews(url) },
-        extractItems = { it.user_previews },
-        extractNextUrl = { it.next_url },
         onItemsLoaded = { previews -> storeUserPreviews(previews) }
     )
 
