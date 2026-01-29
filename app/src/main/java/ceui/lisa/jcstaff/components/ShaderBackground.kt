@@ -424,8 +424,8 @@ private fun TracedTunnelBackgroundImpl(
 }
 
 // ── Traced Tunnel with Image tiles ────────────────────────────────────────────
-private const val ATLAS_COLS = 32
-private const val ATLAS_ROWS = 26
+private const val ATLAS_COLS = 28
+private const val ATLAS_ROWS = 16
 private const val IMAGE_TILE_SIZE = 180
 
 private data class AtlasData(
@@ -440,123 +440,96 @@ uniform float  iTime;
 uniform float2 iAtlasSize;
 uniform shader tileImage;
 
-const float GRID_COLS = 32.0;
-const float GRID_ROWS = 26.0;
+const float GRID_COLS = 28.0;
+const float GRID_ROWS = 16.0;
 const float TILE_SIZE = 180.0;
+const float TOTAL_IMAGES = 448.0;  // GRID_COLS * GRID_ROWS
+const float INV_GRID_COLS = 0.0357142857;  // 1.0 / GRID_COLS
 
 float tick(float t, float d) {
     float m = fract(t / d);
-    m = smoothstep(0.0, 1.0, m);
-    m = smoothstep(0.0, 1.0, m);
+    m = m * m * (3.0 - 2.0 * m);  // Faster than double smoothstep
     return (floor(t / d) + m) * d;
 }
-float tickTime(float t) { return t * 1.0 + tick(t, 6.0) * 0.5; }
 
-float2 rot2(float2 v, float a) {
-    float c = cos(a); float s = sin(a);
+float2 rot2(float2 v, float c, float s) {
     return float2(v.x * c + v.y * s, -v.x * s + v.y * c);
-}
-
-float3 camXform(float3 p, float tTime) {
-    p.xz = rot2(p.xz, sin(tTime * 0.3) * 0.4);
-    p.xy = rot2(p.xy, sin(tTime * 0.1) * 2.0);
-    return p;
-}
-
-float rayPlane(float3 ro, float3 rd, float3 n, float d) {
-    float ndotdir = dot(rd, n);
-    if (ndotdir < 0.0) {
-        float dist = (-d - dot(ro, n) + 9e-7) / ndotdir;
-        if (dist > 0.0) return dist;
-    }
-    return 1e8;
 }
 
 float hash21(float2 p) {
     float3 p3 = fract(float3(p.x, p.y, p.x) * float3(0.1031, 0.1030, 0.0973));
-    p3 += dot(p3, float3(p3.y, p3.z, p3.x) + 33.33);
+    p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
 half4 main(float2 fragCoord) {
     float2 uv = (fragCoord - iResolution * 0.5) / iResolution.y;
 
-    float tickTm = tickTime(iTime);
-    float3 ca = float3(0.0, 0.0, tickTm);
+    float t = iTime;
+    float tickTm = t + tick(t, 6.0) * 0.5;
 
-    float3 ro = float3(0.0);
+    // Precompute sin/cos for camera rotation
+    float a1 = sin(tickTm * 0.3) * 0.4;
+    float a2 = sin(tickTm * 0.1) * 2.0;
+    float c1 = cos(a1), s1 = sin(a1);
+    float c2 = cos(a2), s2 = sin(a2);
+
+    float3 ro = float3(0.0, 0.0, tickTm);
     float3 r = normalize(float3(uv, 1.0));
-    ro = camXform(ro, tickTm);
-    r  = camXform(r,  tickTm);
-    ro.z += ca.z;
 
-    float3 col = float3(0.0);
-    float alpha = 1.0;
-    float fogD = 0.0;
-    const float sc = 2.0;
+    // Apply camera rotation
+    r.xz = rot2(r.xz, c1, s1);
+    r.xy = rot2(r.xy, c2, s2);
 
-    for (int i = 0; i < 1; i++) {
-        float plB = rayPlane(ro, r, float3(0.0,  1.0, 0.0), 1.0);
-        float plT = rayPlane(ro, r, float3(0.0, -1.0, 0.0), 1.0);
-        float plL = rayPlane(ro, r, float3( 1.0, 0.0, 0.0), 1.0);
-        float plR = rayPlane(ro, r, float3(-1.0, 0.0, 0.0), 1.0);
+    // Inline ray-plane intersections (avoid function call overhead)
+    float dB = r.y < 0.0 ? (-1.0 - ro.y) / r.y : 1e8;
+    float dT = r.y > 0.0 ? ( 1.0 - ro.y) / r.y : 1e8;
+    float dL = r.x < 0.0 ? (-1.0 - ro.x) / r.x : 1e8;
+    float dR = r.x > 0.0 ? ( 1.0 - ro.x) / r.x : 1e8;
 
-        float dH = min(plB, plT);
-        float dV = min(plL, plR);
-        float d  = min(dH, dV);
-        if (i == 0) fogD = d;
+    float dH = min(dB, dT);
+    float dV = min(dL, dR);
+    float d  = min(dH, dV);
 
-        float3 hp = ro + r * d;
+    float3 hp = ro + r * d;
 
-        float3 n;
-        float2 tuv;
-        if (dH < dV) {
-            n   = float3(0.0, plB < plT ? 1.0 : -1.0, 0.0);
-            tuv = hp.xz + float2(0.0, n.y);
-        } else {
-            n   = float3(plL < plR ? 1.0 : -1.0, 0.0, 0.0);
-            tuv = hp.yz + float2(n.x, 0.0);
-        }
-
-        tuv *= sc;
-        float2 id = floor(tuv);
-        float2 luv = tuv - id - 0.5;
-
-        float bx = length(max(abs(luv) - 0.42, 0.0)) - 0.05;
-        float sh = clamp(0.5 - bx / 0.1, 0.0, 1.0);
-        float inside = 1.0 - smoothstep(0.0, 0.008, bx);
-
-        float totalImages = GRID_COLS * GRID_ROWS;
-        float imgIndex = floor(hash21(id) * totalImages);
-        float atlasRow = floor(imgIndex / GRID_COLS);
-        float atlasCol = mod(imgIndex, GRID_COLS);
-
-        float2 normUV = (luv + 0.5);
-        float2 atlasOffset = float2(atlasCol, atlasRow) * TILE_SIZE;
-        float2 imgUV = atlasOffset + normUV * TILE_SIZE;
-        float3 imgCol = tileImage.eval(imgUV).rgb;
-
-        float3 sqCol = imgCol;
-        float3 gapCol = float3(0.02, 0.02, 0.03);
-        float3 sampleCol = mix(gapCol, sqCol * sh, inside);
-
-        float3 ld = normalize(ca + float3(0.0, 0.0, 3.0) - hp);
-        float dif = max(dot(ld, n), 0.0);
-        float spe = pow(max(dot(reflect(ld, -n), -r), 0.0), 16.0);
-
-        sampleCol *= dif * 0.4 + 0.6;
-        sampleCol += float3(1.0, 1.0, 1.0) * spe * 0.2;
-        sampleCol *= 1.0 / (1.0 + fogD * fogD * 0.02);
-
-        col += sampleCol * alpha;
-        alpha *= 0.3;
-
-        r = reflect(r, n);
-        ro = hp + n * 0.002;
+    float3 n;
+    float2 tuv;
+    if (dH < dV) {
+        n   = float3(0.0, dB < dT ? 1.0 : -1.0, 0.0);
+        tuv = hp.xz + float2(0.0, n.y);
+    } else {
+        n   = float3(dL < dR ? 1.0 : -1.0, 0.0, 0.0);
+        tuv = hp.yz + float2(n.x, 0.0);
     }
 
-    col = pow(max(col, float3(0.0)), float3(0.4545));
-    return half4(half3(col), 1.0);
+    tuv *= 2.0;
+    float2 id = floor(tuv);
+    float2 luv = tuv - id - 0.5;
+
+    // Tile shape
+    float bx = length(max(abs(luv) - 0.42, 0.0)) - 0.05;
+    float inside = smoothstep(0.008, 0.0, bx);
+    float sh = clamp(0.5 - bx * 10.0, 0.0, 1.0);
+
+    // Atlas lookup - avoid mod() with fract
+    float imgIndex = floor(hash21(id) * TOTAL_IMAGES);
+    float atlasRow = floor(imgIndex * INV_GRID_COLS);
+    float atlasCol = imgIndex - atlasRow * GRID_COLS;
+
+    float2 imgUV = (float2(atlasCol, atlasRow) + luv + 0.5) * TILE_SIZE;
+    float3 imgCol = tileImage.eval(imgUV).rgb;
+
+    // Simple lighting (removed specular for performance)
+    float3 sampleCol = mix(float3(0.02), imgCol * sh, inside);
+    float dif = max(dot(normalize(float3(0.0, 0.0, 3.0) - hp + ro), n), 0.0);
+    sampleCol *= dif * 0.35 + 0.65;
+
+    // Fog
+    sampleCol *= 1.0 / (1.0 + d * d * 0.02);
+
+    // Gamma correction
+    return half4(half3(pow(max(sampleCol, float3(0.0)), float3(0.4545))), 1.0);
 }
 """
 
