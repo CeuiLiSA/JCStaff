@@ -32,8 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.PagedState
-import ceui.lisa.jcstaff.core.SelectionManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -51,7 +51,6 @@ fun IllustGrid(
     modifier: Modifier = Modifier,
     onRefresh: (() -> Unit)? = null,
     onLoadMore: (() -> Unit)? = null,
-    selectionManager: SelectionManager? = null,
     columns: Int = 2,
     gridState: LazyStaggeredGridState? = null,
     contentPadding: PaddingValues? = null,
@@ -75,7 +74,6 @@ fun IllustGrid(
         error = state.error,
         onRefresh = onRefresh,
         onLoadMore = onLoadMore,
-        selectionManager = selectionManager,
         columns = columns,
         gridState = gridState,
         contentPadding = contentPadding,
@@ -107,8 +105,6 @@ fun IllustGrid(
     // 回调
     onRefresh: (() -> Unit)? = null,
     onLoadMore: (() -> Unit)? = null,
-    // 选择模式
-    selectionManager: SelectionManager? = null,
     // Grid 配置
     columns: Int = 2,
     gridState: LazyStaggeredGridState? = null,
@@ -116,6 +112,9 @@ fun IllustGrid(
     // 自定义头部内容
     headerContent: (LazyStaggeredGridScope.() -> Unit)? = null
 ) {
+    // 选择管理器
+    val selectionManager = LocalSelectionManager.current
+
     // 设置
     val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
@@ -194,10 +193,6 @@ fun IllustGrid(
                         IllustCard(
                             illust = illust,
                             onClick = { onIllustClick(illust) },
-                            isSelectionMode = selectionManager?.isSelectionMode ?: false,
-                            isSelected = selectionManager?.isSelected(illust.id) ?: false,
-                            onLongPress = selectionManager?.let { { it.onLongPress(illust) } },
-                            onSelectionToggle = selectionManager?.let { { it.toggleSelection(illust) } },
                             showIllustInfo = showIllustInfo,
                             cornerRadius = illustCornerRadius
                         )

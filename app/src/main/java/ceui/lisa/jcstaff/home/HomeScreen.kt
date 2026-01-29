@@ -110,7 +110,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
-import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
@@ -138,7 +138,7 @@ fun HomeScreen(
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val selectionManager = rememberSelectionManager()
+    val selectionManager = LocalSelectionManager.current
 
     BackHandler(enabled = selectionManager.isSelectionMode) {
         selectionManager.clearSelection()
@@ -284,17 +284,14 @@ fun HomeScreen(
                     userScrollEnabled = false
                 ) { page ->
                     when (page) {
-                        0 -> RecommendedTabPage(selectionManager = selectionManager)
+                        0 -> RecommendedTabPage()
                         1 -> DiscoverTabPage()
-                        2 -> NewWorksTabPage(selectionManager = selectionManager)
+                        2 -> NewWorksTabPage()
                     }
                 }
             }
 
-            SelectionTopBar(
-                selectionManager = selectionManager,
-                allIllusts = emptyList()
-            )
+            SelectionTopBar(allIllusts = emptyList())
         }
     }
 }
@@ -302,9 +299,7 @@ fun HomeScreen(
 // ==================== Tab 1: 推荐 ====================
 
 @Composable
-private fun RecommendedTabPage(
-    selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
-) {
+private fun RecommendedTabPage() {
     val navViewModel = LocalNavigationViewModel.current
     val innerPagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -359,8 +354,7 @@ private fun RecommendedTabPage(
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                        selectionManager = selectionManager,
-                        headerContent = if (state.rankingIllusts.isNotEmpty()) {
+                                                headerContent = if (state.rankingIllusts.isNotEmpty()) {
                             {
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     RankingCarousel(
@@ -404,8 +398,7 @@ private fun RecommendedTabPage(
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                        selectionManager = selectionManager,
-                        headerContent = if (state.rankingIllusts.isNotEmpty()) {
+                                                headerContent = if (state.rankingIllusts.isNotEmpty()) {
                             {
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     RankingCarousel(
@@ -526,9 +519,7 @@ private fun DiscoverTabPage() {
 // ==================== Tab 3: 新作 ====================
 
 @Composable
-private fun NewWorksTabPage(
-    selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
-) {
+private fun NewWorksTabPage() {
     val navViewModel = LocalNavigationViewModel.current
     val innerPagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
@@ -573,8 +564,7 @@ private fun NewWorksTabPage(
                         state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                        selectionManager = selectionManager,
-                    )
+                                            )
                 }
                 1 -> {
                     val vm: FollowingNovelsViewModel = viewModel()
@@ -595,8 +585,7 @@ private fun NewWorksTabPage(
                         state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                        selectionManager = selectionManager,
-                    )
+                                            )
                 }
                 3 -> {
                     val vm: LatestNovelsViewModel = viewModel()

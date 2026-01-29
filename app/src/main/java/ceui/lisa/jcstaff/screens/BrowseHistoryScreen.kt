@@ -42,7 +42,7 @@ import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.NovelCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.components.UserHistoryCard
-import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.history.BrowseHistoryViewModel
 import kotlinx.coroutines.launch
 
@@ -55,7 +55,7 @@ fun BrowseHistoryScreen(
     val illustState by viewModel.illustState.collectAsState()
     val novelState by viewModel.novelState.collectAsState()
     val userState by viewModel.userState.collectAsState()
-    val selectionManager = rememberSelectionManager()
+    val selectionManager = LocalSelectionManager.current
     var showClearDialog by remember { mutableStateOf(false) }
 
     val pagerState = rememberPagerState(pageCount = { 3 })
@@ -132,10 +132,7 @@ fun BrowseHistoryScreen(
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     when (page) {
-                        0 -> IllustHistoryPage(
-                            illustState = illustState,
-                            selectionManager = selectionManager
-                        )
+                        0 -> IllustHistoryPage(illustState = illustState)
                         1 -> NovelHistoryPage(
                             novelState = novelState,
                             onNovelClick = { novel ->
@@ -154,10 +151,7 @@ fun BrowseHistoryScreen(
         }
 
         // Selection top bar overlay (仅插画页有效)
-        SelectionTopBar(
-            selectionManager = selectionManager,
-            allIllusts = illustState.illusts
-        )
+        SelectionTopBar(allIllusts = illustState.illusts)
     }
 
     // 清空确认对话框
@@ -191,8 +185,7 @@ fun BrowseHistoryScreen(
 
 @Composable
 private fun IllustHistoryPage(
-    illustState: ceui.lisa.jcstaff.history.IllustHistoryState,
-    selectionManager: ceui.lisa.jcstaff.core.SelectionManager
+    illustState: ceui.lisa.jcstaff.history.IllustHistoryState
 ) {
     val navViewModel = LocalNavigationViewModel.current
     if (illustState.isEmpty) {
@@ -222,8 +215,7 @@ private fun IllustHistoryPage(
             modifier = Modifier.fillMaxSize(),
             isLoading = illustState.isLoading,
             error = illustState.error,
-            selectionManager = selectionManager
-        )
+                    )
     }
 }
 

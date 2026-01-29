@@ -26,7 +26,7 @@ import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.IllustListViewModel
 import ceui.lisa.jcstaff.core.IllustLoader
-import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.PixivClient
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,7 +37,7 @@ fun BookmarksScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
-    val selectionManager = rememberSelectionManager()
+    val selectionManager = LocalSelectionManager.current
 
     // 返回键退出选择模式
     BackHandler(enabled = selectionManager.isSelectionMode) {
@@ -86,14 +86,10 @@ fun BookmarksScreen(
                 error = state.error,
                 onRefresh = { viewModel.refresh() },
                 onLoadMore = { viewModel.loadMore() },
-                selectionManager = selectionManager
-            )
+                            )
         }
 
         // Selection top bar overlay
-        SelectionTopBar(
-            selectionManager = selectionManager,
-            allIllusts = state.illusts
-        )
+        SelectionTopBar(allIllusts = state.illusts)
     }
 }

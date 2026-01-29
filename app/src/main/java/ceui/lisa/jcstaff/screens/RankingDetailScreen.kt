@@ -27,7 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.IllustGrid
-import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.home.RankingViewModel
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -67,7 +67,7 @@ fun RankingDetailScreen(
     val modes = if (objectType == "manga") mangaRankingModes else illustRankingModes
     val pagerState = rememberPagerState(pageCount = { modes.size })
     val coroutineScope = rememberCoroutineScope()
-    val selectionManager = rememberSelectionManager()
+    val selectionManager = LocalSelectionManager.current
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -160,8 +160,7 @@ fun RankingDetailScreen(
                 error = rankingState.error,
                 onRefresh = { rankingViewModel.refresh() },
                 onLoadMore = { rankingViewModel.loadMore() },
-                selectionManager = selectionManager
-            )
+                            )
         }
     }
 }

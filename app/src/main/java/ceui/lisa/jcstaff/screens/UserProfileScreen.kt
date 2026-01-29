@@ -37,7 +37,7 @@ import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.user.UserProfileHeader
 import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.profile.UserProfileViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -50,7 +50,7 @@ fun UserProfileScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
-    val selectionManager = rememberSelectionManager()
+    val selectionManager = LocalSelectionManager.current
 
     BackHandler(enabled = selectionManager.isSelectionMode) {
         selectionManager.clearSelection()
@@ -175,10 +175,6 @@ fun UserProfileScreen(
                                 aspectRatio = illust.aspectRatio()
                             ))
                         },
-                        isSelectionMode = selectionManager.isSelectionMode,
-                        isSelected = selectionManager.isSelected(illust.id),
-                        onLongPress = { selectionManager.onLongPress(illust) },
-                        onSelectionToggle = { selectionManager.toggleSelection(illust) },
                         showIllustInfo = showIllustInfo,
                         cornerRadius = illustCornerRadius
                     )
@@ -209,9 +205,6 @@ fun UserProfileScreen(
             shareTitle = state.user?.name ?: ""
         )
 
-        SelectionTopBar(
-            selectionManager = selectionManager,
-            allIllusts = state.illusts
-        )
+        SelectionTopBar(allIllusts = state.illusts)
     }
 }

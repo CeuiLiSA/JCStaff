@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -47,16 +48,14 @@ fun IllustCard(
     illust: Illust,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    // 选择模式相关参数
-    isSelectionMode: Boolean = false,
-    isSelected: Boolean = false,
-    onLongPress: (() -> Unit)? = null,
-    onSelectionToggle: (() -> Unit)? = null,
     // 设置参数（从父组件传入，避免每个卡片都收集 Flow）
     showIllustInfo: Boolean = true,
     cornerRadius: Int = 8
 ) {
     val context = LocalContext.current
+    val selectionManager = LocalSelectionManager.current
+    val isSelectionMode = selectionManager.isSelectionMode
+    val isSelected = selectionManager.isSelected(illust.id)
     val previewUrl = illust.previewUrl()
     val aspectRatio = illust.aspectRatio()
 
@@ -87,14 +86,14 @@ fun IllustCard(
             )
             .combinedClickable(
                 onClick = {
-                    if (isSelectionMode && onSelectionToggle != null) {
-                        onSelectionToggle()
+                    if (isSelectionMode) {
+                        selectionManager.toggleSelection(illust)
                     } else {
                         onClick()
                     }
                 },
                 onLongClick = {
-                    onLongPress?.invoke()
+                    selectionManager.onLongPress(illust)
                 }
             )
     ) {

@@ -54,7 +54,7 @@ import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -98,7 +98,7 @@ fun IllustDetailScreen(
     var isImagesExpanded by remember { mutableStateOf(false) }
 
     // 选择模式
-    val selectionManager = rememberSelectionManager()
+    val selectionManager = LocalSelectionManager.current
 
     // 返回键退出选择模式
     BackHandler(enabled = selectionManager.isSelectionMode) {
@@ -340,10 +340,6 @@ fun IllustDetailScreen(
                                 aspectRatio = relatedIllust.aspectRatio()
                             ))
                         },
-                        isSelectionMode = selectionManager.isSelectionMode,
-                        isSelected = selectionManager.isSelected(relatedIllust.id),
-                        onLongPress = { selectionManager.onLongPress(relatedIllust) },
-                        onSelectionToggle = { selectionManager.toggleSelection(relatedIllust) },
                         showIllustInfo = showIllustInfo,
                         cornerRadius = illustCornerRadius
                     )
@@ -390,10 +386,7 @@ fun IllustDetailScreen(
         )
 
         // Selection top bar overlay
-        SelectionTopBar(
-            selectionManager = selectionManager,
-            allIllusts = relatedState.illusts
-        )
+        SelectionTopBar(allIllusts = relatedState.illusts)
     }
 }
 

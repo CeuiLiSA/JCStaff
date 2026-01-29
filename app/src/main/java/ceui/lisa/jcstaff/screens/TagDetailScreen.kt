@@ -59,7 +59,7 @@ import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
-import ceui.lisa.jcstaff.core.rememberSelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.tagdetail.SearchSort
 import ceui.lisa.jcstaff.tagdetail.SearchTarget
@@ -76,7 +76,7 @@ fun TagDetailScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
-    val selectionManager = rememberSelectionManager()
+    val selectionManager = LocalSelectionManager.current
     val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -209,8 +209,7 @@ fun TagDetailScreen(
                                 error = state.error,
                                 onRefresh = { viewModel.refresh() },
                                 onLoadMore = { viewModel.loadMore() },
-                                selectionManager = selectionManager,
-                                headerContent = {
+                                                                headerContent = {
                                     item(
                                         key = "search_filter_bar",
                                         span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine
@@ -270,8 +269,7 @@ fun TagDetailScreen(
 
         // Selection top bar overlay
         SelectionTopBar(
-            selectionManager = selectionManager,
-            allIllusts = state.illusts
+                        allIllusts = state.illusts
         )
     }
 

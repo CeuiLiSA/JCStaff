@@ -61,7 +61,7 @@ ceui.lisa.jcstaff/
 │   ├── ImageDownloader.kt        # 图片下载器
 │   ├── LoadTaskManager.kt        # 原图加载任务管理
 │   ├── ProgressImageLoader.kt    # 带进度的图片加载
-│   ├── SelectionManager.kt       # 多选管理器
+│   ├── SelectionManager.kt       # 多选管理器（CompositionLocal）
 │   └── ScrollPositionStore.kt    # 滚动位置持久化
 ├── navigation/                   # 导航系统
 │   ├── NavRoutes.kt              # 路由定义
@@ -537,13 +537,14 @@ ModalNavigationDrawer（侧滑抽屉）
 
 #### 实现原理
 
-- `SelectionManager`（Compose State 管理）：
+- `SelectionManager`（使用 CompositionLocal 全局提供，类似 React useContext）：
+  - 通过 `LocalSelectionManager.current` 在任意组件中访问
   - `isSelectionMode` — 是否处于选择模式
   - `selectedIds` — 已选 ID 集合
   - `onLongPress(illust)` — 触发进入选择模式
   - `toggleSelection(illust)` — 切换选中状态
-- `SelectionTopBar` 悬浮在页面顶部，显示操作按钮
-- `IllustCard` 在选择模式下显示勾选框覆盖层
+- `SelectionTopBar` 悬浮在页面顶部，显示操作按钮（自动获取 SelectionManager）
+- `IllustCard` 在选择模式下显示勾选框覆盖层（自动获取 SelectionManager）
 
 ---
 

@@ -1,12 +1,19 @@
 package ceui.lisa.jcstaff.core
 
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import ceui.lisa.jcstaff.network.Illust
+
+/**
+ * CompositionLocal for SelectionManager
+ * 全局唯一，类似 React useContext
+ */
+val LocalSelectionManager = compositionLocalOf<SelectionManager> {
+    error("No SelectionManager provided")
+}
 
 /**
  * 管理批量选择状态
@@ -81,9 +88,4 @@ class SelectionManager {
         illustCache.clear()
         isSelectionMode = false
     }
-}
-
-@Composable
-fun rememberSelectionManager(): SelectionManager {
-    return remember { SelectionManager() }
 }

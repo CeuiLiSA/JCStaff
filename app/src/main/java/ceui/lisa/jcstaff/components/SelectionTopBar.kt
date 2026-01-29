@@ -36,18 +36,18 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.core.BatchDownloadProgress
 import ceui.lisa.jcstaff.core.ImageDownloader
-import ceui.lisa.jcstaff.core.SelectionManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectionTopBar(
-    selectionManager: SelectionManager,
     allIllusts: List<Illust>,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val selectionManager = LocalSelectionManager.current
     val coroutineScope = rememberCoroutineScope()
     var isDownloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableStateOf<BatchDownloadProgress?>(null) }

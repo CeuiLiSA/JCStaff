@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,8 @@ import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
 import ceui.lisa.jcstaff.core.LanguageManager
+import ceui.lisa.jcstaff.core.LocalSelectionManager
+import ceui.lisa.jcstaff.core.SelectionManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.home.HomeScreen
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
@@ -218,8 +221,12 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     }
 
     val saveableStateHolder = rememberSaveableStateHolder()
+    val selectionManager = remember { SelectionManager() }
 
-    CompositionLocalProvider(LocalNavigationViewModel provides navViewModel) {
+    CompositionLocalProvider(
+        LocalNavigationViewModel provides navViewModel,
+        LocalSelectionManager provides selectionManager
+    ) {
         // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
         key(activeUserId) {
             AnimatedContent(
