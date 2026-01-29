@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,11 +66,9 @@ import ceui.lisa.jcstaff.tagdetail.SearchTarget
 import ceui.lisa.jcstaff.tagdetail.TagDetailViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TagDetailScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     tag: Tag,
     isPremium: Boolean,
     initialTab: Int = 0,
@@ -208,8 +203,6 @@ fun TagDetailScreen(
                                     ))
                                 },
                                 modifier = Modifier.fillMaxSize(),
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedContentScope = animatedContentScope,
                                 isLoading = state.isLoading,
                                 isLoadingMore = state.isLoadingMore,
                                 canLoadMore = state.canLoadMore,

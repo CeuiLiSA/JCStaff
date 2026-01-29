@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -30,14 +27,11 @@ import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.IllustListViewModel
 import ceui.lisa.jcstaff.core.IllustLoader
 import ceui.lisa.jcstaff.core.rememberSelectionManager
-import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookmarksScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     userId: Long,
     viewModel: IllustListViewModel = viewModel(key = "bookmarks_$userId")
 ) {
@@ -86,8 +80,6 @@ fun BookmarksScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope,
                 isLoading = state.isLoading,
                 isLoadingMore = state.isLoadingMore,
                 canLoadMore = state.canLoadMore,

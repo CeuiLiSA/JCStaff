@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,11 +46,9 @@ import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.history.BrowseHistoryViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BrowseHistoryScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     viewModel: BrowseHistoryViewModel = viewModel()
 ) {
     val navViewModel = LocalNavigationViewModel.current
@@ -139,19 +134,7 @@ fun BrowseHistoryScreen(
                     when (page) {
                         0 -> IllustHistoryPage(
                             illustState = illustState,
-                            selectionManager = selectionManager,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
-                            onIllustClick = { illust ->
-                                navViewModel.navigate(
-                                    NavRoute.IllustDetail(
-                                        illustId = illust.id,
-                                        title = illust.title ?: "",
-                                        previewUrl = illust.previewUrl(),
-                                        aspectRatio = illust.aspectRatio()
-                                    )
-                                )
-                            }
+                            selectionManager = selectionManager
                         )
                         1 -> NovelHistoryPage(
                             novelState = novelState,
@@ -206,15 +189,12 @@ fun BrowseHistoryScreen(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun IllustHistoryPage(
     illustState: ceui.lisa.jcstaff.history.IllustHistoryState,
-    selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
-    onIllustClick: (ceui.lisa.jcstaff.network.Illust) -> Unit
+    selectionManager: ceui.lisa.jcstaff.core.SelectionManager
 ) {
+    val navViewModel = LocalNavigationViewModel.current
     if (illustState.isEmpty) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -229,10 +209,17 @@ private fun IllustHistoryPage(
     } else {
         IllustGrid(
             illusts = illustState.illusts,
-            onIllustClick = onIllustClick,
+            onIllustClick = { illust ->
+                navViewModel.navigate(
+                    NavRoute.IllustDetail(
+                        illustId = illust.id,
+                        title = illust.title ?: "",
+                        previewUrl = illust.previewUrl(),
+                        aspectRatio = illust.aspectRatio()
+                    )
+                )
+            },
             modifier = Modifier.fillMaxSize(),
-            sharedTransitionScope = sharedTransitionScope,
-            animatedContentScope = animatedContentScope,
             isLoading = illustState.isLoading,
             error = illustState.error,
             selectionManager = selectionManager

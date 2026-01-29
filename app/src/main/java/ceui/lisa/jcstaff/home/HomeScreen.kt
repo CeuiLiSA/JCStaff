@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.home
 
-import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateFloatAsState
@@ -127,11 +124,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope?,
     currentUser: User?,
     allAccounts: List<AccountEntry> = emptyList(),
     activeUserId: Long? = null,
@@ -289,17 +284,9 @@ fun HomeScreen(
                     userScrollEnabled = false
                 ) { page ->
                     when (page) {
-                        0 -> RecommendedTabPage(
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
-                            selectionManager = selectionManager,
-                        )
+                        0 -> RecommendedTabPage(selectionManager = selectionManager)
                         1 -> DiscoverTabPage()
-                        2 -> NewWorksTabPage(
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
-                            selectionManager = selectionManager,
-                        )
+                        2 -> NewWorksTabPage(selectionManager = selectionManager)
                     }
                 }
             }
@@ -314,11 +301,8 @@ fun HomeScreen(
 
 // ==================== Tab 1: 推荐 ====================
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun RecommendedTabPage(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope?,
     selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
 ) {
     val navViewModel = LocalNavigationViewModel.current
@@ -369,8 +353,6 @@ private fun RecommendedTabPage(
                                 aspectRatio = illust.aspectRatio()
                             ))
                         },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope,
                         isLoading = state.isLoading,
                         isLoadingMore = state.isLoadingMore,
                         canLoadMore = state.canLoadMore,
@@ -416,8 +398,6 @@ private fun RecommendedTabPage(
                                 aspectRatio = illust.aspectRatio()
                             ))
                         },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope,
                         isLoading = state.isLoading,
                         isLoadingMore = state.isLoadingMore,
                         canLoadMore = state.canLoadMore,
@@ -451,14 +431,7 @@ private fun RecommendedTabPage(
                     val vm: RecommendedNovelsViewModel = viewModel()
                     val state by vm.state.collectAsState()
                     NovelList(
-                        novels = state.novels,
-                        onNovelClick = { novel ->
-                            navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
-                        },
-                        isLoading = state.isLoading,
-                        isLoadingMore = state.isLoadingMore,
-                        canLoadMore = state.canLoadMore,
-                        error = state.error,
+                        state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
                     )
@@ -552,11 +525,8 @@ private fun DiscoverTabPage() {
 
 // ==================== Tab 3: 新作 ====================
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun NewWorksTabPage(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope?,
     selectionManager: ceui.lisa.jcstaff.core.SelectionManager,
 ) {
     val navViewModel = LocalNavigationViewModel.current
@@ -600,21 +570,7 @@ private fun NewWorksTabPage(
                     val vm: FollowingViewModel = viewModel()
                     val state by vm.state.collectAsState()
                     IllustGrid(
-                        illusts = state.illusts,
-                        onIllustClick = { illust ->
-                            navViewModel.navigate(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope,
-                        isLoading = state.isLoading,
-                        isLoadingMore = state.isLoadingMore,
-                        canLoadMore = state.canLoadMore,
-                        error = state.error,
+                        state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
                         selectionManager = selectionManager,
@@ -624,14 +580,7 @@ private fun NewWorksTabPage(
                     val vm: FollowingNovelsViewModel = viewModel()
                     val state by vm.state.collectAsState()
                     NovelList(
-                        novels = state.novels,
-                        onNovelClick = { novel ->
-                            navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
-                        },
-                        isLoading = state.isLoading,
-                        isLoadingMore = state.isLoadingMore,
-                        canLoadMore = state.canLoadMore,
-                        error = state.error,
+                        state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
                     )
@@ -643,21 +592,7 @@ private fun NewWorksTabPage(
                     )
                     val state by vm.state.collectAsState()
                     IllustGrid(
-                        illusts = state.illusts,
-                        onIllustClick = { illust ->
-                            navViewModel.navigate(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
-                        },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope,
-                        isLoading = state.isLoading,
-                        isLoadingMore = state.isLoadingMore,
-                        canLoadMore = state.canLoadMore,
-                        error = state.error,
+                        state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
                         selectionManager = selectionManager,
@@ -667,14 +602,7 @@ private fun NewWorksTabPage(
                     val vm: LatestNovelsViewModel = viewModel()
                     val state by vm.state.collectAsState()
                     NovelList(
-                        novels = state.novels,
-                        onNovelClick = { novel ->
-                            navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
-                        },
-                        isLoading = state.isLoading,
-                        isLoadingMore = state.isLoadingMore,
-                        canLoadMore = state.canLoadMore,
-                        error = state.error,
+                        state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
                     )

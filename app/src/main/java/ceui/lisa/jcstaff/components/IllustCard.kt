@@ -1,14 +1,8 @@
 package ceui.lisa.jcstaff.components
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.BoundsTransform
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -47,14 +41,12 @@ import ceui.lisa.jcstaff.network.Illust
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun IllustCard(
     illust: Illust,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null,
     // 选择模式相关参数
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
@@ -107,23 +99,6 @@ fun IllustCard(
             )
     ) {
         Box {
-            val imageModifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(aspectRatio)
-
-            val finalModifier =
-                if (sharedTransitionScope != null && animatedContentScope != null && !isSelectionMode) {
-                    with(sharedTransitionScope) {
-                        imageModifier.sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "illust-${illust.id}"),
-                            animatedVisibilityScope = animatedContentScope,
-                            boundsTransform = IllustBoundsTransform
-                        )
-                    }
-                } else {
-                    imageModifier
-                }
-
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(previewUrl)
@@ -131,7 +106,9 @@ fun IllustCard(
                     .build(),
                 contentDescription = illust.title,
                 contentScale = ContentScale.Crop,
-                modifier = finalModifier
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(aspectRatio)
             )
 
             // 选择模式下的选中指示器（左上角圆形）
@@ -223,16 +200,4 @@ fun IllustCard(
             }
         }
     }
-}
-
-/**
- * Shared element 过渡动画
- * 使用 FastOutSlowIn 缓动曲线实现快速流畅的过渡效果
- */
-@OptIn(ExperimentalSharedTransitionApi::class)
-val IllustBoundsTransform = BoundsTransform { _, _ ->
-    tween(
-        durationMillis = 260,
-        easing = FastOutSlowInEasing
-    )
 }

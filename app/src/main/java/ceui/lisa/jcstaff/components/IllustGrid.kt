@@ -1,8 +1,5 @@
 package ceui.lisa.jcstaff.components
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,34 +31,74 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.core.SelectionManager
 import ceui.lisa.jcstaff.core.SettingsStore
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
 /**
+ * IllustGrid 的简化版本，直接接收 PagedState
+ * 点击事件默认导航到 IllustDetail
+ */
+@Composable
+fun IllustGrid(
+    state: PagedState<Illust>,
+    modifier: Modifier = Modifier,
+    onRefresh: (() -> Unit)? = null,
+    onLoadMore: (() -> Unit)? = null,
+    selectionManager: SelectionManager? = null,
+    columns: Int = 2,
+    gridState: LazyStaggeredGridState? = null,
+    contentPadding: PaddingValues? = null,
+    headerContent: (LazyStaggeredGridScope.() -> Unit)? = null
+) {
+    val navViewModel = LocalNavigationViewModel.current
+    IllustGrid(
+        illusts = state.items,
+        onIllustClick = { illust ->
+            navViewModel.navigate(NavRoute.IllustDetail(
+                illustId = illust.id,
+                title = illust.title ?: "",
+                previewUrl = illust.previewUrl(),
+                aspectRatio = illust.aspectRatio()
+            ))
+        },
+        modifier = modifier,
+        isLoading = state.isLoading,
+        isLoadingMore = state.isLoadingMore,
+        canLoadMore = state.canLoadMore,
+        error = state.error,
+        onRefresh = onRefresh,
+        onLoadMore = onLoadMore,
+        selectionManager = selectionManager,
+        columns = columns,
+        gridState = gridState,
+        contentPadding = contentPadding,
+        headerContent = headerContent
+    )
+}
+
+/**
  * 通用的 Illust 网格列表组件
  *
  * 特性：
- * - 自动处理 shared element transition 动画期间的滚动禁用
  * - 支持下拉刷新
  * - 支持无限滚动加载更多
  * - 支持选择模式
  * - 自动应用设置（间距、圆角、信息显示）
  * - 持久化滚动位置
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IllustGrid(
     illusts: List<Illust>,
     onIllustClick: (Illust) -> Unit,
     modifier: Modifier = Modifier,
-    // Shared transition
-    sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null,
     // 加载状态
     isLoading: Boolean = false,
     isLoadingMore: Boolean = false,
@@ -157,8 +194,6 @@ fun IllustGrid(
                         IllustCard(
                             illust = illust,
                             onClick = { onIllustClick(illust) },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedContentScope = animatedContentScope,
                             isSelectionMode = selectionManager?.isSelectionMode ?: false,
                             isSelected = selectionManager?.isSelected(illust.id) ?: false,
                             onLongPress = selectionManager?.let { { it.onLongPress(illust) } },

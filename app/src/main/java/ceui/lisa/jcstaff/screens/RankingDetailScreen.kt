@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
 import android.app.DatePickerDialog
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
@@ -60,12 +57,10 @@ private val mangaRankingModes = listOf(
     RankingMode("week_rookie_manga", R.string.rank_week_rookie_manga),
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RankingDetailScreen(
-    objectType: String,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope?
+    objectType: String
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val context = LocalContext.current
@@ -152,17 +147,13 @@ fun RankingDetailScreen(
             IllustGrid(
                 illusts = rankingState.illusts,
                 onIllustClick = { illust ->
-                    navViewModel.navigate(
-                        NavRoute.IllustDetail(
-                            illustId = illust.id,
-                            title = illust.title ?: "",
-                            previewUrl = illust.previewUrl(),
-                            aspectRatio = illust.aspectRatio()
-                        )
-                    )
+                    navViewModel.navigate(NavRoute.IllustDetail(
+                        illustId = illust.id,
+                        title = illust.title ?: "",
+                        previewUrl = illust.previewUrl(),
+                        aspectRatio = illust.aspectRatio()
+                    ))
                 },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope,
                 isLoading = rankingState.isLoading,
                 isLoadingMore = rankingState.isLoadingMore,
                 canLoadMore = rankingState.canLoadMore,

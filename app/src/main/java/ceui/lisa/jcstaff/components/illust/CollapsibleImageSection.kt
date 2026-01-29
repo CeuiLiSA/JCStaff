@@ -1,8 +1,5 @@
 package ceui.lisa.jcstaff.components.illust
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -35,7 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
-import ceui.lisa.jcstaff.components.IllustBoundsTransform
 import ceui.lisa.jcstaff.components.ProgressiveImage
 import ceui.lisa.jcstaff.network.Illust
 
@@ -45,7 +41,6 @@ import ceui.lisa.jcstaff.network.Illust
  * 展开状态：所有图片完整展示
  * 右下角悬浮按钮控制展开/收起
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CollapsibleImageSection(
     illustId: Long,
@@ -55,8 +50,6 @@ fun CollapsibleImageSection(
     illust: Illust?,
     isExpanded: Boolean,
     onExpandToggle: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     onImageClick: ((previewUrl: String, originalUrl: String?, sharedElementKey: String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
@@ -105,36 +98,26 @@ fun CollapsibleImageSection(
         Layout(
             content = {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // 第一张图片 - 带共享元素动画
+                    // 第一张图片
                     val firstImageKey = "${illustId}_0"
-                    with(sharedTransitionScope) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(aspectRatio)
-                                .sharedElement(
-                                    sharedContentState = rememberSharedContentState(key = "illust-$illustId"),
-                                    animatedVisibilityScope = animatedContentScope,
-                                    boundsTransform = IllustBoundsTransform
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(aspectRatio)
+                    ) {
+                        ProgressiveImage(
+                            previewUrl = previewUrl,
+                            originalUrl = firstOriginalUrl,
+                            contentDescription = title,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                onImageClick?.invoke(
+                                    previewUrl,
+                                    firstOriginalUrl,
+                                    firstImageKey
                                 )
-                        ) {
-                            ProgressiveImage(
-                                previewUrl = previewUrl,
-                                originalUrl = firstOriginalUrl,
-                                contentDescription = title,
-                                modifier = Modifier.fillMaxWidth(),
-                                sharedElementKey = firstImageKey,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedContentScope = animatedContentScope,
-                                onClick = {
-                                    onImageClick?.invoke(
-                                        previewUrl,
-                                        firstOriginalUrl,
-                                        firstImageKey
-                                    )
-                                }
-                            )
-                        }
+                            }
+                        )
                     }
 
                     // 多P作品的额外图片
@@ -152,9 +135,6 @@ fun CollapsibleImageSection(
                                     originalUrl = originalUrl,
                                     contentDescription = loadedIllust.title,
                                     modifier = Modifier.fillMaxWidth(),
-                                    sharedElementKey = imageKey,
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedContentScope = animatedContentScope,
                                     onClick = {
                                         onImageClick?.invoke(largeUrl, originalUrl, imageKey)
                                     }

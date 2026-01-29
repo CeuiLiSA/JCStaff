@@ -1,8 +1,5 @@
 package ceui.lisa.jcstaff.screens
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,11 +39,9 @@ val sampleItems = listOf(
     ListItem(5, "Item 5", "This is the fifth item"),
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     onItemClick: (Int, String) -> Unit,
     onLogoutClick: () -> Unit
 ) {
@@ -76,8 +71,6 @@ fun ListScreen(
             items(sampleItems) { item ->
                 ItemCard(
                     item = item,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedContentScope = animatedContentScope,
                     onClick = { onItemClick(item.id, item.name) }
                 )
             }
@@ -85,61 +78,40 @@ fun ListScreen(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ItemCard(
     item: ListItem,
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     onClick: () -> Unit
 ) {
-    with(sharedTransitionScope) {
-        Card(
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "card-${item.id}"),
-                    animatedVisibilityScope = animatedContentScope
-                )
-                .clickable(onClick = onClick),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "title-${item.id}"),
-                            animatedVisibilityScope = animatedContentScope
-                        )
-                    )
-                    Text(
-                        text = item.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "description-${item.id}"),
-                            animatedVisibilityScope = animatedContentScope
-                        )
-                    )
-                }
+            Column {
                 Text(
-                    text = "#${item.id}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.sharedElement(
-                        sharedContentState = rememberSharedContentState(key = "id-${item.id}"),
-                        animatedVisibilityScope = animatedContentScope
-                    )
+                    text = item.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = item.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Text(
+                text = "#${item.id}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }

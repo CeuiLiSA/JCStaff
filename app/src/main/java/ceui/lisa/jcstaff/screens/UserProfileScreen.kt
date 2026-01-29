@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,16 +38,13 @@ import ceui.lisa.jcstaff.components.user.UserProfileHeader
 import ceui.lisa.jcstaff.core.SettingsStore
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import ceui.lisa.jcstaff.core.rememberSelectionManager
-import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.profile.UserProfileViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     userId: Long,
     viewModel: UserProfileViewModel = viewModel(key = "user_profile_$userId")
 ) {
@@ -181,8 +175,6 @@ fun UserProfileScreen(
                                 aspectRatio = illust.aspectRatio()
                             ))
                         },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope,
                         isSelectionMode = selectionManager.isSelectionMode,
                         isSelected = selectionManager.isSelected(illust.id),
                         onLongPress = { selectionManager.onLongPress(illust) },

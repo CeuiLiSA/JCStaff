@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -60,15 +57,12 @@ import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridS
 import ceui.lisa.jcstaff.core.rememberSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
-import ceui.lisa.jcstaff.network.Tag
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IllustDetailScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     illustId: Long,
     title: String,
     previewUrl: String,
@@ -197,13 +191,11 @@ fun IllustDetailScreen(
                         illust = illust,
                         isExpanded = isImagesExpanded,
                         onExpandToggle = { isImagesExpanded = !isImagesExpanded },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedContentScope = animatedContentScope,
-                        onImageClick = { previewUrl, originalUrl, sharedElementKey ->
+                        onImageClick = { clickedPreviewUrl, originalUrl, _ ->
                             navViewModel.navigate(NavRoute.ImageViewer(
-                                imageUrl = previewUrl,
+                                imageUrl = clickedPreviewUrl,
                                 originalUrl = originalUrl,
-                                sharedElementKey = sharedElementKey
+                                sharedElementKey = ""
                             ))
                         }
                     )
@@ -394,9 +386,7 @@ fun IllustDetailScreen(
         // 浮动顶部栏
         FloatingTopBar(
             shareUrl = "https://www.pixiv.net/artworks/$illustId",
-            shareTitle = title,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedContentScope = animatedContentScope
+            shareTitle = title
         )
 
         // Selection top bar overlay

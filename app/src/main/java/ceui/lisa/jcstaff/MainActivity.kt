@@ -10,8 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -51,12 +49,12 @@ import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.NovelDetailScreen
+import ceui.lisa.jcstaff.screens.RankingDetailScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
-import ceui.lisa.jcstaff.screens.ShaderDemoScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
+import ceui.lisa.jcstaff.screens.ShaderDemoScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
-import ceui.lisa.jcstaff.screens.RankingDetailScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 import coil.Coil
 import coil.ImageLoader
@@ -108,17 +106,7 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             JCStaffTheme {
-                val isInitialized by LanguageManager.isInitialized.collectAsState()
-                if (!isInitialized) {
-                    // 语言状态还在读取中，显示空白背景（不卡主线程）
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
-                    )
-                } else {
-                    AppNavigation(authViewModel)
-                }
+                AppNavigation(authViewModel)
             }
         }
     }
@@ -140,7 +128,6 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavigation(authViewModel: AuthViewModel) {
     val context = LocalContext.current
@@ -235,161 +222,139 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     CompositionLocalProvider(LocalNavigationViewModel provides navViewModel) {
         // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
         key(activeUserId) {
-            SharedTransitionLayout(
+            AnimatedContent(
+                targetState = currentRoute,
+                transitionSpec = {
+                    fadeIn() togetherWith fadeOut() using SizeTransform(clip = false)
+                },
+                label = "navigation",
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
-            ) {
-                AnimatedContent(
-                    targetState = currentRoute,
-                    transitionSpec = {
-                        fadeIn() togetherWith fadeOut() using SizeTransform(clip = false)
-                    },
-                    label = "navigation"
-                ) { route ->
-                    saveableStateHolder.SaveableStateProvider(route.stableKey) {
-                        when (route) {
-                            is NavRoute.Landing -> {
-                                LandingScreen(
-                                    onLoginClick = {
-                                        authViewModel.launchLogin(context, isSignup = false)
-                                    },
-                                    onSignupClick = {
-                                        authViewModel.launchLogin(context, isSignup = true)
-                                    }
-                                )
-                            }
+            ) { route ->
+                saveableStateHolder.SaveableStateProvider(route.stableKey) {
+                    when (route) {
+                        is NavRoute.Landing -> {
+                            LandingScreen(
+                                onLoginClick = {
+                                    authViewModel.launchLogin(context, isSignup = false)
+                                },
+                                onSignupClick = {
+                                    authViewModel.launchLogin(context, isSignup = true)
+                                }
+                            )
+                        }
 
-                            is NavRoute.Home -> {
-                                val currentUser = (authState as? AuthState.Authenticated)?.user
-                                HomeScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent,
-                                    currentUser = currentUser,
-                                    allAccounts = allAccounts,
-                                    activeUserId = activeUserId,
-                                    onSwitchAccount = { userId ->
-                                        authViewModel.switchAccount(userId)
-                                    },
-                                    onAddAccount = {
-                                        authViewModel.launchAddAccount(context)
-                                    }
-                                )
-                            }
+                        is NavRoute.Home -> {
+                            val currentUser = (authState as? AuthState.Authenticated)?.user
+                            HomeScreen(
+                                currentUser = currentUser,
+                                allAccounts = allAccounts,
+                                activeUserId = activeUserId,
+                                onSwitchAccount = { userId ->
+                                    authViewModel.switchAccount(userId)
+                                },
+                                onAddAccount = {
+                                    authViewModel.launchAddAccount(context)
+                                }
+                            )
+                        }
 
-                            is NavRoute.Search -> {
-                                SearchScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent
-                                )
-                            }
+                        is NavRoute.Search -> {
+                            SearchScreen()
+                        }
 
-                            is NavRoute.IllustDetail -> {
-                                IllustDetailScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent,
-                                    illustId = route.illustId,
-                                    title = route.title,
-                                    previewUrl = route.previewUrl,
-                                    aspectRatio = route.aspectRatio
-                                )
-                            }
+                        is NavRoute.IllustDetail -> {
+                            IllustDetailScreen(
+                                illustId = route.illustId,
+                                title = route.title,
+                                previewUrl = route.previewUrl,
+                                aspectRatio = route.aspectRatio
+                            )
+                        }
 
-                            is NavRoute.TagDetail -> {
-                                val isPremium =
-                                    (authState as? AuthState.Authenticated)?.user?.is_premium == true
-                                TagDetailScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent,
-                                    tag = route.tag,
-                                    isPremium = isPremium,
-                                    initialTab = route.initialTab
-                                )
-                            }
+                        is NavRoute.TagDetail -> {
+                            val isPremium =
+                                (authState as? AuthState.Authenticated)?.user?.is_premium == true
+                            TagDetailScreen(
+                                tag = route.tag,
+                                isPremium = isPremium,
+                                initialTab = route.initialTab
+                            )
+                        }
 
-                            is NavRoute.NovelDetail -> {
-                                NovelDetailScreen(
-                                    novelId = route.novelId
-                                )
-                            }
+                        is NavRoute.NovelDetail -> {
+                            NovelDetailScreen(
+                                novelId = route.novelId
+                            )
+                        }
 
-                            is NavRoute.Bookmarks -> {
-                                BookmarksScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent,
-                                    userId = route.userId
-                                )
-                            }
+                        is NavRoute.Bookmarks -> {
+                            BookmarksScreen(
+                                userId = route.userId
+                            )
+                        }
 
-                            is NavRoute.Settings -> {
-                                SettingsScreen(
-                                    onLogoutClick = {
-                                        authViewModel.logout()
-                                    }
-                                )
-                            }
+                        is NavRoute.Settings -> {
+                            SettingsScreen(
+                                onLogoutClick = {
+                                    authViewModel.logout()
+                                }
+                            )
+                        }
 
-                            is NavRoute.ImageViewer -> {
-                                ImageViewerScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent,
-                                    imageUrl = route.imageUrl,
-                                    originalUrl = route.originalUrl,
-                                    sharedElementKey = route.sharedElementKey
-                                )
-                            }
+                        is NavRoute.ImageViewer -> {
+                            ImageViewerScreen(
+                                imageUrl = route.imageUrl,
+                                originalUrl = route.originalUrl,
+                                sharedElementKey = route.sharedElementKey
+                            )
+                        }
 
-                            is NavRoute.BrowseHistory -> {
-                                BrowseHistoryScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent
-                                )
-                            }
+                        is NavRoute.BrowseHistory -> {
+                            BrowseHistoryScreen()
+                        }
 
-                            is NavRoute.UserProfile -> {
-                                UserProfileScreen(
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent,
-                                    userId = route.userId
-                                )
-                            }
+                        is NavRoute.UserProfile -> {
+                            UserProfileScreen(
+                                userId = route.userId
+                            )
+                        }
 
-                            is NavRoute.ShaderDemo -> {
-                                ShaderDemoScreen()
-                            }
+                        is NavRoute.ShaderDemo -> {
+                            ShaderDemoScreen()
+                        }
 
-                            is NavRoute.AccountManagement -> {
-                                AccountManagementScreen(
-                                    allAccounts = allAccounts,
-                                    activeUserId = activeUserId,
-                                    onAddAccount = {
-                                        authViewModel.launchAddAccount(context)
-                                    },
-                                    onRemoveAccount = { userId ->
-                                        authViewModel.removeAccount(userId)
-                                    },
-                                    onSwitchAccount = { userId ->
-                                        authViewModel.switchAccount(userId)
-                                    }
-                                )
-                            }
+                        is NavRoute.AccountManagement -> {
+                            AccountManagementScreen(
+                                allAccounts = allAccounts,
+                                activeUserId = activeUserId,
+                                onAddAccount = {
+                                    authViewModel.launchAddAccount(context)
+                                },
+                                onRemoveAccount = { userId ->
+                                    authViewModel.removeAccount(userId)
+                                },
+                                onSwitchAccount = { userId ->
+                                    authViewModel.switchAccount(userId)
+                                }
+                            )
+                        }
 
-                            is NavRoute.CommentDetail -> {
-                                val currentUserId = (authState as? AuthState.Authenticated)?.user?.id ?: 0L
-                                CommentScreen(
-                                    objectId = route.objectId,
-                                    objectType = route.objectType,
-                                    currentUserId = currentUserId
-                                )
-                            }
+                        is NavRoute.CommentDetail -> {
+                            val currentUserId =
+                                (authState as? AuthState.Authenticated)?.user?.id ?: 0L
+                            CommentScreen(
+                                objectId = route.objectId,
+                                objectType = route.objectType,
+                                currentUserId = currentUserId
+                            )
+                        }
 
-                            is NavRoute.RankingDetail -> {
-                                RankingDetailScreen(
-                                    objectType = route.objectType,
-                                    sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedContentScope = this@AnimatedContent
-                                )
-                            }
+                        is NavRoute.RankingDetail -> {
+                            RankingDetailScreen(
+                                objectType = route.objectType
+                            )
                         }
                     }
                 }

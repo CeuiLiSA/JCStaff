@@ -27,9 +27,41 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.core.PagedState
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Novel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+
+/**
+ * NovelList 的简化版本，直接接收 PagedState
+ * 点击事件默认导航到 NovelDetail
+ */
+@Composable
+fun NovelList(
+    state: PagedState<Novel>,
+    modifier: Modifier = Modifier,
+    onRefresh: (() -> Unit)? = null,
+    onLoadMore: (() -> Unit)? = null,
+    listState: LazyListState = rememberLazyListState()
+) {
+    val navViewModel = LocalNavigationViewModel.current
+    NovelList(
+        novels = state.items,
+        onNovelClick = { novel ->
+            navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
+        },
+        modifier = modifier,
+        isLoading = state.isLoading,
+        isLoadingMore = state.isLoadingMore,
+        canLoadMore = state.canLoadMore,
+        error = state.error,
+        onRefresh = onRefresh,
+        onLoadMore = onLoadMore,
+        listState = listState
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

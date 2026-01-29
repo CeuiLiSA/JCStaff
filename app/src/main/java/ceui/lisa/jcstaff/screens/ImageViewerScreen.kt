@@ -1,8 +1,5 @@
 package ceui.lisa.jcstaff.screens
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -32,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import androidx.compose.runtime.collectAsState
-import ceui.lisa.jcstaff.components.IllustBoundsTransform
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -47,11 +43,8 @@ import java.io.File
  * - 退出再进入时，续上上一个请求而不是新发请求
  * - 下载完成后直接使用缓存文件，点击下载按钮瞬间完成
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ImageViewerScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     imageUrl: String,
     originalUrl: String?,
     sharedElementKey: String
@@ -82,103 +75,88 @@ fun ImageViewerScreen(
 
     val zoomableState = rememberZoomableImageState()
 
-    with(sharedTransitionScope) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        ) {
-            // 图片容器（带 shared element transition）
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .sharedElement(
-                        sharedContentState = rememberSharedContentState(key = "image-$sharedElementKey"),
-                        animatedVisibilityScope = animatedContentScope,
-                        boundsTransform = IllustBoundsTransform
-                    )
-            ) {
-                // 预览图（作为底层，在原图加载完成前显示）
-                AsyncImage(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        // 图片容器
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 预览图（作为底层，在原图加载完成前显示）
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // 原图（当下载完成后，使用缓存文件加载可缩放图片）
+            if (isTaskCompleted && cachedFilePath != null) {
+                ZoomableAsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(imageUrl)
+                        .data(File(cachedFilePath))
                         .build(),
                     contentDescription = null,
+                    state = zoomableState,
                     modifier = Modifier.fillMaxSize()
                 )
-
-                // 原图（当下载完成后，使用缓存文件加载可缩放图片）
-                if (isTaskCompleted && cachedFilePath != null) {
-                    ZoomableAsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(File(cachedFilePath))
-                            .build(),
-                        contentDescription = null,
-                        state = zoomableState,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
             }
+        }
 
-            // 加载进度指示器（带 shared element transition）
-            if (isTaskLoading && !isTaskCompleted) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(72.dp)
-                        .sharedElement(
-                            sharedContentState = rememberSharedContentState(key = "progress-$sharedElementKey"),
-                            animatedVisibilityScope = animatedContentScope,
-                            boundsTransform = IllustBoundsTransform
-                        )
-                        .background(
-                            color = Color.Black.copy(alpha = 0.7f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // 背景圆环
-                    CircularProgressIndicator(
-                        progress = { 1f },
-                        modifier = Modifier.size(56.dp),
-                        strokeWidth = 4.dp,
-                        color = Color.White.copy(alpha = 0.3f),
-                        trackColor = Color.Transparent
-                    )
-                    // 进度圆环
-                    CircularProgressIndicator(
-                        progress = { downloadProgress },
-                        modifier = Modifier.size(56.dp),
-                        strokeWidth = 4.dp,
-                        color = Color.White,
-                        trackColor = Color.Transparent
-                    )
-                    // 百分比文字
-                    Text(
-                        text = "${(downloadProgress * 100).toInt()}%",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            // 关闭按钮
-            val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
-            IconButton(
-                onClick = { navViewModel.goBack() },
+        // 加载进度指示器
+        if (isTaskLoading && !isTaskCompleted) {
+            Box(
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(
-                        top = statusBarPadding.calculateTopPadding() + 4.dp,
-                        start = 4.dp
-                    )
+                    .align(Alignment.Center)
+                    .size(72.dp)
+                    .background(
+                        color = Color.Black.copy(alpha = 0.7f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = stringResource(R.string.close),
-                    tint = Color.White
+                // 背景圆环
+                CircularProgressIndicator(
+                    progress = { 1f },
+                    modifier = Modifier.size(56.dp),
+                    strokeWidth = 4.dp,
+                    color = Color.White.copy(alpha = 0.3f),
+                    trackColor = Color.Transparent
+                )
+                // 进度圆环
+                CircularProgressIndicator(
+                    progress = { downloadProgress },
+                    modifier = Modifier.size(56.dp),
+                    strokeWidth = 4.dp,
+                    color = Color.White,
+                    trackColor = Color.Transparent
+                )
+                // 百分比文字
+                Text(
+                    text = "${(downloadProgress * 100).toInt()}%",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
+        }
+
+        // 关闭按钮
+        val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+        IconButton(
+            onClick = { navViewModel.goBack() },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(
+                    top = statusBarPadding.calculateTopPadding() + 4.dp,
+                    start = 4.dp
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.close),
+                tint = Color.White
+            )
         }
     }
 }

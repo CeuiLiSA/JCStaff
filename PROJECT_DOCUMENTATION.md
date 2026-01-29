@@ -15,7 +15,7 @@ JCStaff 是一个使用 **Jetpack Compose + Material Design 3** 构建的 Pixiv 
 | 图片加载 | Coil + 自定义进度加载器 |
 | 认证方式 | OAuth 2.0 + PKCE |
 | 导航 | 自定义栈式导航 (NavigationViewModel) |
-| 动画 | Shared Element Transitions |
+| 动画 | Compose AnimatedContent |
 | 特效 | AGSL RuntimeShader |
 
 ---
@@ -327,7 +327,7 @@ ModalNavigationDrawer（侧滑抽屉）
 
 #### 用户视角
 - 从任何列表点击插画卡片进入详情
-- 顶部显示作品图片（多图可展开），支持共享元素过渡动画
+- 顶部显示作品图片（多图可展开）
 - 下方依次展示：标题、作者信息（可关注）、操作栏（收藏/下载/分享）、标签、简介、元数据
 - 底部展示相关推荐作品的瀑布流
 
@@ -350,11 +350,6 @@ ModalNavigationDrawer（侧滑抽屉）
     → 列表页的 Flow 同步更新 → 卡片自动刷新收藏图标
 ```
 
-**共享元素过渡动画：**
-- 使用 Compose `SharedTransitionLayout` + `AnimatedContent`
-- 每张图片通过 `sharedElement(key = "image-{illustId}")` 关联
-- 从列表到详情页，图片平滑过渡而非突然切换
-
 ---
 
 ### 5. 全屏图片查看器
@@ -363,7 +358,6 @@ ModalNavigationDrawer（侧滑抽屉）
 - 点击详情页中的图片进入全屏模式
 - 先显示预览图，后台加载原图并显示下载进度（百分比环形指示器）
 - 原图加载完成后可双指缩放和拖拽
-- 支持共享元素过渡动画
 
 #### 实现原理
 
@@ -720,7 +714,6 @@ class NavigationViewModel : ViewModel() {
 - 使用 Compose `SnapshotStateList` 自动触发重组
 - 路由是类型安全的 `sealed interface`，参数直接嵌入
 - `AnimatedContent` 实现页面切换动画（`fadeIn togetherWith fadeOut`）
-- `SharedTransitionLayout` 包裹全部页面，支持跨页共享元素过渡
 - `SaveableStateProvider(route.stableKey)` 保存每个页面的 UI 状态
 - 通过 `CompositionLocalProvider` 全局提供 `navViewModel`
 - `key(activeUserId)` 在账号切换时强制重建所有页面和 ViewModel

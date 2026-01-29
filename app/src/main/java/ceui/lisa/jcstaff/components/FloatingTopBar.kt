@@ -1,9 +1,6 @@
 package ceui.lisa.jcstaff.components
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,16 +40,12 @@ import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 /**
  * 通用浮动顶部栏组件
  * 包含渐变背景、返回按钮、分享按钮和更多菜单
- * 可选支持共享元素过渡（用于 IllustDetailScreen 等需要在过渡动画期间显示的场景）
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun FloatingTopBar(
     shareUrl: String,
     shareTitle: String,
     modifier: Modifier = Modifier,
-    sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null,
     onReportClick: () -> Unit = {},
     onBlockClick: () -> Unit = {}
 ) {
@@ -61,44 +54,19 @@ fun FloatingTopBar(
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     var showMoreMenu by remember { mutableStateOf(false) }
 
-    // 判断是否使用共享元素过渡
-    val useSharedTransition = sharedTransitionScope != null && animatedContentScope != null
-
     // 渐变背景的 modifier
-    val gradientModifier = if (useSharedTransition && sharedTransitionScope != null) {
-        with(sharedTransitionScope) {
-            modifier
-                .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
-                .fillMaxWidth()
-                .height(statusBarPadding.calculateTopPadding() + 60.dp)
-        }
-    } else {
-        Modifier
-            .fillMaxWidth()
-            .height(statusBarPadding.calculateTopPadding() + 60.dp)
-    }
+    val gradientModifier = Modifier
+        .fillMaxWidth()
+        .height(statusBarPadding.calculateTopPadding() + 60.dp)
 
     // 按钮行的 modifier
-    val buttonRowModifier = if (useSharedTransition && sharedTransitionScope != null) {
-        with(sharedTransitionScope) {
-            Modifier
-                .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
-                .fillMaxWidth()
-                .padding(
-                    top = statusBarPadding.calculateTopPadding() + 4.dp,
-                    start = 4.dp,
-                    end = 4.dp
-                )
-        }
-    } else {
-        Modifier
-            .fillMaxWidth()
-            .padding(
-                top = statusBarPadding.calculateTopPadding() + 4.dp,
-                start = 4.dp,
-                end = 4.dp
-            )
-    }
+    val buttonRowModifier = Modifier
+        .fillMaxWidth()
+        .padding(
+            top = statusBarPadding.calculateTopPadding() + 4.dp,
+            start = 4.dp,
+            end = 4.dp
+        )
 
     Box(modifier = modifier) {
         // 顶部阴影渐变

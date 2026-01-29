@@ -1,8 +1,5 @@
 package ceui.lisa.jcstaff.components
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -40,7 +37,6 @@ import java.io.File
  * - 下载完成后保存到缓存文件
  * - 原图下载完成后支持 Peek Overlay 手势缩放预览
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ProgressiveImage(
     previewUrl: String,
@@ -48,9 +44,6 @@ fun ProgressiveImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.FillWidth,
-    sharedElementKey: String? = null,
-    sharedTransitionScope: SharedTransitionScope? = null,
-    animatedContentScope: AnimatedContentScope? = null,
     onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -78,31 +71,13 @@ fun ProgressiveImage(
         }
     }
 
-    // 计算图片的 shared element modifier
-    val imageModifier =
-        if (sharedElementKey != null && sharedTransitionScope != null && animatedContentScope != null) {
-            with(sharedTransitionScope) {
-                Modifier.sharedElement(
-                    sharedContentState = rememberSharedContentState(key = "image-$sharedElementKey"),
-                    animatedVisibilityScope = animatedContentScope,
-                    boundsTransform = IllustBoundsTransform
-                )
-            }
-        } else {
-            Modifier
-        }
-
     Box(
         modifier = modifier.then(
             if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
         )
     ) {
-        // 图片容器（可能带 shared element transition）
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(imageModifier)
-        ) {
+        // 图片容器
+        Box(modifier = Modifier.fillMaxSize()) {
             // 预览图（始终显示作为底层）
             AsyncImage(
                 model = ImageRequest.Builder(context)

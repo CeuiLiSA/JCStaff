@@ -1,8 +1,5 @@
 package ceui.lisa.jcstaff.screens
 
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -27,11 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedContentScope: AnimatedContentScope,
     itemId: Int,
     itemName: String
 ) {
@@ -54,60 +49,41 @@ fun DetailScreen(
             )
         }
     ) { innerPadding ->
-        with(sharedTransitionScope) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Card(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .sharedBounds(
-                            sharedContentState = rememberSharedContentState(key = "card-$itemId"),
-                            animatedVisibilityScope = animatedContentScope
-                        ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Text(
+                        text = "#$itemId",
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = itemName,
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    item?.let {
                         Text(
-                            text = "#$itemId",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.sharedElement(
-                                sharedContentState = rememberSharedContentState(key = "id-$itemId"),
-                                animatedVisibilityScope = animatedContentScope
-                            )
+                            text = it.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = itemName,
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.sharedElement(
-                                sharedContentState = rememberSharedContentState(key = "title-$itemId"),
-                                animatedVisibilityScope = animatedContentScope
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        item?.let {
-                            Text(
-                                text = it.description,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.sharedElement(
-                                    sharedContentState = rememberSharedContentState(key = "description-$itemId"),
-                                    animatedVisibilityScope = animatedContentScope
-                                )
-                            )
-                        }
                     }
                 }
             }
