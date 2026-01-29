@@ -354,8 +354,8 @@ private fun RecommendedTabPage() {
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                                                headerContent = if (state.rankingIllusts.isNotEmpty()) {
-                            {
+                                                headerContent = {
+                            if (state.rankingIllusts.isNotEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     RankingCarousel(
                                         illusts = state.rankingIllusts,
@@ -373,7 +373,13 @@ private fun RecommendedTabPage() {
                                     )
                                 }
                             }
-                        } else null
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                SectionHeader(
+                                    title = stringResource(R.string.recommended_for_you),
+                                    subtitle = stringResource(R.string.recommended_illust_subtitle)
+                                )
+                            }
+                        }
                     )
                 }
                 1 -> {
@@ -398,8 +404,8 @@ private fun RecommendedTabPage() {
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                                                headerContent = if (state.rankingIllusts.isNotEmpty()) {
-                            {
+                                                headerContent = {
+                            if (state.rankingIllusts.isNotEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     RankingCarousel(
                                         illusts = state.rankingIllusts,
@@ -417,7 +423,13 @@ private fun RecommendedTabPage() {
                                     )
                                 }
                             }
-                        } else null
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                SectionHeader(
+                                    title = stringResource(R.string.recommended_for_you),
+                                    subtitle = stringResource(R.string.recommended_manga_subtitle)
+                                )
+                            }
+                        }
                     )
                 }
                 2 -> {
@@ -1045,6 +1057,10 @@ private fun DrawerMenuItem(
 
 // ==================== Ranking Carousel ====================
 
+private val RankGold = Color(0xFFFFD700)
+private val RankSilver = Color(0xFFC0C0C0)
+private val RankBronze = Color(0xFFCD7F32)
+
 @Composable
 private fun RankingCarousel(
     illusts: List<Illust>,
@@ -1053,28 +1069,99 @@ private fun RankingCarousel(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
+        // Header with gradient background
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onViewAllClick)
-                .padding(start = 4.dp, end = 8.dp, top = 4.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                )
+                .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 12.dp)
         ) {
-            Text(
-                text = stringResource(R.string.daily_ranking),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = stringResource(R.string.view_full_ranking),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Trophy icon with gradient background
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    RankGold.copy(alpha = 0.2f),
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.daily_ranking),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.ranking_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // View All button
+                Surface(
+                    onClick = onViewAllClick,
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.view_all),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Cards carousel
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
         ) {
             itemsIndexed(illusts, key = { _, illust -> "ranking_${illust.id}" }) { index, illust ->
                 RankingCard(
@@ -1085,7 +1172,7 @@ private fun RankingCarousel(
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -1098,48 +1185,232 @@ private fun RankingCard(
 ) {
     val context = LocalContext.current
 
-    ElevatedCard(
-        onClick = onClick,
-        modifier = modifier.width(140.dp),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Box {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(illust.image_urls?.square_medium ?: illust.previewUrl())
-                    .crossfade(true)
-                    .build(),
-                contentDescription = illust.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.75f)
-            )
+    // Rank colors for top 3
+    val rankColor = when (rank) {
+        1 -> RankGold
+        2 -> RankSilver
+        3 -> RankBronze
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
 
-            // Rank badge
-            Surface(
-                shape = RoundedCornerShape(bottomEnd = 8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-                modifier = Modifier.align(Alignment.TopStart)
+    val rankTextColor = when (rank) {
+        1, 2, 3 -> Color.Black.copy(alpha = 0.85f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier.width(160.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = if (rank <= 3) 8.dp else 4.dp,
+        tonalElevation = if (rank <= 3) 2.dp else 0.dp
+    ) {
+        Column {
+            Box {
+                // Main image
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(illust.image_urls?.medium ?: illust.previewUrl())
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = illust.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.8f)
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                )
+
+                // Rank badge - special design for top 3
+                if (rank <= 3) {
+                    Box(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .size(32.dp)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        rankColor,
+                                        rankColor.copy(alpha = 0.8f)
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                            .border(
+                                width = 2.dp,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.6f),
+                                        Color.White.copy(alpha = 0.2f)
+                                    )
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$rank",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = rankTextColor
+                        )
+                    }
+                } else {
+                    Surface(
+                        modifier = Modifier.padding(8.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+                    ) {
+                        Text(
+                            text = "#$rank",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                // Author avatar at bottom right of image
+                illust.user?.let { user ->
+                    val avatarUrl = user.profile_image_urls?.findAvatarUrl()
+                    if (avatarUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(avatarUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = user.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                                .size(28.dp)
+                                .border(
+                                    width = 2.dp,
+                                    color = Color.White,
+                                    shape = CircleShape
+                                )
+                                .padding(1.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        )
+                    }
+                }
+            }
+
+            // Title and author info
+            Column(
+                modifier = Modifier.padding(12.dp)
             ) {
                 Text(
-                    text = "#$rank",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    text = illust.title ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = illust.user?.name ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Stats row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatCount(illust.total_bookmarks ?: 0),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatCount(count: Int): String {
+    return when {
+        count >= 10000 -> String.format("%.1fK", count / 1000.0)
+        count >= 1000 -> String.format("%.1fK", count / 1000.0)
+        else -> count.toString()
+    }
+}
+
+// ==================== Section Header ====================
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    subtitle: String? = null,
+    icon: ImageVector? = null,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Icon with gradient background
+        if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                MaterialTheme.colorScheme.tertiaryContainer
+                            )
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-
-        // Title
-        Text(
-            text = illust.title ?: "",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-        )
     }
 }
 
@@ -1184,8 +1455,8 @@ private fun TrendingTagGrid(
         columns = GridCells.Fixed(3),
         state = gridState,
         modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(1.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
         // First item spans full width
         if (tags.isNotEmpty()) {
@@ -1231,7 +1502,6 @@ private fun TrendingTagCard(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
     ) {
         // Background image

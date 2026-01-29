@@ -247,11 +247,11 @@ ceui.lisa.jcstaff/
 
 #### 用户视角
 - **推荐 Tab**：展示 Pixiv 推荐内容，包含三个子 Tab：
-  - **插画**：顶部排行榜轮播（可点击进入完整排行榜）+ 瀑布流推荐
-  - **漫画**：顶部排行榜轮播 + 瀑布流推荐
+  - **插画**：顶部精美排行榜轮播（金银铜牌徽章 + 作者头像 + 收藏数）+ 「为你推荐」Section Header + 瀑布流推荐
+  - **漫画**：顶部精美排行榜轮播 + 「为你推荐」Section Header + 瀑布流推荐
   - **小说**：小说推荐列表
 - **发现 Tab**：探索入口，包含三个子 Tab：
-  - **插画漫画标签**：热门标签网格（首个全宽展示）
+  - **插画漫画标签**：热门标签网格（首个全宽展示，1dp 间距，直角边框）
   - **小说标签**：小说热门标签网格
   - **推荐作者**：可能喜欢的作者列表（含示例作品）
 - **新作 Tab**：基于时间线的最新内容，包含四个子 Tab：
@@ -320,6 +320,37 @@ ModalNavigationDrawer（侧滑抽屉）
 - `RankingViewModel` 接收 `mode` 参数，调用 `getRankingIllusts(mode, date)` API
 - 日期选择使用 Android `DatePickerDialog`，支持 2008-08-01 到昨天的范围
 - 导航路由 `NavRoute.RankingDetail(objectType)` 区分插画和漫画排行榜
+
+---
+
+### 3.2 排行榜轮播组件 (RankingCarousel)
+
+#### 用户视角
+- 在推荐 Tab 的插画/漫画子页面顶部展示
+- 精美的 Header 区域：渐变背景 + 趋势图标 + 标题副标题 + 圆角按钮
+- 横向滑动的排行榜卡片，前三名有金银铜牌徽章
+- 每张卡片展示：作品图片、排名徽章、作者头像、标题、作者名、收藏数
+
+#### 实现原理
+
+**RankingCarousel 组件：**
+- Header 使用 `primaryContainer → tertiaryContainer` 横向渐变背景
+- 圆形图标容器包含 `TrendingUp` 图标
+- 「查看全部」使用 `Surface` 圆角按钮样式
+- `LazyRow` 横向滑动，12dp 间距，16dp 水平内边距
+
+**RankingCard 设计：**
+- 160dp 宽度，0.8 宽高比
+- Top 3 使用金/银/铜色圆形徽章（带边框光泽）
+- 其他排名使用简洁的 `#N` 矩形徽章
+- 作者头像显示在图片右下角（28dp，白色边框）
+- 底部信息区：标题（bodyMedium + SemiBold）、作者名（bodySmall）、收藏数（带心形图标）
+- Top 3 卡片有更高的阴影（8dp vs 4dp）
+
+**SectionHeader 组件：**
+- 用于分隔排行榜和推荐瀑布流
+- 标题（titleMedium + Bold）+ 副标题（bodySmall）
+- 可选的渐变背景图标
 
 ---
 
@@ -638,18 +669,21 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
-### 18. 热门标签 ViewPager
+### 18. 热门标签网格
 
 #### 用户视角
-- 在首页推荐 Tab 中以横向轮播展示热门标签
-- 每个标签卡片显示标签名称和预览图
+- 在首页发现 Tab 中以网格形式展示热门标签
+- 首个标签全宽展示，其余 3 列排列
+- 每个标签卡片显示标签名称、翻译名和预览图
+- 采用 1dp 间距、直角边框的紧凑设计
 - 点击标签进入 TagDetail 页面查看该标签下的作品
 
 #### 实现原理
 
-- `TrendingTagsViewModel` 调用 API 获取热门标签列表
-- 使用 `LazyRow` 或水平滑动组件展示标签卡片
-- 点击导航至 `NavRoute.TagDetail(tag)`
+- `TrendingTagsViewModel` 调用 API 获取热门标签列表（插画漫画 + 小说分开）
+- 使用 `LazyVerticalGrid` 3 列网格展示，首项 `GridItemSpan(3)` 全宽
+- `TrendingTagCard` 组件：正方形比例、底部渐变遮罩、直角边框
+- 点击导航至 `NavRoute.TagDetail(tag, initialTab)`
 
 ---
 
