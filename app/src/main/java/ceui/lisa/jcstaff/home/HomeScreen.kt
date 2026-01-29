@@ -107,6 +107,7 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.components.IllustFeed
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -581,11 +582,11 @@ private fun NewWorksTabPage() {
                 0 -> {
                     val vm: FollowingViewModel = viewModel()
                     val state by vm.state.collectAsState()
-                    IllustGrid(
+                    IllustFeed(
                         state = state,
                         onRefresh = { vm.refresh() },
-                        onLoadMore = { vm.loadMore() },
-                                            )
+                        onLoadMore = { vm.loadMore() }
+                    )
                 }
                 1 -> {
                     val vm: FollowingNovelsViewModel = viewModel()
@@ -640,6 +641,7 @@ private fun UserAvatar(
                 .crossfade(true)
                 .build(),
             contentDescription = user?.name,
+            contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(size.dp)
                 .clip(CircleShape)
@@ -771,6 +773,7 @@ private fun DrawerContent(
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = user?.name,
+                                contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .size(72.dp)
                                     .border(
@@ -1700,6 +1703,7 @@ private fun UserPreviewCard(
                             .crossfade(true)
                             .build(),
                         contentDescription = user.name,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(48.dp)
                             .border(
@@ -1926,13 +1930,14 @@ private fun SpotlightCard(
 ) {
     val context = LocalContext.current
 
-    ElevatedCard(
+    Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 1.dp
     ) {
-        Column {
-            // Thumbnail
+        Box {
+            // 背景图片
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(article.thumbnail)
@@ -1942,42 +1947,81 @@ private fun SpotlightCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
+                    .aspectRatio(16f / 10f)
             )
 
-            // Content
+            // 渐变遮罩
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 10f)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f)
+                            ),
+                            startY = 0f,
+                            endY = Float.POSITIVE_INFINITY
+                        )
+                    )
+            )
+
+            // 左上角分类标签
+            if (article.subcategory_label != null) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f)
+                ) {
+                    Text(
+                        text = article.subcategory_label,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+            }
+
+            // 底部内容区
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(16.dp)
             ) {
+                // 标题
                 Text(
                     text = article.pure_title ?: article.title ?: "",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = MaterialTheme.typography.titleMedium.lineHeight * 1.1f
                 )
 
-                if (article.subcategory_label != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = article.subcategory_label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                Spacer(modifier = Modifier.height(6.dp))
 
+                // 日期
                 if (article.publish_date != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = article.publish_date.take(10),  // Show only date part
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    ceui.lisa.jcstaff.utils.formatRelativeDate(article.publish_date)?.let { dateText ->
+                        Text(
+                            text = dateText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 private fun EmptyPlaceholderPage() {

@@ -100,6 +100,8 @@ ceui.lisa.jcstaff/
 ├── components/                   # 可复用 UI 组件
 │   ├── IllustCard.kt             # 插画卡片
 │   ├── IllustGrid.kt             # 插画瀑布流网格
+│   ├── IllustFeedCard.kt         # 社交信息流风格插画卡片
+│   ├── IllustFeed.kt             # 社交信息流插画列表（纵向）
 │   ├── NovelCard.kt              # 小说卡片
 │   ├── NovelList.kt              # 小说列表
 │   ├── FloatingTopBar.kt         # 浮动顶部栏（返回+分享）
@@ -282,7 +284,7 @@ ModalNavigationDrawer（侧滑抽屉）
         │       └── RecommendedUsersList
         └── Tab 2: NewWorksTabPage
             └── HorizontalPager（关注插画漫画 / 关注小说 / 最新插画漫画 / 最新小说）
-                ├── IllustGrid（关注插画漫画）
+                ├── IllustFeed（关注插画漫画 — 社交信息流风格）
                 ├── NovelList（关注小说）
                 ├── IllustGrid（最新插画漫画）
                 └── NovelList（最新小说）
@@ -688,7 +690,57 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
-### 19. 评论系统
+### 19. 社交信息流 (IllustFeed)
+
+#### 用户视角
+- 在首页新作 Tab 的「关注插画漫画」子页面中，以类似 Twitter/微博的信息流形式展示
+- 每张卡片纵向排列，包含完整信息：
+  - 顶部：作者头像（渐变边框）、用户名、发布时间
+  - 中间：作品图片（16:10 圆角）、多图数量徽章
+  - 底部：标签流（`#tag` 格式）、操作栏（收藏/分享）、统计信息（收藏数/浏览数）
+- 支持下拉刷新和无限滚动加载
+- AI 生成作品显示特殊标识
+
+#### 实现原理
+
+- `IllustFeedCard` 组件：
+  - 作者头像使用渐变边框（`primary → tertiary`）+ `ContentScale.Crop`
+  - 发布时间使用 `formatRelativeDate()` 统一格式化（如「3 小时前」「昨天」）
+  - 标签使用 `bodySmall` 字号，`primary.copy(alpha = 0.8f)` 颜色
+  - 操作栏使用 `IconButton` + `FilledTonalIconButton`（收藏状态切换）
+- `IllustFeed` 组件：
+  - 使用 `LazyColumn` 纵向排列 `IllustFeedCard`
+  - `PullToRefreshBox` 实现下拉刷新
+  - 监听滚动位置，接近底部时触发 `onLoadMore`
+  - 底部显示加载更多指示器
+
+---
+
+### 20. Spotlight/Pixivision 专题
+
+#### 用户视角
+- 在首页抽屉菜单或特定入口访问 Pixiv 官方精选专题
+- 列表页展示专题卡片：缩略图 + 渐变遮罩 + 标题 + 分类标签 + 发布日期
+- 详情页采用沉浸式设计：
+  - 顶部 Hero Header（4:3 比例缩略图 + 渐变遮罩 + 分类标签）
+  - 悬浮导航栏（半透明返回按钮 + 浏览器打开按钮）
+  - 文章描述和收录作品列表
+  - 作品项：用户头像（渐变边框）→ 作品图片（16:10 圆角）→ 作品标题
+
+#### 实现原理
+
+- `SpotlightCard` 组件：
+  - 使用 `Box` 叠加图片和渐变遮罩
+  - 底部信息区覆盖在图片上（白色文字 + 阴影）
+  - 发布日期使用 `formatRelativeDate()` 统一格式化
+- `SpotlightDetailScreen` 组件：
+  - `LazyColumn` 展示 Hero Header + 文章信息 + 作品列表
+  - 悬浮导航栏使用 `windowInsetsPadding(WindowInsets.statusBars)` 适配刘海屏
+  - `SpotlightArtworkItem` 展示收录作品，点击跳转插画详情
+
+---
+
+### 21. 评论系统
 
 #### 用户视角
 - 在插画详情页和小说详情页底部显示评论预览（最多 3 条）
@@ -1002,7 +1054,7 @@ onCreate()
 
 | 指标 | 数值 |
 |------|------|
-| Kotlin 源文件数 | 107 |
+| Kotlin 源文件数 | 109 |
 | 页面数 | 18 |
 | ViewModel 数 | 17+ |
 | API 接口数 | 30+ |

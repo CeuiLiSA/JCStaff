@@ -130,6 +130,7 @@ fun NovelCard(
                                 .crossfade(true)
                                 .build(),
                             contentDescription = novel.user?.name,
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(20.dp)
                                 .clip(CircleShape)
@@ -250,8 +251,8 @@ fun NovelCard(
                         tags.forEach { tag ->
                             Text(
                                 text = "#${tag.name}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
