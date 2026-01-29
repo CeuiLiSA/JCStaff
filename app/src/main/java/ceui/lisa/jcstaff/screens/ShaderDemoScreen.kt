@@ -1,6 +1,9 @@
 package ceui.lisa.jcstaff.screens
 
+import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
 import android.graphics.RuntimeShader
+import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -28,8 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +43,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.components.SHADER_TRACED_TUNNEL
@@ -779,14 +786,155 @@ half4 main(float2 fragCoord) {
 }
 """
 
+// Traced Tunnel with Image tiles - each tile shows a different image from atlas
+private const val SHADER_TRACED_TUNNEL_IMAGE = """
+uniform float2 iResolution;
+uniform float  iTime;
+uniform float2 iAtlasSize;   // Atlas dimensions in pixels
+uniform shader tileImage;
+
+const float GRID_COLS = 32.0;  // 32 columns in atlas
+const float GRID_ROWS = 16.0;  // 16 rows in atlas (512 images total)
+const float TILE_SIZE = 180.0; // Each image is 180x180
+
+float tick(float t, float d) {
+    float m = fract(t / d);
+    m = smoothstep(0.0, 1.0, m);
+    m = smoothstep(0.0, 1.0, m);
+    return (floor(t / d) + m) * d;
+}
+float tickTime(float t) { return t * 2.0 + tick(t, 4.0) * 0.75; }
+
+float2 rot2(float2 v, float a) {
+    float c = cos(a); float s = sin(a);
+    return float2(v.x * c + v.y * s, -v.x * s + v.y * c);
+}
+
+float3 camXform(float3 p, float tTime) {
+    p.xz = rot2(p.xz, sin(tTime * 0.3) * 0.4);
+    p.xy = rot2(p.xy, sin(tTime * 0.1) * 2.0);
+    return p;
+}
+
+float rayPlane(float3 ro, float3 rd, float3 n, float d) {
+    float ndotdir = dot(rd, n);
+    if (ndotdir < 0.0) {
+        float dist = (-d - dot(ro, n) + 9e-7) / ndotdir;
+        if (dist > 0.0) return dist;
+    }
+    return 1e8;
+}
+
+// Hash function to pick image index based on tile ID
+float hash21(float2 p) {
+    float3 p3 = fract(float3(p.x, p.y, p.x) * float3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, float3(p3.y, p3.z, p3.x) + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+half4 main(float2 fragCoord) {
+    float2 uv = (fragCoord - iResolution * 0.5) / iResolution.y;
+
+    float tickTm = tickTime(iTime);
+    float3 ca = float3(0.0, 0.0, tickTm);
+
+    float3 ro = float3(0.0);
+    float3 r = normalize(float3(uv, 1.0));
+    ro = camXform(ro, tickTm);
+    r  = camXform(r,  tickTm);
+    ro.z += ca.z;
+
+    float3 col = float3(0.0);
+    float alpha = 1.0;
+    float fogD = 0.0;
+    const float sc = 1.5;
+
+    for (int i = 0; i < 1; i++) {  // Single bounce for performance
+        float plB = rayPlane(ro, r, float3(0.0,  1.0, 0.0), 1.0);
+        float plT = rayPlane(ro, r, float3(0.0, -1.0, 0.0), 1.0);
+        float plL = rayPlane(ro, r, float3( 1.0, 0.0, 0.0), 1.0);
+        float plR = rayPlane(ro, r, float3(-1.0, 0.0, 0.0), 1.0);
+
+        float dH = min(plB, plT);
+        float dV = min(plL, plR);
+        float d  = min(dH, dV);
+        if (i == 0) fogD = d;
+
+        float3 hp = ro + r * d;
+
+        float3 n;
+        float2 tuv;
+        if (dH < dV) {
+            n   = float3(0.0, plB < plT ? 1.0 : -1.0, 0.0);
+            tuv = hp.xz + float2(0.0, n.y);
+        } else {
+            n   = float3(plL < plR ? 1.0 : -1.0, 0.0, 0.0);
+            tuv = hp.yz + float2(n.x, 0.0);
+        }
+
+        tuv *= sc;
+        float2 id = floor(tuv);
+        float2 luv = tuv - id - 0.5;
+
+        // Tile shape - rounded box
+        float bx = length(max(abs(luv) - 0.38, 0.0)) - 0.06;
+        float sh = clamp(0.5 - bx / 0.1, 0.0, 1.0);
+        float inside = 1.0 - smoothstep(0.0, 0.008, bx);
+
+        // Pick a random image from atlas based on tile ID
+        float totalImages = GRID_COLS * GRID_ROWS;
+        float imgIndex = floor(hash21(id) * totalImages);
+        float atlasRow = floor(imgIndex / GRID_COLS);
+        float atlasCol = mod(imgIndex, GRID_COLS);
+
+        // Map tile-local UV to the selected image in atlas
+        float2 normUV = (luv + 0.5);  // 0 to 1 within tile
+        float2 atlasOffset = float2(atlasCol, atlasRow) * TILE_SIZE;
+        float2 imgUV = atlasOffset + normUV * TILE_SIZE;
+        float3 imgCol = tileImage.eval(imgUV).rgb;
+
+        float3 sqCol = imgCol;
+
+        // Dark gap between tiles
+        float3 gapCol = float3(0.02, 0.02, 0.03);
+        float3 sampleCol = mix(gapCol, sqCol * sh, inside);
+
+        // Simple lighting - keep images solid
+        float3 ld = normalize(ca + float3(0.0, 0.0, 3.0) - hp);
+        float dif = max(dot(ld, n), 0.0);
+        float spe = pow(max(dot(reflect(ld, -n), -r), 0.0), 16.0);
+
+        sampleCol *= dif * 0.4 + 0.6;  // Less dramatic, more base light
+        sampleCol += float3(1.0, 1.0, 1.0) * spe * 0.2;
+
+        // Fog - less aggressive
+        sampleCol *= 1.0 / (1.0 + fogD * fogD * 0.02);
+
+        col += sampleCol * alpha;
+        alpha *= 0.3;  // Less transparency for reflections
+
+        r = reflect(r, n);
+        ro = hp + n * 0.002;
+    }
+
+    col = pow(max(col, float3(0.0)), float3(0.4545));
+    return half4(half3(col), 1.0);
+}
+"""
+
 // endregion
 
-private data class ShaderEntry(val title: String, val source: String)
+private data class ShaderEntry(
+    val title: String,
+    val source: String,
+    val usesImage: Boolean = false
+)
 
 private val shaderEntries = listOf(
     ShaderEntry("Neon Plasma", SHADER_NEON_PLASMA),
     ShaderEntry("Fire Storm", SHADER_FIRE),
     ShaderEntry("Traced Tunnel", SHADER_TRACED_TUNNEL),
+    ShaderEntry("Tunnel (Image)", SHADER_TRACED_TUNNEL_IMAGE, usesImage = true),
     ShaderEntry("Magic Circle", SHADER_MAGIC_CIRCLE),
 )
 
@@ -805,7 +953,11 @@ fun ShaderDemoScreen() {
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val entry = shaderEntries[page]
-            ShaderPage(shaderSrc = entry.source, title = entry.title)
+            ShaderPage(
+                shaderSrc = entry.source,
+                title = entry.title,
+                usesImage = entry.usesImage
+            )
         }
 
         // Back button
@@ -847,10 +999,14 @@ fun ShaderDemoScreen() {
 }
 
 @Composable
-private fun ShaderPage(shaderSrc: String, title: String) {
+private fun ShaderPage(shaderSrc: String, title: String, usesImage: Boolean = false) {
     Box(modifier = Modifier.fillMaxSize()) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ShaderCanvas(shaderSrc = shaderSrc)
+            if (usesImage) {
+                ImageShaderCanvas(shaderSrc = shaderSrc)
+            } else {
+                ShaderCanvas(shaderSrc = shaderSrc)
+            }
         } else {
             // Fallback gradient
             Spacer(
@@ -916,4 +1072,100 @@ private fun ShaderCanvas(shaderSrc: String) {
                 drawRect(brush = brush)
             }
     )
+}
+
+private const val ATLAS_COLS = 32       // 32 columns
+private const val ATLAS_ROWS = 16       // 16 rows = 512 images
+private const val TILE_SIZE = 180       // Downscale to 180x180 (balanced quality)
+
+private data class AtlasData(
+    val shader: BitmapShader,
+    val width: Float,
+    val height: Float
+)
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+private fun ImageShaderCanvas(shaderSrc: String) {
+    val context = LocalContext.current
+    val shader = remember(shaderSrc) { RuntimeShader(shaderSrc) }
+    val time = remember { mutableFloatStateOf(0f) }
+    val brush = remember(shader) { ShaderBrush(shader) }
+
+    // Load atlas asynchronously
+    var atlasData by remember { mutableStateOf<AtlasData?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        atlasData = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            loadAtlas(context)
+        }
+        isLoading = false
+    }
+
+    LaunchedEffect(shaderSrc) {
+        var startNanos = 0L
+        while (true) {
+            withFrameNanos { nanos ->
+                if (startNanos == 0L) startNanos = nanos
+                time.floatValue = (nanos - startNanos) / 1_000_000_000f
+            }
+        }
+    }
+
+    if (isLoading || atlasData == null) {
+        // Loading state - show black background
+        Spacer(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        )
+    } else {
+        val data = atlasData!!
+        Spacer(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    shader.setFloatUniform("iResolution", size.width, size.height)
+                    shader.setFloatUniform("iTime", time.floatValue)
+                    shader.setFloatUniform("iAtlasSize", data.width, data.height)
+                    shader.setInputShader("tileImage", data.shader)
+                    drawRect(brush = brush)
+                }
+        )
+    }
+}
+
+private fun loadAtlas(context: android.content.Context): AtlasData? {
+    val assetManager = context.assets
+    val files = assetManager.list("prime_square")?.toList()?.shuffled() ?: return null
+    if (files.isEmpty()) return null
+
+    val atlasWidth = ATLAS_COLS * TILE_SIZE   // 32 * 135 = 4320
+    val atlasHeight = ATLAS_ROWS * TILE_SIZE  // 16 * 135 = 2160
+    val atlasBitmap = android.graphics.Bitmap.createBitmap(
+        atlasWidth, atlasHeight, android.graphics.Bitmap.Config.RGB_565
+    )
+    val canvas = android.graphics.Canvas(atlasBitmap)
+
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = 3  // Decode at 1/3 size (540->180)
+    }
+
+    // Fill atlas with 512 images
+    for (row in 0 until ATLAS_ROWS) {
+        for (col in 0 until ATLAS_COLS) {
+            val index = (row * ATLAS_COLS + col) % files.size
+            val inputStream = assetManager.open("prime_square/${files[index]}")
+            val bitmap = BitmapFactory.decodeStream(inputStream, null, options)
+            inputStream.close()
+            bitmap?.let {
+                canvas.drawBitmap(it, (col * TILE_SIZE).toFloat(), (row * TILE_SIZE).toFloat(), null)
+                it.recycle()
+            }
+        }
+    }
+
+    val bitmapShader = BitmapShader(atlasBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+    return AtlasData(bitmapShader, atlasWidth.toFloat(), atlasHeight.toFloat())
 }

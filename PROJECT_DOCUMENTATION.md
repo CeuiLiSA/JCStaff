@@ -94,7 +94,7 @@ ceui.lisa.jcstaff/
 │   ├── AccountManagementScreen.kt# 账号管理页
 │   ├── CommentScreen.kt          # 评论页（完整评论列表+回复+发布）
 │   ├── RankingDetailScreen.kt    # 排行榜详情页（多模式 + 日期选择）
-│   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（4 种效果）
+│   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（5 种效果）
 │   ├── ListScreen.kt             # 通用列表页
 │   └── DetailScreen.kt           # 通用详情页
 ├── components/                   # 可复用 UI 组件
@@ -649,10 +649,11 @@ ModalNavigationDrawer（侧滑抽屉）
 - 从首页抽屉菜单中点击「Shader Demo」进入
 - 全屏沉浸式展示，左右滑动切换不同着色器效果
 - 底部显示效果名称和页面指示器
-- 当前包含 4 种效果：
+- 当前包含 5 种效果：
   - **Neon Plasma** — 霓虹等离子体流动效果
   - **Fire Storm** — 火焰风暴效果
-  - **Traced Tunnel** — 光线追踪隧道效果
+  - **Traced Tunnel** — 光线追踪隧道效果（程序生成色彩）
+  - **Tunnel (Image)** — 图片隧道效果（512 张 Pixiv 插画图集，每块瓷砖随机展示不同图片）
   - **Magic Circle** — 旋转发光魔法阵（多层同心圆、符文标记、六芒星/八芒星几何图案、粒子火花、能量流动）
 
 #### 实现原理
@@ -925,10 +926,11 @@ val state: StateFlow<PagedState<Illust>> = loader.state
 
 #### ShaderDemoScreen.kt — 着色器演示页
 
-包含 4 种独立的 AGSL 着色器效果：
+包含 5 种独立的 AGSL 着色器效果：
 - **Neon Plasma**：正弦波叠加产生的霓虹等离子体色彩流动
 - **Fire Storm**：基于噪声的火焰模拟效果
-- **Traced Tunnel**：复用 `SHADER_TRACED_TUNNEL` 的隧道穿行效果
+- **Traced Tunnel**：复用 `SHADER_TRACED_TUNNEL` 的隧道穿行效果（程序生成色彩瓷砖）
+- **Tunnel (Image)**：图片隧道效果，从 512 张 Pixiv 正方形插画中随机选取，创建 32×16 图集纹理，每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载完成后显示着色器。
 - **Magic Circle**：多层旋转魔法阵，使用 SDF 绘制同心圆环、六芒星/八芒星几何、符文标记，配合粒子火花和能量流动
 
 另外还包含备用着色器常量（Voronoi、Aurora、Galaxy、Sakura Card 等），未在入口列表中启用。
@@ -1005,6 +1007,6 @@ onCreate()
 | 支持语言 | 5 (中/繁中/英/日/韩) |
 | Room Entity | 2 (ApiCache, BrowseHistory) |
 | OkHttp Interceptor | 4 |
-| AGSL 着色器效果 | 4 (Neon Plasma, Fire Storm, Traced Tunnel, Magic Circle) |
+| AGSL 着色器效果 | 5 (Neon Plasma, Fire Storm, Traced Tunnel, Tunnel Image, Magic Circle) |
 | 导航路由数 | 15 |
 | 首页子页面数 | 10 (3 Tab × 内嵌 ViewPager) |
