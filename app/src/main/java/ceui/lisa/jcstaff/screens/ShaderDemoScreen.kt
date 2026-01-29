@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.createBitmap
 import ceui.lisa.jcstaff.components.SHADER_TRACED_TUNNEL
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 
@@ -1112,9 +1113,7 @@ private fun loadAtlas(context: android.content.Context): AtlasData? {
 
     val atlasWidth = ATLAS_COLS * TILE_SIZE   // 32 * 135 = 4320
     val atlasHeight = ATLAS_ROWS * TILE_SIZE  // 16 * 135 = 2160
-    val atlasBitmap = android.graphics.Bitmap.createBitmap(
-        atlasWidth, atlasHeight, android.graphics.Bitmap.Config.RGB_565
-    )
+    val atlasBitmap = createBitmap(atlasWidth, atlasHeight, android.graphics.Bitmap.Config.RGB_565)
     val canvas = android.graphics.Canvas(atlasBitmap)
 
     val options = BitmapFactory.Options().apply {

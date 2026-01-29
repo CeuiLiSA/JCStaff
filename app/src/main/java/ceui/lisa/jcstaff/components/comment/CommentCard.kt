@@ -129,7 +129,9 @@ fun CommentCard(
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
-                    modifier = Modifier.height(120.dp)
+                    modifier = Modifier
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(10.dp))
                 )
             } else if (comment.comment != null) {
                 CommentText(text = comment.comment)
@@ -307,7 +309,9 @@ fun CompactCommentCard(
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
-                    modifier = Modifier.height(48.dp)
+                    modifier = Modifier
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(6.dp))
                 )
             } else if (comment.comment != null) {
                 CommentText(
