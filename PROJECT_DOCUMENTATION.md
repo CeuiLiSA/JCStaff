@@ -156,7 +156,7 @@ ceui.lisa.jcstaff/
 
 #### 用户视角
 - 首次打开 App 进入 **3 页引导流程**（HorizontalPager）：
-  - **第 1 页 — 欢迎页**：Traced Tunnel 着色器动态背景 + 渐变遮罩，展示应用名称和欢迎语
+  - **第 1 页 — 欢迎页**：Image Tunnel 着色器动态背景（832 张 Pixiv 插画瓷砖墙）+ 渐变遮罩，展示应用名称和欢迎语
   - **第 2 页 — 语言选择**：选择显示语言（中/繁中/英/日/韩）
   - **第 3 页 — 登录轮播**：Pixiv 作品幻灯片背景，提供登录/注册按钮
 - 底部有页面指示器（圆点），支持左右滑动切换
@@ -653,7 +653,7 @@ ModalNavigationDrawer（侧滑抽屉）
   - **Neon Plasma** — 霓虹等离子体流动效果
   - **Fire Storm** — 火焰风暴效果
   - **Traced Tunnel** — 光线追踪隧道效果（程序生成色彩）
-  - **Tunnel (Image)** — 图片隧道效果（512 张 Pixiv 插画图集，每块瓷砖随机展示不同图片）
+  - **Tunnel (Image)** — 图片隧道效果（832 张 Pixiv 插画图集，每块瓷砖随机展示不同图片）
   - **Magic Circle** — 旋转发光魔法阵（多层同心圆、符文标记、六芒星/八芒星几何图案、粒子火花、能量流动）
 
 #### 实现原理
@@ -922,7 +922,9 @@ val state: StateFlow<PagedState<Illust>> = loader.state
    - 主螺旋 + 多次谐波叠加
    - 使用 `smoothstep` 实现线条发光效果
 
-**`TracedTunnelBackground`：** 光线追踪隧道效果，用于 Landing Screen 的沉浸式动态背景。接受 `content` lambda 参数，可在着色器上层叠加 UI 内容。
+**`TracedTunnelBackground`：** 光线追踪隧道效果（程序生成色彩瓷砖）。接受 `content` lambda 参数，可在着色器上层叠加 UI 内容。
+
+**`TracedTunnelImageBackground`：** 图片隧道效果，用于 Landing Screen 的沉浸式动态背景。从 `assets/prime_square/` 加载 832 张 Pixiv 正方形插画，创建 32×26 图集纹理（180×180 每块），每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载期间显示居中转圈指示器，加载完成后淡入显示着色器。
 
 #### ShaderDemoScreen.kt — 着色器演示页
 
@@ -930,7 +932,7 @@ val state: StateFlow<PagedState<Illust>> = loader.state
 - **Neon Plasma**：正弦波叠加产生的霓虹等离子体色彩流动
 - **Fire Storm**：基于噪声的火焰模拟效果
 - **Traced Tunnel**：复用 `SHADER_TRACED_TUNNEL` 的隧道穿行效果（程序生成色彩瓷砖）
-- **Tunnel (Image)**：图片隧道效果，从 512 张 Pixiv 正方形插画中随机选取，创建 32×16 图集纹理，每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载完成后显示着色器。
+- **Tunnel (Image)**：图片隧道效果，从 832 张 Pixiv 正方形插画中随机选取，创建 32×26 图集纹理（180×180 每块），每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载期间显示居中转圈指示器，加载完成后淡入显示着色器。
 - **Magic Circle**：多层旋转魔法阵，使用 SDF 绘制同心圆环、六芒星/八芒星几何、符文标记，配合粒子火花和能量流动
 
 另外还包含备用着色器常量（Voronoi、Aurora、Galaxy、Sakura Card 等），未在入口列表中启用。

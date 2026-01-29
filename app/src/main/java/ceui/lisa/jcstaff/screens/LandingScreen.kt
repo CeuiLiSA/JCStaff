@@ -39,7 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
-import ceui.lisa.jcstaff.components.TracedTunnelBackground
+import ceui.lisa.jcstaff.components.TracedTunnelImageBackground
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Size
@@ -96,7 +96,7 @@ fun LandingScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Base layer: shader + scrim (visible on pages 0-1)
-        TracedTunnelBackground(modifier = Modifier.fillMaxSize()) {
+        TracedTunnelImageBackground(modifier = Modifier.fillMaxSize()) {
             GradientScrim()
         }
 

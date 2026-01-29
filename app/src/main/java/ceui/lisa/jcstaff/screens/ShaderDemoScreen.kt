@@ -25,6 +25,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -794,7 +795,7 @@ uniform float2 iAtlasSize;   // Atlas dimensions in pixels
 uniform shader tileImage;
 
 const float GRID_COLS = 32.0;  // 32 columns in atlas
-const float GRID_ROWS = 16.0;  // 16 rows in atlas (512 images total)
+const float GRID_ROWS = 26.0;  // 26 rows in atlas (832 images total)
 const float TILE_SIZE = 180.0; // Each image is 180x180
 
 float tick(float t, float d) {
@@ -803,7 +804,7 @@ float tick(float t, float d) {
     m = smoothstep(0.0, 1.0, m);
     return (floor(t / d) + m) * d;
 }
-float tickTime(float t) { return t * 2.0 + tick(t, 4.0) * 0.75; }
+float tickTime(float t) { return t * 1.0 + tick(t, 6.0) * 0.5; }  // Slower forward speed
 
 float2 rot2(float2 v, float a) {
     float c = cos(a); float s = sin(a);
@@ -847,7 +848,7 @@ half4 main(float2 fragCoord) {
     float3 col = float3(0.0);
     float alpha = 1.0;
     float fogD = 0.0;
-    const float sc = 1.5;
+    const float sc = 2.0;
 
     for (int i = 0; i < 1; i++) {  // Single bounce for performance
         float plB = rayPlane(ro, r, float3(0.0,  1.0, 0.0), 1.0);
@@ -877,7 +878,7 @@ half4 main(float2 fragCoord) {
         float2 luv = tuv - id - 0.5;
 
         // Tile shape - rounded box
-        float bx = length(max(abs(luv) - 0.38, 0.0)) - 0.06;
+        float bx = length(max(abs(luv) - 0.42, 0.0)) - 0.05;
         float sh = clamp(0.5 - bx / 0.1, 0.0, 1.0);
         float inside = 1.0 - smoothstep(0.0, 0.008, bx);
 
@@ -945,9 +946,11 @@ fun ShaderDemoScreen() {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Black)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
@@ -1075,8 +1078,8 @@ private fun ShaderCanvas(shaderSrc: String) {
 }
 
 private const val ATLAS_COLS = 32       // 32 columns
-private const val ATLAS_ROWS = 16       // 16 rows = 512 images
-private const val TILE_SIZE = 180       // Downscale to 180x180 (balanced quality)
+private const val ATLAS_ROWS = 26       // 26 rows = 832 images
+private const val TILE_SIZE = 180       // Downscale to 180x180
 
 private data class AtlasData(
     val shader: BitmapShader,
@@ -1114,12 +1117,14 @@ private fun ImageShaderCanvas(shaderSrc: String) {
     }
 
     if (isLoading || atlasData == null) {
-        // Loading state - show black background
-        Spacer(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
-        )
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.White)
+        }
     } else {
         val data = atlasData!!
         Spacer(
@@ -1149,10 +1154,10 @@ private fun loadAtlas(context: android.content.Context): AtlasData? {
     val canvas = android.graphics.Canvas(atlasBitmap)
 
     val options = BitmapFactory.Options().apply {
-        inSampleSize = 3  // Decode at 1/3 size (540->180)
+        inSampleSize = 3
     }
 
-    // Fill atlas with 512 images
+    // Fill atlas with images
     for (row in 0 until ATLAS_ROWS) {
         for (col in 0 until ATLAS_COLS) {
             val index = (row * ATLAS_COLS + col) % files.size
@@ -1160,7 +1165,12 @@ private fun loadAtlas(context: android.content.Context): AtlasData? {
             val bitmap = BitmapFactory.decodeStream(inputStream, null, options)
             inputStream.close()
             bitmap?.let {
-                canvas.drawBitmap(it, (col * TILE_SIZE).toFloat(), (row * TILE_SIZE).toFloat(), null)
+                canvas.drawBitmap(
+                    it,
+                    (col * TILE_SIZE).toFloat(),
+                    (row * TILE_SIZE).toFloat(),
+                    null
+                )
                 it.recycle()
             }
         }

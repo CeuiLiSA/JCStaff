@@ -1,26 +1,37 @@
 package ceui.lisa.jcstaff.components
 
+import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
 import android.graphics.RuntimeShader
+import android.graphics.Shader
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.FloatState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Domain-warping FBM background + oscilloscope wave lines.
@@ -410,4 +421,258 @@ private fun TracedTunnelBackgroundImpl(
         )
         content()
     }
+}
+
+// ── Traced Tunnel with Image tiles ────────────────────────────────────────────
+private const val ATLAS_COLS = 32
+private const val ATLAS_ROWS = 26
+private const val IMAGE_TILE_SIZE = 180
+
+private data class AtlasData(
+    val shader: BitmapShader,
+    val width: Float,
+    val height: Float
+)
+
+private const val SHADER_TRACED_TUNNEL_IMAGE = """
+uniform float2 iResolution;
+uniform float  iTime;
+uniform float2 iAtlasSize;
+uniform shader tileImage;
+
+const float GRID_COLS = 32.0;
+const float GRID_ROWS = 26.0;
+const float TILE_SIZE = 180.0;
+
+float tick(float t, float d) {
+    float m = fract(t / d);
+    m = smoothstep(0.0, 1.0, m);
+    m = smoothstep(0.0, 1.0, m);
+    return (floor(t / d) + m) * d;
+}
+float tickTime(float t) { return t * 1.0 + tick(t, 6.0) * 0.5; }
+
+float2 rot2(float2 v, float a) {
+    float c = cos(a); float s = sin(a);
+    return float2(v.x * c + v.y * s, -v.x * s + v.y * c);
+}
+
+float3 camXform(float3 p, float tTime) {
+    p.xz = rot2(p.xz, sin(tTime * 0.3) * 0.4);
+    p.xy = rot2(p.xy, sin(tTime * 0.1) * 2.0);
+    return p;
+}
+
+float rayPlane(float3 ro, float3 rd, float3 n, float d) {
+    float ndotdir = dot(rd, n);
+    if (ndotdir < 0.0) {
+        float dist = (-d - dot(ro, n) + 9e-7) / ndotdir;
+        if (dist > 0.0) return dist;
+    }
+    return 1e8;
+}
+
+float hash21(float2 p) {
+    float3 p3 = fract(float3(p.x, p.y, p.x) * float3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, float3(p3.y, p3.z, p3.x) + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+half4 main(float2 fragCoord) {
+    float2 uv = (fragCoord - iResolution * 0.5) / iResolution.y;
+
+    float tickTm = tickTime(iTime);
+    float3 ca = float3(0.0, 0.0, tickTm);
+
+    float3 ro = float3(0.0);
+    float3 r = normalize(float3(uv, 1.0));
+    ro = camXform(ro, tickTm);
+    r  = camXform(r,  tickTm);
+    ro.z += ca.z;
+
+    float3 col = float3(0.0);
+    float alpha = 1.0;
+    float fogD = 0.0;
+    const float sc = 2.0;
+
+    for (int i = 0; i < 1; i++) {
+        float plB = rayPlane(ro, r, float3(0.0,  1.0, 0.0), 1.0);
+        float plT = rayPlane(ro, r, float3(0.0, -1.0, 0.0), 1.0);
+        float plL = rayPlane(ro, r, float3( 1.0, 0.0, 0.0), 1.0);
+        float plR = rayPlane(ro, r, float3(-1.0, 0.0, 0.0), 1.0);
+
+        float dH = min(plB, plT);
+        float dV = min(plL, plR);
+        float d  = min(dH, dV);
+        if (i == 0) fogD = d;
+
+        float3 hp = ro + r * d;
+
+        float3 n;
+        float2 tuv;
+        if (dH < dV) {
+            n   = float3(0.0, plB < plT ? 1.0 : -1.0, 0.0);
+            tuv = hp.xz + float2(0.0, n.y);
+        } else {
+            n   = float3(plL < plR ? 1.0 : -1.0, 0.0, 0.0);
+            tuv = hp.yz + float2(n.x, 0.0);
+        }
+
+        tuv *= sc;
+        float2 id = floor(tuv);
+        float2 luv = tuv - id - 0.5;
+
+        float bx = length(max(abs(luv) - 0.42, 0.0)) - 0.05;
+        float sh = clamp(0.5 - bx / 0.1, 0.0, 1.0);
+        float inside = 1.0 - smoothstep(0.0, 0.008, bx);
+
+        float totalImages = GRID_COLS * GRID_ROWS;
+        float imgIndex = floor(hash21(id) * totalImages);
+        float atlasRow = floor(imgIndex / GRID_COLS);
+        float atlasCol = mod(imgIndex, GRID_COLS);
+
+        float2 normUV = (luv + 0.5);
+        float2 atlasOffset = float2(atlasCol, atlasRow) * TILE_SIZE;
+        float2 imgUV = atlasOffset + normUV * TILE_SIZE;
+        float3 imgCol = tileImage.eval(imgUV).rgb;
+
+        float3 sqCol = imgCol;
+        float3 gapCol = float3(0.02, 0.02, 0.03);
+        float3 sampleCol = mix(gapCol, sqCol * sh, inside);
+
+        float3 ld = normalize(ca + float3(0.0, 0.0, 3.0) - hp);
+        float dif = max(dot(ld, n), 0.0);
+        float spe = pow(max(dot(reflect(ld, -n), -r), 0.0), 16.0);
+
+        sampleCol *= dif * 0.4 + 0.6;
+        sampleCol += float3(1.0, 1.0, 1.0) * spe * 0.2;
+        sampleCol *= 1.0 / (1.0 + fogD * fogD * 0.02);
+
+        col += sampleCol * alpha;
+        alpha *= 0.3;
+
+        r = reflect(r, n);
+        ro = hp + n * 0.002;
+    }
+
+    col = pow(max(col, float3(0.0)), float3(0.4545));
+    return half4(half3(col), 1.0);
+}
+"""
+
+@Composable
+fun TracedTunnelImageBackground(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        TracedTunnelImageBackgroundImpl(modifier, content)
+    } else {
+        FallbackBackground(modifier, content)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+private fun TracedTunnelImageBackgroundImpl(
+    modifier: Modifier,
+    content: @Composable () -> Unit
+) {
+    val context = LocalContext.current
+    val shader = remember { RuntimeShader(SHADER_TRACED_TUNNEL_IMAGE) }
+    val time = remember { mutableFloatStateOf(0f) }
+    val brush = remember { ShaderBrush(shader) }
+    val fadeAlpha = remember { Animatable(0f) }
+
+    var atlasData by remember { mutableStateOf<AtlasData?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        atlasData = withContext(Dispatchers.IO) {
+            loadAtlas(context)
+        }
+        isLoading = false
+    }
+
+    LaunchedEffect(isLoading) {
+        if (!isLoading && atlasData != null) {
+            fadeAlpha.animateTo(1f, animationSpec = tween(durationMillis = 1500))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        var startNanos = 0L
+        while (true) {
+            withFrameNanos { nanos ->
+                if (startNanos == 0L) startNanos = nanos
+                time.floatValue = (nanos - startNanos) / 1_000_000_000f
+            }
+        }
+    }
+
+    Box(modifier = modifier) {
+        if (isLoading || atlasData == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color.White)
+            }
+        } else {
+            val data = atlasData!!
+            Spacer(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = fadeAlpha.value }
+                    .drawBehind {
+                        shader.setFloatUniform("iResolution", size.width, size.height)
+                        shader.setFloatUniform("iTime", time.floatValue)
+                        shader.setFloatUniform("iAtlasSize", data.width, data.height)
+                        shader.setInputShader("tileImage", data.shader)
+                        drawRect(brush = brush)
+                    }
+            )
+        }
+        content()
+    }
+}
+
+private fun loadAtlas(context: android.content.Context): AtlasData? {
+    val assetManager = context.assets
+    val files = assetManager.list("prime_square")?.toList()?.shuffled() ?: return null
+    if (files.isEmpty()) return null
+
+    val atlasWidth = ATLAS_COLS * IMAGE_TILE_SIZE
+    val atlasHeight = ATLAS_ROWS * IMAGE_TILE_SIZE
+    val atlasBitmap = android.graphics.Bitmap.createBitmap(
+        atlasWidth, atlasHeight, android.graphics.Bitmap.Config.RGB_565
+    )
+    val canvas = android.graphics.Canvas(atlasBitmap)
+
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = 3
+    }
+
+    for (row in 0 until ATLAS_ROWS) {
+        for (col in 0 until ATLAS_COLS) {
+            val index = (row * ATLAS_COLS + col) % files.size
+            val inputStream = assetManager.open("prime_square/${files[index]}")
+            val bitmap = BitmapFactory.decodeStream(inputStream, null, options)
+            inputStream.close()
+            bitmap?.let {
+                canvas.drawBitmap(
+                    it,
+                    (col * IMAGE_TILE_SIZE).toFloat(),
+                    (row * IMAGE_TILE_SIZE).toFloat(),
+                    null
+                )
+                it.recycle()
+            }
+        }
+    }
+
+    val bitmapShader = BitmapShader(atlasBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+    return AtlasData(bitmapShader, atlasWidth.toFloat(), atlasHeight.toFloat())
 }
