@@ -3,6 +3,7 @@ package ceui.lisa.jcstaff.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.HomeIllustResponse
 import ceui.lisa.jcstaff.network.Illust
@@ -12,10 +13,36 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * 推荐内容 UI 状态，包含排行榜数据
+ */
+data class RecommendedUiState(
+    val illusts: List<Illust> = emptyList(),
+    val rankingIllusts: List<Illust> = emptyList(),
+    val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val error: String? = null,
+    val nextUrl: String? = null
+) {
+    val canLoadMore: Boolean get() = nextUrl != null && !isLoadingMore
+}
+
+/**
+ * 推荐插画/漫画 ViewModel
+ * 特殊：包含 ranking_illusts 字段，不能用通用 PagedDataLoader
+ */
 class RecommendedContentViewModel(private val contentType: String) : ViewModel() {
 
     private val _state = MutableStateFlow(RecommendedUiState())
     val state: StateFlow<RecommendedUiState> = _state.asStateFlow()
+
+    private val cacheConfig = CacheConfig(
+        path = "/v1/$contentType/recommended",
+        queryParams = mapOf(
+            "include_ranking_illusts" to "true",
+            "filter" to "for_ios"
+        )
+    )
 
     init {
         load()
@@ -23,44 +50,33 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
 
     fun load() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isLoading = true,
-                error = null
-            )
+            _state.value = _state.value.copy(isLoading = true, error = null)
 
-            val cachedResponse = PixivClient.getFromStaleCache(
-                path = "/v1/$contentType/recommended",
-                queryParams = mapOf(
-                    "include_ranking_illusts" to "true",
-                    "filter" to "for_ios"
-                ),
+            // 从缓存加载
+            val cached = PixivClient.getFromStaleCache(
+                path = cacheConfig.path,
+                queryParams = cacheConfig.queryParams,
                 clazz = HomeIllustResponse::class.java
             )
-
-            if (cachedResponse != null) {
-                val illusts = cachedResponse.illusts
-                val ranking = cachedResponse.ranking_illusts
-                storeIllusts(illusts)
-                storeIllusts(ranking)
+            if (cached != null) {
+                storeIllusts(cached.illusts)
+                storeIllusts(cached.ranking_illusts)
                 _state.value = _state.value.copy(
-                    illusts = illusts,
-                    rankingIllusts = ranking,
+                    illusts = cached.illusts,
+                    rankingIllusts = cached.ranking_illusts,
                     isLoading = false,
-                    nextUrl = cachedResponse.next_url
+                    nextUrl = cached.next_url
                 )
             }
 
+            // 从网络加载
             try {
                 val response = PixivClient.pixivApi.getRecommendedContent(contentType)
-                val illusts = response.illusts
-                val ranking = response.ranking_illusts
-
-                storeIllusts(illusts)
-                storeIllusts(ranking)
-
+                storeIllusts(response.illusts)
+                storeIllusts(response.ranking_illusts)
                 _state.value = _state.value.copy(
-                    illusts = illusts,
-                    rankingIllusts = ranking,
+                    illusts = response.illusts,
+                    rankingIllusts = response.ranking_illusts,
                     isLoading = false,
                     nextUrl = response.next_url
                 )
@@ -83,12 +99,9 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
             _state.value = _state.value.copy(isLoadingMore = true)
             try {
                 val response = PixivClient.pixivApi.getNextPageHomeIllusts(nextUrl)
-                val newIllusts = response.displayList
-
-                storeIllusts(newIllusts)
-
+                storeIllusts(response.displayList)
                 _state.value = _state.value.copy(
-                    illusts = _state.value.illusts + newIllusts,
+                    illusts = _state.value.illusts + response.displayList,
                     isLoadingMore = false,
                     nextUrl = response.next_url
                 )
@@ -108,9 +121,7 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
     private fun storeIllusts(illusts: List<Illust>) {
         illusts.forEach { illust ->
             ObjectStore.put(illust)
-            illust.user?.let { user ->
-                ObjectStore.put(user)
-            }
+            illust.user?.let { user -> ObjectStore.put(user) }
         }
     }
 

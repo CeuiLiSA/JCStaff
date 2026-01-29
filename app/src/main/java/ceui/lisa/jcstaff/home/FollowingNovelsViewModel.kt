@@ -2,98 +2,55 @@ package ceui.lisa.jcstaff.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.PagedDataLoader
+import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.NovelResponse
 import ceui.lisa.jcstaff.network.PixivClient
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+typealias NovelListUiState = PagedState<Novel>
 
 class FollowingNovelsViewModel : ViewModel() {
 
-    private val _state = MutableStateFlow(NovelListUiState())
-    val state: StateFlow<NovelListUiState> = _state.asStateFlow()
+    private val loader = PagedDataLoader(
+        cacheConfig = CacheConfig(
+            path = "/v1/novel/follow",
+            queryParams = mapOf("restrict" to "public")
+        ),
+        responseClass = NovelResponse::class.java,
+        loadFirstPage = { PixivClient.pixivApi.getFollowingNovels() },
+        loadNextPage = { url -> PixivClient.pixivApi.getNextPageNovels(url) },
+        extractItems = { it.novels },
+        extractNextUrl = { it.next_url },
+        onItemsLoaded = { novels -> storeNovels(novels) }
+    )
+
+    val state: StateFlow<NovelListUiState> = loader.state
 
     init {
         load()
     }
 
     fun load() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isLoading = true,
-                error = null
-            )
-
-            val cachedResponse = PixivClient.getFromStaleCache(
-                path = "/v1/novel/follow",
-                queryParams = mapOf("restrict" to "public"),
-                clazz = NovelResponse::class.java
-            )
-
-            if (cachedResponse != null) {
-                storeNovels(cachedResponse.novels)
-                _state.value = _state.value.copy(
-                    novels = cachedResponse.novels,
-                    isLoading = false,
-                    nextUrl = cachedResponse.next_url
-                )
-            }
-
-            try {
-                val response = PixivClient.pixivApi.getFollowingNovels()
-                storeNovels(response.novels)
-                _state.value = _state.value.copy(
-                    novels = response.novels,
-                    isLoading = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = if (_state.value.novels.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
-                )
-            }
-        }
+        viewModelScope.launch { loader.load() }
     }
 
     fun loadMore() {
-        val nextUrl = _state.value.nextUrl ?: return
-        if (_state.value.isLoadingMore) return
-
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingMore = true)
-            try {
-                val response = PixivClient.pixivApi.getNextPageNovels(nextUrl)
-                storeNovels(response.novels)
-                _state.value = _state.value.copy(
-                    novels = _state.value.novels + response.novels,
-                    isLoadingMore = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoadingMore = false,
-                    error = e.message ?: "加载更多失败"
-                )
-            }
-        }
+        viewModelScope.launch { loader.loadMore() }
     }
 
     fun refresh() {
-        load()
+        viewModelScope.launch { loader.refresh() }
     }
 
     private fun storeNovels(novels: List<Novel>) {
         novels.forEach { novel ->
             ObjectStore.put(novel)
-            novel.user?.let { user ->
-                ObjectStore.put(user)
-            }
+            novel.user?.let { user -> ObjectStore.put(user) }
         }
     }
 }

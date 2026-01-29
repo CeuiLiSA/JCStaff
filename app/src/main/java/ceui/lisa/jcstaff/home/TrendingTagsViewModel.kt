@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.TrendingTag
@@ -20,10 +21,24 @@ data class TrendingTagsUiState(
     val novelError: String? = null
 )
 
+/**
+ * 热门标签 ViewModel
+ * 特殊：同时管理插画和小说两种标签，不使用 PagedDataLoader
+ */
 class TrendingTagsViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(TrendingTagsUiState())
     val state: StateFlow<TrendingTagsUiState> = _state.asStateFlow()
+
+    private val illustCacheConfig = CacheConfig(
+        path = "/v1/trending-tags/illust",
+        queryParams = mapOf("filter" to "for_ios")
+    )
+
+    private val novelCacheConfig = CacheConfig(
+        path = "/v1/trending-tags/novel",
+        queryParams = mapOf("filter" to "for_ios")
+    )
 
     init {
         loadIllustTags()
@@ -34,34 +49,22 @@ class TrendingTagsViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isIllustLoading = true, illustError = null)
 
-            val cached = PixivClient.getFromStaleCache(
-                path = "/v1/trending-tags/illust",
-                queryParams = mapOf("filter" to "for_ios"),
-                clazz = TrendingTagsResponse::class.java
+            loadTags(
+                cacheConfig = illustCacheConfig,
+                apiCall = { PixivClient.pixivApi.getTrendingTags() },
+                onSuccess = { tags ->
+                    _state.value = _state.value.copy(
+                        illustTags = tags,
+                        isIllustLoading = false
+                    )
+                },
+                onError = { error ->
+                    _state.value = _state.value.copy(
+                        isIllustLoading = false,
+                        illustError = if (_state.value.illustTags.isEmpty()) error else null
+                    )
+                }
             )
-            if (cached != null) {
-                storeTrendingTags(cached.trend_tags)
-                _state.value = _state.value.copy(
-                    illustTags = cached.trend_tags,
-                    isIllustLoading = false
-                )
-            }
-
-            try {
-                val response = PixivClient.pixivApi.getTrendingTags()
-                storeTrendingTags(response.trend_tags)
-                _state.value = _state.value.copy(
-                    illustTags = response.trend_tags,
-                    isIllustLoading = false
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isIllustLoading = false,
-                    illustError = if (_state.value.illustTags.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
-                )
-            }
         }
     }
 
@@ -69,34 +72,49 @@ class TrendingTagsViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isNovelLoading = true, novelError = null)
 
-            val cached = PixivClient.getFromStaleCache(
-                path = "/v1/trending-tags/novel",
-                queryParams = mapOf("filter" to "for_ios"),
-                clazz = TrendingTagsResponse::class.java
+            loadTags(
+                cacheConfig = novelCacheConfig,
+                apiCall = { PixivClient.pixivApi.getTrendingNovelTags() },
+                onSuccess = { tags ->
+                    _state.value = _state.value.copy(
+                        novelTags = tags,
+                        isNovelLoading = false
+                    )
+                },
+                onError = { error ->
+                    _state.value = _state.value.copy(
+                        isNovelLoading = false,
+                        novelError = if (_state.value.novelTags.isEmpty()) error else null
+                    )
+                }
             )
-            if (cached != null) {
-                storeTrendingTags(cached.trend_tags)
-                _state.value = _state.value.copy(
-                    novelTags = cached.trend_tags,
-                    isNovelLoading = false
-                )
-            }
+        }
+    }
 
-            try {
-                val response = PixivClient.pixivApi.getTrendingNovelTags()
-                storeTrendingTags(response.trend_tags)
-                _state.value = _state.value.copy(
-                    novelTags = response.trend_tags,
-                    isNovelLoading = false
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isNovelLoading = false,
-                    novelError = if (_state.value.novelTags.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
-                )
-            }
+    private suspend fun loadTags(
+        cacheConfig: CacheConfig,
+        apiCall: suspend () -> TrendingTagsResponse,
+        onSuccess: (List<TrendingTag>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        // 从缓存加载
+        val cached = PixivClient.getFromStaleCache(
+            path = cacheConfig.path,
+            queryParams = cacheConfig.queryParams,
+            clazz = TrendingTagsResponse::class.java
+        )
+        if (cached != null) {
+            storeTrendingTags(cached.trend_tags)
+            onSuccess(cached.trend_tags)
+        }
+
+        // 从网络加载
+        try {
+            val response = apiCall()
+            storeTrendingTags(response.trend_tags)
+            onSuccess(response.trend_tags)
+        } catch (e: Exception) {
+            onError(e.message ?: "加载失败")
         }
     }
 

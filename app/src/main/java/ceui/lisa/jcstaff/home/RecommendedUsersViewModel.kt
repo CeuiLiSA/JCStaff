@@ -2,107 +2,54 @@ package ceui.lisa.jcstaff.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.PagedDataLoader
+import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.UserPreview
 import ceui.lisa.jcstaff.network.UserPreviewResponse
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class RecommendedUsersUiState(
-    val users: List<UserPreview> = emptyList(),
-    val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val error: String? = null,
-    val nextUrl: String? = null
-) {
-    val canLoadMore: Boolean get() = nextUrl != null && !isLoadingMore
-}
+typealias RecommendedUsersUiState = PagedState<UserPreview>
 
 class RecommendedUsersViewModel : ViewModel() {
 
-    private val _state = MutableStateFlow(RecommendedUsersUiState())
-    val state: StateFlow<RecommendedUsersUiState> = _state.asStateFlow()
+    private val loader = PagedDataLoader(
+        cacheConfig = CacheConfig(
+            path = "/v1/user/recommended",
+            queryParams = mapOf("filter" to "for_ios")
+        ),
+        responseClass = UserPreviewResponse::class.java,
+        loadFirstPage = { PixivClient.pixivApi.getRecommendedUsers() },
+        loadNextPage = { url -> PixivClient.pixivApi.getNextPageUserPreviews(url) },
+        extractItems = { it.user_previews },
+        extractNextUrl = { it.next_url },
+        onItemsLoaded = { previews -> storeUserPreviews(previews) }
+    )
+
+    val state: StateFlow<RecommendedUsersUiState> = loader.state
 
     init {
         load()
     }
 
     fun load() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isLoading = true,
-                error = null
-            )
-
-            val cachedResponse = PixivClient.getFromStaleCache(
-                path = "/v1/user/recommended",
-                queryParams = mapOf("filter" to "for_ios"),
-                clazz = UserPreviewResponse::class.java
-            )
-
-            if (cachedResponse != null) {
-                storeUserPreviews(cachedResponse.user_previews)
-                _state.value = _state.value.copy(
-                    users = cachedResponse.user_previews,
-                    isLoading = false,
-                    nextUrl = cachedResponse.next_url
-                )
-            }
-
-            try {
-                val response = PixivClient.pixivApi.getRecommendedUsers()
-                storeUserPreviews(response.user_previews)
-                _state.value = _state.value.copy(
-                    users = response.user_previews,
-                    isLoading = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = if (_state.value.users.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
-                )
-            }
-        }
+        viewModelScope.launch { loader.load() }
     }
 
     fun loadMore() {
-        val nextUrl = _state.value.nextUrl ?: return
-        if (_state.value.isLoadingMore) return
-
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingMore = true)
-            try {
-                val response = PixivClient.pixivApi.getNextPageUserPreviews(nextUrl)
-                storeUserPreviews(response.user_previews)
-                _state.value = _state.value.copy(
-                    users = _state.value.users + response.user_previews,
-                    isLoadingMore = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoadingMore = false,
-                    error = e.message ?: "加载更多失败"
-                )
-            }
-        }
+        viewModelScope.launch { loader.loadMore() }
     }
 
     fun refresh() {
-        load()
+        viewModelScope.launch { loader.refresh() }
     }
 
     private fun storeUserPreviews(previews: List<UserPreview>) {
         previews.forEach { preview ->
-            preview.user?.let { user ->
-                ObjectStore.put(user)
-            }
+            preview.user?.let { user -> ObjectStore.put(user) }
             preview.illusts.forEach { illust ->
                 ObjectStore.put(illust)
                 illust.user?.let { user -> ObjectStore.put(user) }

@@ -3,15 +3,15 @@ package ceui.lisa.jcstaff.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.PagedDataLoader
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.IllustResponse
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.NovelResponse
 import ceui.lisa.jcstaff.network.PixivClient
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -20,82 +20,38 @@ import kotlinx.coroutines.launch
  */
 class LatestIllustsViewModel(private val contentType: String = "illust") : ViewModel() {
 
-    private val _state = MutableStateFlow(FollowingUiState())
-    val state: StateFlow<FollowingUiState> = _state.asStateFlow()
+    private val loader = PagedDataLoader(
+        cacheConfig = CacheConfig(
+            path = "/v1/illust/new",
+            queryParams = mapOf(
+                "content_type" to contentType,
+                "filter" to "for_ios"
+            )
+        ),
+        responseClass = IllustResponse::class.java,
+        loadFirstPage = { PixivClient.pixivApi.getLatestIllusts(contentType) },
+        loadNextPage = { url -> PixivClient.pixivApi.getNextPageIllusts(url) },
+        extractItems = { it.illusts },
+        extractNextUrl = { it.next_url },
+        onItemsLoaded = { illusts -> storeIllusts(illusts) }
+    )
+
+    val state: StateFlow<FollowingUiState> = loader.state
 
     init {
         load()
     }
 
     fun load() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isLoading = true,
-                error = null
-            )
-
-            val cachedResponse = PixivClient.getFromStaleCache(
-                path = "/v1/illust/new",
-                queryParams = mapOf(
-                    "content_type" to contentType,
-                    "filter" to "for_ios"
-                ),
-                clazz = IllustResponse::class.java
-            )
-
-            if (cachedResponse != null) {
-                storeIllusts(cachedResponse.illusts)
-                _state.value = _state.value.copy(
-                    illusts = cachedResponse.illusts,
-                    isLoading = false,
-                    nextUrl = cachedResponse.next_url
-                )
-            }
-
-            try {
-                val response = PixivClient.pixivApi.getLatestIllusts(contentType)
-                storeIllusts(response.illusts)
-                _state.value = _state.value.copy(
-                    illusts = response.illusts,
-                    isLoading = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = if (_state.value.illusts.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
-                )
-            }
-        }
+        viewModelScope.launch { loader.load() }
     }
 
     fun loadMore() {
-        val nextUrl = _state.value.nextUrl ?: return
-        if (_state.value.isLoadingMore) return
-
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingMore = true)
-            try {
-                val response = PixivClient.pixivApi.getNextPageIllusts(nextUrl)
-                storeIllusts(response.illusts)
-                _state.value = _state.value.copy(
-                    illusts = _state.value.illusts + response.illusts,
-                    isLoadingMore = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoadingMore = false,
-                    error = e.message ?: "加载更多失败"
-                )
-            }
-        }
+        viewModelScope.launch { loader.loadMore() }
     }
 
     fun refresh() {
-        load()
+        viewModelScope.launch { loader.refresh() }
     }
 
     private fun storeIllusts(illusts: List<Illust>) {
@@ -120,79 +76,35 @@ class LatestIllustsViewModel(private val contentType: String = "illust") : ViewM
  */
 class LatestNovelsViewModel : ViewModel() {
 
-    private val _state = MutableStateFlow(NovelListUiState())
-    val state: StateFlow<NovelListUiState> = _state.asStateFlow()
+    private val loader = PagedDataLoader(
+        cacheConfig = CacheConfig(
+            path = "/v1/novel/new",
+            queryParams = emptyMap()
+        ),
+        responseClass = NovelResponse::class.java,
+        loadFirstPage = { PixivClient.pixivApi.getLatestNovels() },
+        loadNextPage = { url -> PixivClient.pixivApi.getNextPageNovels(url) },
+        extractItems = { it.novels },
+        extractNextUrl = { it.next_url },
+        onItemsLoaded = { novels -> storeNovels(novels) }
+    )
+
+    val state: StateFlow<NovelListUiState> = loader.state
 
     init {
         load()
     }
 
     fun load() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isLoading = true,
-                error = null
-            )
-
-            val cachedResponse = PixivClient.getFromStaleCache(
-                path = "/v1/novel/new",
-                queryParams = emptyMap(),
-                clazz = NovelResponse::class.java
-            )
-
-            if (cachedResponse != null) {
-                storeNovels(cachedResponse.novels)
-                _state.value = _state.value.copy(
-                    novels = cachedResponse.novels,
-                    isLoading = false,
-                    nextUrl = cachedResponse.next_url
-                )
-            }
-
-            try {
-                val response = PixivClient.pixivApi.getLatestNovels()
-                storeNovels(response.novels)
-                _state.value = _state.value.copy(
-                    novels = response.novels,
-                    isLoading = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = if (_state.value.novels.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
-                )
-            }
-        }
+        viewModelScope.launch { loader.load() }
     }
 
     fun loadMore() {
-        val nextUrl = _state.value.nextUrl ?: return
-        if (_state.value.isLoadingMore) return
-
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingMore = true)
-            try {
-                val response = PixivClient.pixivApi.getNextPageNovels(nextUrl)
-                storeNovels(response.novels)
-                _state.value = _state.value.copy(
-                    novels = _state.value.novels + response.novels,
-                    isLoadingMore = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoadingMore = false,
-                    error = e.message ?: "加载更多失败"
-                )
-            }
-        }
+        viewModelScope.launch { loader.loadMore() }
     }
 
     fun refresh() {
-        load()
+        viewModelScope.launch { loader.refresh() }
     }
 
     private fun storeNovels(novels: List<Novel>) {
