@@ -924,7 +924,7 @@ val state: StateFlow<PagedState<Illust>> = loader.state
 
 **`TracedTunnelBackground`：** 光线追踪隧道效果（程序生成色彩瓷砖）。接受 `content` lambda 参数，可在着色器上层叠加 UI 内容。
 
-**`TracedTunnelImageBackground`：** 图片隧道效果，用于 Landing Screen 的沉浸式动态背景。从 `assets/prime_square/` 加载 448 张 Pixiv 正方形插画，创建 28×16 图集纹理（180×180 每块），每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载期间显示居中转圈指示器，加载完成后淡入显示着色器。着色器经过优化：内联光线求交、预计算常量、移除冗余计算，确保流畅渲染。
+**`TracedTunnelImageBackground`：** 图片隧道效果，用于 Landing Screen 的沉浸式动态背景。从 `assets/prime_square/` 加载 448 张 Pixiv 正方形插画，创建 28×16 图集纹理（200×200 每块，双线性滤波缩放），每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载期间显示居中转圈指示器，加载完成后淡入显示着色器。着色器经过优化：内联光线求交、预计算常量、移除冗余计算，确保流畅渲染。
 
 #### ShaderDemoScreen.kt — 着色器演示页
 
@@ -932,7 +932,7 @@ val state: StateFlow<PagedState<Illust>> = loader.state
 - **Neon Plasma**：正弦波叠加产生的霓虹等离子体色彩流动
 - **Fire Storm**：基于噪声的火焰模拟效果
 - **Traced Tunnel**：复用 `SHADER_TRACED_TUNNEL` 的隧道穿行效果（程序生成色彩瓷砖）
-- **Tunnel (Image)**：图片隧道效果，从 448 张 Pixiv 正方形插画中随机选取，创建 28×16 图集纹理（180×180 每块），每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载期间显示居中转圈指示器，加载完成后淡入显示着色器。着色器经过性能优化：内联光线-平面求交、预计算 sin/cos、移除高光计算、避免 mod() 函数。
+- **Tunnel (Image)**：图片隧道效果，从 448 张 Pixiv 正方形插画中随机选取，创建 28×16 图集纹理（200×200 每块，双线性滤波缩放），每块瓷砖通过哈希函数随机映射到不同图片。图集在后台线程异步加载，加载期间显示居中转圈指示器，加载完成后淡入显示着色器。着色器经过性能优化：内联光线-平面求交、预计算 sin/cos、移除高光计算、避免 mod() 函数。
 - **Magic Circle**：多层旋转魔法阵，使用 SDF 绘制同心圆环、六芒星/八芒星几何、符文标记，配合粒子火花和能量流动
 
 另外还包含备用着色器常量（Voronoi、Aurora、Galaxy、Sakura Card 等），未在入口列表中启用。

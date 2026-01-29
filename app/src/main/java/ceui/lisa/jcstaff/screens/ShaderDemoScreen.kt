@@ -796,7 +796,7 @@ uniform shader tileImage;
 
 const float GRID_COLS = 28.0;
 const float GRID_ROWS = 16.0;
-const float TILE_SIZE = 180.0;
+const float TILE_SIZE = 200.0;
 const float TOTAL_IMAGES = 448.0;  // GRID_COLS * GRID_ROWS
 const float INV_GRID_COLS = 0.0357142857;  // 1.0 / GRID_COLS
 
@@ -1043,7 +1043,7 @@ private fun ShaderCanvas(shaderSrc: String) {
 
 private const val ATLAS_COLS = 28       // 28 columns
 private const val ATLAS_ROWS = 16       // 16 rows = 448 images
-private const val TILE_SIZE = 180       // Downscale to 180x180
+private const val TILE_SIZE = 200       // Downscale to 200x200
 
 private data class AtlasData(
     val shader: BitmapShader,
@@ -1118,8 +1118,9 @@ private fun loadAtlas(context: android.content.Context): AtlasData? {
     val canvas = android.graphics.Canvas(atlasBitmap)
 
     val options = BitmapFactory.Options().apply {
-        inSampleSize = 3
+        inSampleSize = 2  // Decode at 270x270, then scale to 200x200
     }
+    val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
 
     // Fill atlas with images
     for (row in 0 until ATLAS_ROWS) {
@@ -1129,12 +1130,13 @@ private fun loadAtlas(context: android.content.Context): AtlasData? {
             val bitmap = BitmapFactory.decodeStream(inputStream, null, options)
             inputStream.close()
             bitmap?.let {
-                canvas.drawBitmap(
-                    it,
+                val destRect = android.graphics.RectF(
                     (col * TILE_SIZE).toFloat(),
                     (row * TILE_SIZE).toFloat(),
-                    null
+                    ((col + 1) * TILE_SIZE).toFloat(),
+                    ((row + 1) * TILE_SIZE).toFloat()
                 )
+                canvas.drawBitmap(it, null, destRect, paint)
                 it.recycle()
             }
         }
