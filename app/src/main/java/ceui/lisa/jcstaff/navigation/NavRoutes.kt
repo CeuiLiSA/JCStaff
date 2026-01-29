@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.navigation
 
+import ceui.lisa.jcstaff.network.SpotlightArticle
 import ceui.lisa.jcstaff.network.Tag
 
 sealed interface NavRoute {
@@ -64,5 +65,10 @@ sealed interface NavRoute {
         val objectType: String  // "illust" or "manga"
     ) : NavRoute {
         override val stableKey = "RankingDetail_$objectType"
+    }
+    data class SpotlightDetail(
+        val article: SpotlightArticle
+    ) : NavRoute {
+        override val stableKey = "SpotlightDetail_${article.id}"
     }
 }

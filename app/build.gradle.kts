@@ -71,6 +71,9 @@ dependencies {
     implementation(libs.telephoto.zoomable.image.coil)
     implementation(libs.telephoto.zoomable.peek.overlay)
 
+    // HTML parsing
+    implementation(libs.jsoup)
+
     // Room database
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

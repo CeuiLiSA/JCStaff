@@ -56,6 +56,7 @@ import ceui.lisa.jcstaff.screens.RankingDetailScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ShaderDemoScreen
+import ceui.lisa.jcstaff.screens.SpotlightDetailScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
@@ -361,6 +362,12 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                         is NavRoute.RankingDetail -> {
                             RankingDetailScreen(
                                 objectType = route.objectType
+                            )
+                        }
+
+                        is NavRoute.SpotlightDetail -> {
+                            SpotlightDetailScreen(
+                                article = route.article
                             )
                         }
                     }

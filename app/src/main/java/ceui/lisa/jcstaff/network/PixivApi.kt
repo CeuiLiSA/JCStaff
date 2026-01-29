@@ -241,4 +241,12 @@ interface PixivApi {
 
     @GET("/v1/novel/new")
     suspend fun getLatestNovels(): NovelResponse
+
+    // ===== Spotlight Endpoints =====
+
+    @GET("/v1/spotlight/articles")
+    suspend fun getSpotlightArticles(
+        @Query("category") category: String = "all",
+        @Query("filter") filter: String = "for_android"
+    ): SpotlightResponse
 }

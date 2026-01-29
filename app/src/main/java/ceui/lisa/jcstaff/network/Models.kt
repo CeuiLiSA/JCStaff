@@ -309,3 +309,24 @@ data class CommentResponse(
 data class PostCommentResponse(
     val comment: Comment? = null
 ) : Serializable
+
+// ===== Spotlight Models =====
+
+data class SpotlightArticle(
+    val id: Long = 0,
+    val title: String? = null,
+    val pure_title: String? = null,
+    val thumbnail: String? = null,
+    val article_url: String? = null,
+    val publish_date: String? = null,
+    val category: String? = null,
+    val subcategory_label: String? = null
+) : Serializable
+
+data class SpotlightResponse(
+    val spotlight_articles: List<SpotlightArticle> = listOf(),
+    val next_url: String? = null
+) : Serializable, PagedResponse<SpotlightArticle> {
+    override val displayList: List<SpotlightArticle> get() = spotlight_articles
+    override val nextUrl: String? get() = next_url
+}

@@ -135,7 +135,7 @@ fun HomeScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
 
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val pagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val selectionManager = LocalSelectionManager.current
@@ -273,6 +273,14 @@ fun HomeScreen(
                             icon = { Icon(Icons.Default.FiberNew, contentDescription = null) },
                             label = { Text(stringResource(R.string.tab_new_works)) }
                         )
+                        NavigationBarItem(
+                            selected = pagerState.currentPage == 3,
+                            onClick = {
+                                coroutineScope.launch { pagerState.animateScrollToPage(3) }
+                            },
+                            icon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                            label = { Text(stringResource(R.string.tab_general)) }
+                        )
                     }
                 }
             ) { innerPadding ->
@@ -287,6 +295,7 @@ fun HomeScreen(
                         0 -> RecommendedTabPage()
                         1 -> DiscoverTabPage()
                         2 -> NewWorksTabPage()
+                        3 -> GeneralTabPage()
                     }
                 }
             }
@@ -1759,6 +1768,238 @@ private fun UserPreviewCard(
                     }
                 }
             }
+        }
+    }
+}
+
+// ==================== Tab 4: 综合 ====================
+
+@Composable
+private fun GeneralTabPage() {
+    val innerPagerState = rememberPagerState(pageCount = { 2 })
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = innerPagerState.currentPage,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            Tab(
+                selected = innerPagerState.currentPage == 0,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
+                text = { Text(stringResource(R.string.tab_spotlight)) }
+            )
+            Tab(
+                selected = innerPagerState.currentPage == 1,
+                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
+                text = { Text(stringResource(R.string.coming_soon)) }
+            )
+        }
+
+        HorizontalPager(
+            state = innerPagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { innerPage ->
+            when (innerPage) {
+                0 -> SpotlightPage()
+                1 -> EmptyPlaceholderPage()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SpotlightPage() {
+    val navViewModel = LocalNavigationViewModel.current
+    val vm: SpotlightViewModel = viewModel()
+    val state by vm.state.collectAsState()
+    val context = LocalContext.current
+
+    PullToRefreshBox(
+        isRefreshing = state.isLoading && state.items.isNotEmpty(),
+        onRefresh = { vm.refresh() },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        when {
+            state.isLoading && state.items.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            state.error != null && state.items.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = state.error ?: stringResource(R.string.load_error),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Surface(
+                            onClick = { vm.refresh() },
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                text = "重试",
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            state.items.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.spotlight_empty),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                val listState = rememberLazyListState()
+
+                // Load more when near the end
+                LaunchedEffect(listState) {
+                    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+                        .distinctUntilChanged()
+                        .filter { lastIndex ->
+                            lastIndex != null &&
+                            lastIndex >= state.items.size - 3 &&
+                            state.canLoadMore &&
+                            !state.isLoadingMore
+                        }
+                        .collect { vm.loadMore() }
+                }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+                ) {
+                    items(
+                        count = state.items.size,
+                        key = { index -> state.items[index].id }
+                    ) { index ->
+                        SpotlightCard(
+                            article = state.items[index],
+                            onClick = {
+                                // Navigate to spotlight detail page
+                                navViewModel.navigate(NavRoute.SpotlightDetail(article = state.items[index]))
+                            }
+                        )
+                    }
+
+                    if (state.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpotlightCard(
+    article: ceui.lisa.jcstaff.network.SpotlightArticle,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column {
+            // Thumbnail
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(article.thumbnail)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = article.pure_title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+            )
+
+            // Content
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = article.pure_title ?: article.title ?: "",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                if (article.subcategory_label != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = article.subcategory_label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                if (article.publish_date != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = article.publish_date.take(10),  // Show only date part
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyPlaceholderPage() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.coming_soon),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

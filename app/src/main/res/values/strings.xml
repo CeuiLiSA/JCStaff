@@ -230,4 +230,9 @@
     <string name="novel_detail">小说详情</string>
     <string name="novel_series">系列</string>
     <string name="novel_read">阅读小说</string>
+
+    <!-- General Tab -->
+    <string name="tab_general">综合</string>
+    <string name="tab_spotlight">精选</string>
+    <string name="spotlight_empty">暂无精选文章</string>
 </resources>
