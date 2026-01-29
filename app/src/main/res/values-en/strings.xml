@@ -14,6 +14,7 @@
     <string name="signup">Sign Up</string>
     <string name="download">Download</string>
     <string name="load_error">Failed to load</string>
+    <string name="retry">Retry</string>
 
     <!-- Language -->
     <string name="language_title">Language</string>
@@ -31,10 +32,25 @@
 
     <!-- Home Screen -->
     <string name="daily_ranking">Daily Ranking</string>
+    <string name="ranking_subtitle">Trending works, endless excitement</string>
+    <string name="view_all">View All</string>
     <string name="tab_discover">Discover</string>
     <string name="tab_trending">Trending</string>
+    <string name="tab_trending_illust">Illustrations</string>
+    <string name="tab_trending_novel">Novels</string>
     <string name="tab_recommended">Recommended</string>
     <string name="tab_following">Following</string>
+    <string name="tab_new_works">New Works</string>
+    <string name="tab_illust_manga">Illust &amp; Manga</string>
+    <string name="tab_recommended_users">Recommended Users</string>
+    <string name="tab_following_illust_manga">Following Illust &amp; Manga</string>
+    <string name="tab_following_novel">Following Novels</string>
+    <string name="tab_latest_illust_manga">Latest Illust &amp; Manga</string>
+    <string name="tab_latest_novel">Latest Novels</string>
+    <string name="view_full_ranking">View Full Ranking</string>
+    <string name="recommended_for_you">Recommended for You</string>
+    <string name="recommended_illust_subtitle">Curated based on your preferences</string>
+    <string name="recommended_manga_subtitle">Curated manga works</string>
     <string name="search">Search</string>
     <string name="user_icon">User</string>
     <string name="not_logged_in">Not logged in</string>
@@ -42,6 +58,22 @@
     <string name="my_bookmarks">My Bookmarks</string>
     <string name="my_following">My Following</string>
     <string name="browse_history">Browse History</string>
+
+    <!-- Ranking -->
+    <string name="ranking">Ranking</string>
+    <string name="rank_day">Daily</string>
+    <string name="rank_week">Weekly</string>
+    <string name="rank_month">Monthly</string>
+    <string name="rank_day_ai">AI Daily</string>
+    <string name="rank_day_male">For Male</string>
+    <string name="rank_day_female">For Female</string>
+    <string name="rank_week_original">Original</string>
+    <string name="rank_week_rookie">Rookie</string>
+    <string name="rank_day_manga">Manga Daily</string>
+    <string name="rank_week_manga">Manga Weekly</string>
+    <string name="rank_month_manga">Manga Monthly</string>
+    <string name="rank_week_rookie_manga">Manga Rookie</string>
+    <string name="select_date">Select Date</string>
 
     <!-- Search Screen -->
     <string name="search_placeholder">Search illustrations, users…</string>
@@ -158,12 +190,19 @@
     <string name="remove_tag_message">Removing \"%1$s\" will exclude it from search keywords and refresh the results.</string>
 
     <!-- Account Management -->
+    <string name="account_management">Account Management</string>
+    <string name="account_management_desc">Manage logged-in accounts</string>
+    <string name="current_account">Current Account</string>
+    <string name="other_accounts">Other Accounts</string>
     <string name="add_account">Add Account</string>
     <string name="switch_account">Switch Account</string>
     <string name="remove_account">Remove Account</string>
     <string name="remove_account_title">Remove Account</string>
     <string name="remove_account_message">Remove account \"%1$s\"? All local data (browse history, settings, cache) for this account will be deleted.</string>
     <string name="account_switched">Switched to %1$s</string>
+    <string name="logout_confirm_title">Confirm Logout</string>
+    <string name="logout_confirm_message">Are you sure you want to logout? Your local data will be preserved and restored on next login.</string>
+    <string name="confirm">Confirm</string>
     <string name="last_account_warning">This is the last account. Removing it will return to the login screen.</string>
 
     <!-- Comments -->
@@ -192,4 +231,9 @@
     <string name="novel_detail">Novel Detail</string>
     <string name="novel_series">Series</string>
     <string name="novel_read">Read Novel</string>
+
+    <!-- General Tab -->
+    <string name="tab_general">General</string>
+    <string name="tab_spotlight">Spotlight</string>
+    <string name="spotlight_empty">No spotlight articles</string>
 </resources>

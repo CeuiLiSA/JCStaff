@@ -83,6 +83,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
@@ -364,7 +365,10 @@ private fun RecommendedTabPage() {
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                                                headerContent = {
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            start = 8.dp, end = 8.dp, bottom = 8.dp, top = 0.dp
+                        ),
+                        headerContent = {
                             if (state.rankingIllusts.isNotEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     RankingCarousel(
@@ -386,7 +390,8 @@ private fun RecommendedTabPage() {
                             item(span = StaggeredGridItemSpan.FullLine) {
                                 SectionHeader(
                                     title = stringResource(R.string.recommended_for_you),
-                                    subtitle = stringResource(R.string.recommended_illust_subtitle)
+                                    subtitle = stringResource(R.string.recommended_illust_subtitle),
+                                    icon = Icons.Default.Favorite
                                 )
                             }
                         }
@@ -414,7 +419,10 @@ private fun RecommendedTabPage() {
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                                                headerContent = {
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            start = 8.dp, end = 8.dp, bottom = 8.dp, top = 0.dp
+                        ),
+                        headerContent = {
                             if (state.rankingIllusts.isNotEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
                                     RankingCarousel(
@@ -436,7 +444,8 @@ private fun RecommendedTabPage() {
                             item(span = StaggeredGridItemSpan.FullLine) {
                                 SectionHeader(
                                     title = stringResource(R.string.recommended_for_you),
-                                    subtitle = stringResource(R.string.recommended_manga_subtitle)
+                                    subtitle = stringResource(R.string.recommended_manga_subtitle),
+                                    icon = Icons.Default.Favorite
                                 )
                             }
                         }
@@ -1080,7 +1089,22 @@ private fun RankingCarousel(
     onViewAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    // Use layout modifier to extend beyond parent's horizontal padding
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .layout { measurable, constraints ->
+                // Measure with extra width to fill screen edge-to-edge
+                val horizontalPadding = 8.dp.roundToPx()
+                val expandedConstraints = constraints.copy(
+                    maxWidth = constraints.maxWidth + horizontalPadding * 2
+                )
+                val placeable = measurable.measure(expandedConstraints)
+                layout(placeable.width, placeable.height) {
+                    placeable.place(-horizontalPadding, 0)
+                }
+            }
+    ) {
         // Header with gradient background
         Box(
             modifier = Modifier
@@ -1379,33 +1403,34 @@ private fun SectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Icon with gradient background
+        // Fancy icon with animated gradient background
         if (icon != null) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(40.dp)
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.secondaryContainer,
-                                MaterialTheme.colorScheme.tertiaryContainer
+                                Color(0xFFFF6B6B),  // Coral red
+                                Color(0xFFFF8E53),  // Orange
+                                Color(0xFFFFE66D)   // Yellow
                             )
                         ),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(20.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
         }
 
         Column(modifier = Modifier.weight(1f)) {
@@ -1416,6 +1441,7 @@ private fun SectionHeader(
                 color = MaterialTheme.colorScheme.onSurface
             )
             if (subtitle != null) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
@@ -1683,96 +1709,286 @@ private fun UserPreviewCard(
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(16.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(20.dp)
     ) {
-        Column {
-            // User info row
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // ========== Header Section: Avatar + User Info + Follow Button ==========
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onUserClick)
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                val avatarUrl = user.profile_image_urls?.findAvatarUrl()
-                if (avatarUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(avatarUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = user.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .border(
-                                width = 1.5.dp,
-                                brush = Brush.linearGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.tertiary
-                                    )
-                                ),
-                                shape = CircleShape
+                // Avatar with premium ring
+                Box(
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    val avatarUrl = user.profile_image_urls?.findAvatarUrl()
+                    val isPremium = user.is_premium == true
+
+                    // Avatar border - gradient for premium, subtle for regular
+                    val borderBrush = if (isPremium) {
+                        Brush.sweepGradient(
+                            colors = listOf(
+                                Color(0xFFFFD700), // Gold
+                                Color(0xFFFFA500), // Orange
+                                Color(0xFFFF6347), // Tomato
+                                Color(0xFFFF69B4), // Hot pink
+                                Color(0xFFFFD700)  // Gold (loop)
                             )
-                            .padding(2.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                        )
+                    } else {
+                        Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
+                            )
+                        )
+                    }
+
+                    if (avatarUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(avatarUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = user.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .border(
+                                    width = if (isPremium) 2.5.dp else 2.dp,
+                                    brush = borderBrush,
+                                    shape = CircleShape
+                                )
+                                .padding(3.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .border(
+                                    width = 2.dp,
+                                    brush = borderBrush,
+                                    shape = CircleShape
+                                )
+                                .padding(3.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    // Premium badge
+                    if (isPremium) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFFFD700),
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.size(20.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Verified,
+                                    contentDescription = "Premium",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                // User info column
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Name
+                    Text(
+                        text = user.name ?: "",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(28.dp)
+
+                    // Account handle
+                    if (!user.account.isNullOrBlank()) {
+                        Text(
+                            text = "@${user.account}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    // Illust titles (up to 3)
+                    val illustTitles = userPreview.illusts.take(3).mapNotNull { it.title }.filter { it.isNotBlank() }
+                    if (illustTitles.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = illustTitles.joinToString(" · "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // Bio/Comment (if available)
+                    if (!user.comment.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = user.comment,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = user.name ?: "",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
 
-            // Sample illusts row
-            if (userPreview.illusts.isNotEmpty()) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                // Follow status indicator
+                val isFollowed = user.is_followed == true
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isFollowed)
+                        MaterialTheme.colorScheme.secondaryContainer
+                    else
+                        MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.padding(top = 4.dp)
                 ) {
-                    itemsIndexed(
-                        userPreview.illusts.take(3),
-                        key = { _, illust -> "user_preview_${user.id}_${illust.id}" }
-                    ) { _, illust ->
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(illust.image_urls?.square_medium ?: illust.previewUrl())
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = illust.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onIllustClick(illust) }
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isFollowed) Icons.Default.Check else Icons.Default.PersonAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = if (isFollowed)
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(if (isFollowed) R.string.following else R.string.follow),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = if (isFollowed)
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            else
+                                MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
             }
+
+            // ========== Sample Illusts Gallery ==========
+            if (userPreview.illusts.isNotEmpty()) {
+                val illusts = userPreview.illusts.take(3)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    illusts.forEachIndexed { index, illust ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                                .clip(
+                                    when (index) {
+                                        0 -> RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp, topEnd = 4.dp, bottomEnd = 4.dp)
+                                        illusts.size - 1 -> RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 12.dp, bottomEnd = 12.dp)
+                                        else -> RoundedCornerShape(4.dp)
+                                    }
+                                )
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable { onIllustClick(illust) }
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(illust.image_urls?.square_medium ?: illust.previewUrl())
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = illust.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            // Bookmark count overlay on each illust
+                            val bookmarks = illust.total_bookmarks ?: 0
+                            if (bookmarks > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(4.dp)
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.6f),
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Favorite,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(10.dp),
+                                            tint = Color(0xFFFF6B6B)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(
+                                            text = formatNumber(bookmarks),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White,
+                                            fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+// Helper function to format large numbers
+private fun formatNumber(num: Int): String {
+    return when {
+        num >= 1_000_000 -> String.format("%.1fM", num / 1_000_000.0)
+        num >= 10_000 -> String.format("%.1fW", num / 10_000.0)
+        num >= 1_000 -> String.format("%.1fK", num / 1_000.0)
+        else -> num.toString()
     }
 }
 
@@ -1852,7 +2068,7 @@ private fun SpotlightPage() {
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                text = "重试",
+                                text = stringResource(R.string.retry),
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                             )
                         }

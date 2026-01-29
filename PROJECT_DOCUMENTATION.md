@@ -352,7 +352,8 @@ ModalNavigationDrawer（侧滑抽屉）
 **SectionHeader 组件：**
 - 用于分隔排行榜和推荐瀑布流
 - 标题（titleMedium + Bold）+ 副标题（bodySmall）
-- 可选的渐变背景图标
+- 暖色渐变图标（珊瑚红 → 橙色 → 黄色，40dp 背景 + 22dp 图标）
+- 「为你推荐」使用心形图标
 
 ---
 
@@ -687,6 +688,32 @@ ModalNavigationDrawer（侧滑抽屉）
 - 使用 `LazyVerticalGrid` 3 列网格展示，首项 `GridItemSpan(3)` 全宽
 - `TrendingTagCard` 组件：正方形比例、底部渐变遮罩、直角边框
 - 点击导航至 `NavRoute.TagDetail(tag, initialTab)`
+
+---
+
+### 18.1 推荐作者列表 (RecommendedUsersList)
+
+#### 用户视角
+- 在首页发现 Tab 的「推荐作者」子页面中以列表形式展示推荐用户
+- 每张用户卡片采用 Material Design 3 风格：
+  - 64dp 头像，Premium 用户有金色渐变扫描边框 + 认证徽章
+  - 用户名（titleMedium + Bold）+ @账号（bodySmall）
+  - 作品标题预览（最多 3 个，用 · 分隔，primary 颜色）
+  - 用户简介（bodySmall，85% 透明度）
+  - 关注状态按钮（已关注/关注，使用 MD3 Container 颜色）
+  - 作品预览画廊（3 张等宽图片，首尾大圆角，中间小圆角）
+  - 每张作品右下角显示收藏数浮层
+
+#### 实现原理
+
+- `UserPreviewCard` 组件：
+  - 头像边框：Premium 用户使用 `sweepGradient`（金 → 橙 → 粉 → 金），普通用户使用 `linearGradient`（primary → tertiary）
+  - Premium 徽章：20dp 金色圆形 + 白色认证图标
+  - 作品标题行：`mapNotNull { it.title }` 提取标题，`joinToString(" · ")` 连接
+  - 作品画廊：`Row` + `weight(1f)` 等宽分布，`aspectRatio(1f)` 正方形
+  - 收藏数浮层：暗色半透明背景 + 心形图标 + 格式化数字（支持 K/W/M）
+- `RecommendedUsersList` 使用 `LazyColumn` + `PullToRefreshBox` 实现
+- 支持无限滚动加载更多
 
 ---
 

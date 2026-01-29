@@ -14,6 +14,7 @@
     <string name="signup">注册</string>
     <string name="download">下载</string>
     <string name="load_error">加载失败</string>
+    <string name="retry">重试</string>
 
     <!-- Language -->
     <string name="language_title">语言</string>
@@ -31,10 +32,25 @@
 
     <!-- Home Screen -->
     <string name="daily_ranking">每日排行</string>
+    <string name="ranking_subtitle">热门作品，精彩不断</string>
+    <string name="view_all">查看全部</string>
     <string name="tab_discover">发现</string>
     <string name="tab_trending">排行</string>
+    <string name="tab_trending_illust">插画</string>
+    <string name="tab_trending_novel">小说</string>
     <string name="tab_recommended">推荐</string>
     <string name="tab_following">关注</string>
+    <string name="tab_new_works">新作</string>
+    <string name="tab_illust_manga">插画漫画</string>
+    <string name="tab_recommended_users">推荐作者</string>
+    <string name="tab_following_illust_manga">关注插画漫画</string>
+    <string name="tab_following_novel">关注小说</string>
+    <string name="tab_latest_illust_manga">最新插画漫画</string>
+    <string name="tab_latest_novel">最新小说</string>
+    <string name="view_full_ranking">查看完整排行榜</string>
+    <string name="recommended_for_you">为你推荐</string>
+    <string name="recommended_illust_subtitle">基于你的喜好精选</string>
+    <string name="recommended_manga_subtitle">精选漫画作品</string>
     <string name="search">搜索</string>
     <string name="user_icon">用户</string>
     <string name="not_logged_in">未登录</string>
@@ -42,6 +58,22 @@
     <string name="my_bookmarks">我的收藏</string>
     <string name="my_following">我的关注</string>
     <string name="browse_history">浏览历史</string>
+
+    <!-- Ranking -->
+    <string name="ranking">排行榜</string>
+    <string name="rank_day">日榜</string>
+    <string name="rank_week">周榜</string>
+    <string name="rank_month">月榜</string>
+    <string name="rank_day_ai">AI 日榜</string>
+    <string name="rank_day_male">男性向</string>
+    <string name="rank_day_female">女性向</string>
+    <string name="rank_week_original">原创</string>
+    <string name="rank_week_rookie">新人</string>
+    <string name="rank_day_manga">漫画日榜</string>
+    <string name="rank_week_manga">漫画周榜</string>
+    <string name="rank_month_manga">漫画月榜</string>
+    <string name="rank_week_rookie_manga">漫画新人</string>
+    <string name="select_date">选择日期</string>
 
     <!-- Search Screen -->
     <string name="search_placeholder">搜索插画、用户...</string>
@@ -158,12 +190,19 @@
     <string name="remove_tag_message">移除「%1$s」后，该标签将不再作为搜索关键字，搜索结果会随之更新。</string>
 
     <!-- Account Management -->
+    <string name="account_management">账号管理</string>
+    <string name="account_management_desc">管理已登录的账号</string>
+    <string name="current_account">当前账号</string>
+    <string name="other_accounts">其他账号</string>
     <string name="add_account">添加账号</string>
     <string name="switch_account">切换账号</string>
     <string name="remove_account">移除账号</string>
     <string name="remove_account_title">移除账号</string>
     <string name="remove_account_message">确定要移除账号「%1$s」吗？该账号的所有本地数据（浏览历史、设置、缓存）将被删除。</string>
     <string name="account_switched">已切换到 %1$s</string>
+    <string name="logout_confirm_title">退出登录</string>
+    <string name="logout_confirm_message">确定要退出当前账号吗？你的本地数据不会被删除，下次登录时可以恢复。</string>
+    <string name="confirm">确定</string>
     <string name="last_account_warning">这是最后一个账号，移除后将返回登录页面。</string>
 
     <!-- Comments -->
@@ -192,4 +231,9 @@
     <string name="novel_detail">小说详情</string>
     <string name="novel_series">系列</string>
     <string name="novel_read">阅读小说</string>
+
+    <!-- General Tab -->
+    <string name="tab_general">综合</string>
+    <string name="tab_spotlight">精选</string>
+    <string name="spotlight_empty">暂无精选文章</string>
 </resources>

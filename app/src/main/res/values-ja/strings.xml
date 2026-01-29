@@ -14,6 +14,7 @@
     <string name="signup">新規登録</string>
     <string name="download">ダウンロード</string>
     <string name="load_error">読み込み失敗</string>
+    <string name="retry">再試行</string>
 
     <!-- Language -->
     <string name="language_title">言語</string>
@@ -31,10 +32,25 @@
 
     <!-- Home Screen -->
     <string name="daily_ranking">デイリーランキング</string>
+    <string name="ranking_subtitle">話題の作品が続々</string>
+    <string name="view_all">すべて見る</string>
     <string name="tab_discover">見つける</string>
     <string name="tab_trending">ランキング</string>
+    <string name="tab_trending_illust">イラスト</string>
+    <string name="tab_trending_novel">小説</string>
     <string name="tab_recommended">おすすめ</string>
     <string name="tab_following">フォロー中</string>
+    <string name="tab_new_works">新着</string>
+    <string name="tab_illust_manga">イラスト・マンガ</string>
+    <string name="tab_recommended_users">おすすめユーザー</string>
+    <string name="tab_following_illust_manga">フォロー中のイラスト・マンガ</string>
+    <string name="tab_following_novel">フォロー中の小説</string>
+    <string name="tab_latest_illust_manga">最新イラスト・マンガ</string>
+    <string name="tab_latest_novel">最新小説</string>
+    <string name="view_full_ranking">ランキングをすべて見る</string>
+    <string name="recommended_for_you">あなたへのおすすめ</string>
+    <string name="recommended_illust_subtitle">あなたの好みに基づいて厳選</string>
+    <string name="recommended_manga_subtitle">厳選マンガ作品</string>
     <string name="search">検索</string>
     <string name="user_icon">ユーザー</string>
     <string name="not_logged_in">未ログイン</string>
@@ -42,6 +58,22 @@
     <string name="my_bookmarks">ブックマーク</string>
     <string name="my_following">フォロー中</string>
     <string name="browse_history">閲覧履歴</string>
+
+    <!-- Ranking -->
+    <string name="ranking">ランキング</string>
+    <string name="rank_day">デイリー</string>
+    <string name="rank_week">ウィークリー</string>
+    <string name="rank_month">マンスリー</string>
+    <string name="rank_day_ai">AI デイリー</string>
+    <string name="rank_day_male">男子に人気</string>
+    <string name="rank_day_female">女子に人気</string>
+    <string name="rank_week_original">オリジナル</string>
+    <string name="rank_week_rookie">ルーキー</string>
+    <string name="rank_day_manga">マンガ デイリー</string>
+    <string name="rank_week_manga">マンガ ウィークリー</string>
+    <string name="rank_month_manga">マンガ マンスリー</string>
+    <string name="rank_week_rookie_manga">マンガ ルーキー</string>
+    <string name="select_date">日付を選択</string>
 
     <!-- Search Screen -->
     <string name="search_placeholder">イラスト、ユーザーを検索…</string>
@@ -158,12 +190,19 @@
     <string name="remove_tag_message">「%1$s」を削除すると、検索キーワードから除外され、検索結果が更新されます。</string>
 
     <!-- Account Management -->
+    <string name="account_management">アカウント管理</string>
+    <string name="account_management_desc">ログイン中のアカウントを管理</string>
+    <string name="current_account">現在のアカウント</string>
+    <string name="other_accounts">その他のアカウント</string>
     <string name="add_account">アカウントを追加</string>
     <string name="switch_account">アカウントを切替</string>
     <string name="remove_account">アカウントを削除</string>
     <string name="remove_account_title">アカウントを削除</string>
     <string name="remove_account_message">アカウント「%1$s」を削除しますか？閲覧履歴、設定、キャッシュなどのローカルデータがすべて削除されます。</string>
     <string name="account_switched">%1$s に切り替えました</string>
+    <string name="logout_confirm_title">ログアウト確認</string>
+    <string name="logout_confirm_message">ログアウトしますか？ローカルデータは保持され、次回ログイン時に復元されます。</string>
+    <string name="confirm">確認</string>
     <string name="last_account_warning">これが最後のアカウントです。削除するとログイン画面に戻ります。</string>
 
     <!-- Comments -->
@@ -192,4 +231,9 @@
     <string name="novel_detail">小説詳細</string>
     <string name="novel_series">シリーズ</string>
     <string name="novel_read">小説を読む</string>
+
+    <!-- General Tab -->
+    <string name="tab_general">総合</string>
+    <string name="tab_spotlight">スポットライト</string>
+    <string name="spotlight_empty">スポットライト記事がありません</string>
 </resources>
