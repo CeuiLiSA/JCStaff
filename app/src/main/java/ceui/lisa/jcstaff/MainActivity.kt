@@ -17,7 +17,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
+import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -200,7 +200,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                 .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            LoadingIndicator()
         }
         return
     }
@@ -216,7 +216,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                 .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            LoadingIndicator()
         }
         return
     }

@@ -121,7 +121,7 @@ fun NovelList(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
             else -> {

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material3.CircularProgressIndicator
+import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -210,7 +211,7 @@ fun IllustDetailScreen(
                                 .padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            LoadingIndicator()
                         }
                     }
                 } else if (error != null && illust == null) {
@@ -323,7 +324,7 @@ fun IllustDetailScreen(
                                 .padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            LoadingIndicator()
                         }
                     }
                 }

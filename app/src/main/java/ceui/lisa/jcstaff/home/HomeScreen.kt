@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.CircularProgressIndicator
+import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -1468,7 +1469,7 @@ private fun TrendingTagGrid(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            LoadingIndicator()
         }
         return
     }
@@ -1641,7 +1642,7 @@ private fun RecommendedUsersList(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
             else -> {
@@ -2048,7 +2049,7 @@ private fun SpotlightPage() {
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
             state.error != null && state.items.isEmpty() -> {

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -255,7 +256,7 @@ private fun SearchResults(
     Box(modifier = modifier) {
         when {
             state.isLoading && state.illusts.isEmpty() -> {
-                CircularProgressIndicator(
+                LoadingIndicator(
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
