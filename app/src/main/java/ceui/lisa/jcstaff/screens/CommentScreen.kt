@@ -74,6 +74,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.comment.CommentViewModel
+import ceui.lisa.jcstaff.components.ActionMenu
+import ceui.lisa.jcstaff.components.ActionMenuItem
 import ceui.lisa.jcstaff.components.comment.CommentCard
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -175,68 +177,45 @@ fun CommentScreen(
 
     // Long press action menu
     actionMenuComment?.let { comment ->
-        AlertDialog(
-            onDismissRequest = { actionMenuComment = null },
-            confirmButton = {},
-            text = {
-                Column {
-                    // Copy comment
-                    if (!comment.comment.isNullOrBlank()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("comment", comment.comment))
-                                    Toast.makeText(context, context.getString(R.string.comment_copied), Toast.LENGTH_SHORT).show()
-                                    actionMenuComment = null
-                                }
-                                .padding(vertical = 14.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ContentCopy,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = stringResource(R.string.copy_comment),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
+        val copyLabel = stringResource(R.string.copy_comment)
+        val deleteLabel = stringResource(R.string.delete_comment)
+        val copiedToast = stringResource(R.string.comment_copied)
 
-                    // Delete comment (only for own comments)
-                    if (comment.user.id == currentUserId) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    val id = comment.id
-                                    actionMenuComment = null
-                                    showDeleteDialog = id
-                                }
-                                .padding(vertical = 14.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Delete,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Text(
-                                text = stringResource(R.string.delete_comment),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
+        val items = buildList {
+            // Copy comment
+            if (!comment.comment.isNullOrBlank()) {
+                add(ActionMenuItem(
+                    icon = Icons.Outlined.ContentCopy,
+                    label = copyLabel,
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("comment", comment.comment))
+                        Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                        actionMenuComment = null
                     }
-                }
+                ))
             }
-        )
+            // Delete comment (only for own comments)
+            if (comment.user.id == currentUserId) {
+                add(ActionMenuItem(
+                    icon = Icons.Outlined.Delete,
+                    label = deleteLabel,
+                    color = MaterialTheme.colorScheme.error,
+                    onClick = {
+                        val id = comment.id
+                        actionMenuComment = null
+                        showDeleteDialog = id
+                    }
+                ))
+            }
+        }
+
+        if (items.isNotEmpty()) {
+            ActionMenu(
+                onDismiss = { actionMenuComment = null },
+                items = items
+            )
+        }
     }
 
     Scaffold(

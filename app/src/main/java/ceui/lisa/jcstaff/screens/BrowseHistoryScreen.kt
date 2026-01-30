@@ -19,15 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -48,6 +45,8 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.components.ActionMenu
+import ceui.lisa.jcstaff.components.ActionMenuItem
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.NovelCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -241,12 +240,19 @@ private fun IllustHistoryPage(
 
     // Action menu dialog
     if (menuIllustId != null) {
-        HistoryActionMenu(
+        ActionMenu(
             onDismiss = { menuIllustId = null },
-            onDelete = {
-                menuIllustId?.let { onDeleteIllust(it) }
-                menuIllustId = null
-            }
+            items = listOf(
+                ActionMenuItem(
+                    icon = Icons.Outlined.Delete,
+                    label = stringResource(R.string.delete),
+                    color = MaterialTheme.colorScheme.error,
+                    onClick = {
+                        menuIllustId?.let { onDeleteIllust(it) }
+                        menuIllustId = null
+                    }
+                )
+            )
         )
     }
 }
@@ -294,12 +300,19 @@ private fun NovelHistoryPage(
 
     // Action menu dialog
     if (menuNovelId != null) {
-        HistoryActionMenu(
+        ActionMenu(
             onDismiss = { menuNovelId = null },
-            onDelete = {
-                menuNovelId?.let { onDeleteNovel(it) }
-                menuNovelId = null
-            }
+            items = listOf(
+                ActionMenuItem(
+                    icon = Icons.Outlined.Delete,
+                    label = stringResource(R.string.delete),
+                    color = MaterialTheme.colorScheme.error,
+                    onClick = {
+                        menuNovelId?.let { onDeleteNovel(it) }
+                        menuNovelId = null
+                    }
+                )
+            )
         )
     }
 }
@@ -345,52 +358,19 @@ private fun UserHistoryPage(
 
     // Action menu dialog
     if (menuUserId != null) {
-        HistoryActionMenu(
+        ActionMenu(
             onDismiss = { menuUserId = null },
-            onDelete = {
-                menuUserId?.let { onDeleteUser(it) }
-                menuUserId = null
-            }
-        )
-    }
-}
-
-/**
- * 历史记录操作菜单
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HistoryActionMenu(
-    onDismiss: () -> Unit,
-    onDelete: () -> Unit
-) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 6.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        onDelete()
+            items = listOf(
+                ActionMenuItem(
+                    icon = Icons.Outlined.Delete,
+                    label = stringResource(R.string.delete),
+                    color = MaterialTheme.colorScheme.error,
+                    onClick = {
+                        menuUserId?.let { onDeleteUser(it) }
+                        menuUserId = null
                     }
-                    .padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
                 )
-                Text(
-                    text = stringResource(R.string.delete),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
+            )
+        )
     }
 }
