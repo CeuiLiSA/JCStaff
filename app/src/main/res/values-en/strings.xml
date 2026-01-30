@@ -16,6 +16,7 @@
     <string name="load_error">Failed to load</string>
     <string name="loading">Loading</string>
     <string name="retry">Retry</string>
+    <string name="pull_to_refresh_retry">Pull to refresh</string>
 
     <!-- Language -->
     <string name="language_title">Language</string>

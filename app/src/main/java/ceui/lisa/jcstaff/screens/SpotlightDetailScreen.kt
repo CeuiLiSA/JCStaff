@@ -102,7 +102,7 @@ fun SpotlightDetailScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                text = "重试",
+                                text = stringResource(R.string.retry),
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                             )
                         }

@@ -2,7 +2,6 @@ package ceui.lisa.jcstaff.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -97,22 +96,20 @@ fun NovelList(
     val content: @Composable () -> Unit = {
         when {
             error != null && novels.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (onRefresh != null) {
+                    ErrorRetryState(
+                        error = error,
+                        onRetry = onRefresh
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
                             text = error,
                             color = MaterialTheme.colorScheme.error
                         )
-                        if (onRefresh != null) {
-                            Text(
-                                text = "下拉刷新重试",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
                     }
                 }
             }

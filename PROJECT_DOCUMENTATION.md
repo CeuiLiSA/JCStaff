@@ -104,6 +104,8 @@ ceui.lisa.jcstaff/
 │   ├── IllustFeed.kt             # 社交信息流插画列表（纵向）
 │   ├── NovelCard.kt              # 小说卡片
 │   ├── NovelList.kt              # 小说列表
+│   ├── ErrorRetryState.kt        # 通用错误重试状态（支持下拉刷新+重试按钮）
+│   ├── LoadingIndicator.kt       # MD3 加载指示器
 │   ├── FloatingTopBar.kt         # 浮动顶部栏（返回+分享）
 │   ├── SelectionTopBar.kt        # 多选操作栏
 │   ├── ProgressiveImage.kt       # 渐进式图片
@@ -301,7 +303,15 @@ ModalNavigationDrawer（侧滑抽屉）
 - `LatestNovelsViewModel` — 全站最新小说
 - `RankingViewModel` — 排行榜详情页（带 mode 参数）
 
-每个 ViewModel 在 `init` 时自动加载数据，采用 **Stale-While-Revalidate** 策略：先展示过期缓存，再后台请求最新数据。
+每个 ViewModel 在 `init` 时自动加载数据，采用 **Stale-While-Revalidate** 缓存策略：
+
+| 缓存状态 | 时间范围 | 行为 |
+|---------|---------|------|
+| 新鲜缓存 | 0-15 分钟 | 直接使用缓存，不发网络请求 |
+| 过期缓存 | 15 分钟-7 天 | 先展示缓存，后台刷新最新数据 |
+| 无缓存/超期 | >7 天 | 显示 loading，等待网络响应 |
+
+**错误处理：** 网络请求失败时，如果有缓存数据则静默失败（保持展示缓存），无缓存时显示 `ErrorRetryState` 组件（支持下拉刷新+重试按钮）。
 
 **性能说明：** HorizontalPager 是懒加载的，默认只组合当前页和相邻页（`beyondBoundsPageCount = 0`），10 个子页面和 3 个子页面对性能影响几乎相同。
 

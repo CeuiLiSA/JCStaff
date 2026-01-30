@@ -143,13 +143,20 @@ object PixivClient {
     suspend fun <T> getFromStaleCache(path: String, queryParams: Map<String, String> = emptyMap(), clazz: Class<T>): T? {
         val url = buildUrl(path, queryParams)
         val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
-        val cached = ApiCacheManager.getStale(cacheKey) ?: return null
+        android.util.Log.d("PixivClient", "🔍 Looking for cache: $cacheKey")
+        val cached = ApiCacheManager.getStale(cacheKey)
+        if (cached == null) {
+            android.util.Log.d("PixivClient", "❌ Cache not found for: $cacheKey")
+            return null
+        }
+        android.util.Log.d("PixivClient", "✅ Cache found for: $cacheKey")
 
         return withContext(Dispatchers.Default) {
             try {
                 val json = String(cached.responseBody, Charsets.UTF_8)
                 gson.fromJson(json, clazz)
             } catch (e: Exception) {
+                android.util.Log.e("PixivClient", "❗ Parse cache failed: ${e.message}")
                 null
             }
         }

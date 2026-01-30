@@ -16,6 +16,7 @@
     <string name="load_error">載入失敗</string>
     <string name="loading">載入中</string>
     <string name="retry">重試</string>
+    <string name="pull_to_refresh_retry">下拉重新整理</string>
 
     <!-- Language -->
     <string name="language_title">語言</string>

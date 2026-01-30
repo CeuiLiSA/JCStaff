@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.CircularProgressIndicator
+import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
@@ -101,6 +102,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
@@ -1475,17 +1477,20 @@ private fun TrendingTagGrid(
     }
 
     if (error != null && tags.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(onClick = onRefresh),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = stringResource(R.string.load_error),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onRefresh) {
+                Text(stringResource(R.string.retry))
+            }
         }
         return
     }
@@ -1627,15 +1632,10 @@ private fun RecommendedUsersList(
     val content: @Composable () -> Unit = {
         when {
             usersState.error != null && usersState.users.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = usersState.error,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                ErrorRetryState(
+                    error = usersState.error,
+                    onRetry = onRefresh
+                )
             }
             usersState.users.isEmpty() && usersState.isLoading -> {
                 Box(
@@ -2053,28 +2053,10 @@ private fun SpotlightPage() {
                 }
             }
             state.error != null && state.items.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = state.error ?: stringResource(R.string.load_error),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Surface(
-                            onClick = { vm.refresh() },
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Text(
-                                text = stringResource(R.string.retry),
-                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-                            )
-                        }
-                    }
-                }
+                ErrorRetryState(
+                    error = state.error ?: stringResource(R.string.load_error),
+                    onRetry = { vm.refresh() }
+                )
             }
             state.items.isEmpty() -> {
                 Box(

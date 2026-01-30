@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -158,6 +159,7 @@ fun SearchScreen(
                     navViewModel.navigate(NavRoute.UserProfile(userId = userId))
                 },
                 onLoadMore = { viewModel.loadMore() },
+                onRetry = { viewModel.search(state.query) },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = 72.dp)
@@ -248,6 +250,7 @@ private fun SearchResults(
     onIllustClick: (Illust) -> Unit,
     onUserClick: (Long) -> Unit,
     onLoadMore: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
@@ -261,12 +264,11 @@ private fun SearchResults(
                 )
             }
             state.error != null && state.illusts.isEmpty() -> {
-                Text(
-                    text = state.error ?: stringResource(R.string.search_error),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp)
+                ErrorRetryState(
+                    error = state.error ?: stringResource(R.string.search_error),
+                    onRetry = onRetry,
+                    scrollable = false,
+                    showPullToRefreshHint = false
                 )
             }
             state.illusts.isEmpty() && !state.isLoading && state.hasSearched -> {

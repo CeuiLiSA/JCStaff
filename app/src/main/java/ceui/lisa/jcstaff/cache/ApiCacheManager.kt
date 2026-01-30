@@ -22,7 +22,10 @@ import java.util.concurrent.TimeUnit
 object ApiCacheManager {
 
     private const val TAG = "ApiCache"
-    private val CACHE_DURATION_MS = TimeUnit.MINUTES.toMillis(15)
+    /** 缓存有效期：15 分钟内认为是新鲜的，直接使用 */
+    private val CACHE_FRESH_DURATION_MS = TimeUnit.MINUTES.toMillis(15)
+    /** 缓存最大保留时间：7 天后才删除，支持 stale-while-revalidate */
+    private val CACHE_MAX_AGE_MS = TimeUnit.DAYS.toMillis(7)
     private const val MAX_CACHE_SIZE = 100
 
     private var dao: ApiCacheDao? = null
@@ -64,19 +67,18 @@ object ApiCacheManager {
         try {
             val entity = cacheDao.get(key) ?: return@withContext null
 
-            // 检查是否过期
-            if (isExpired(entity.timestamp)) {
+            // 检查是否新鲜（15分钟内）
+            if (isFresh(entity.timestamp).not()) {
                 val ageMinutes = (System.currentTimeMillis() - entity.timestamp) / 60000.0
                 Log.d(TAG, "⏰ EXPIRED (%.1f min) ${shortenKey(key)}".format(ageMinutes))
-                cacheDao.delete(key)
                 return@withContext null
             }
 
             val ageSeconds = (System.currentTimeMillis() - entity.timestamp) / 1000
             val remainingSeconds =
-                (CACHE_DURATION_MS - (System.currentTimeMillis() - entity.timestamp)) / 1000
+                (CACHE_FRESH_DURATION_MS - (System.currentTimeMillis() - entity.timestamp)) / 1000
 
-            Log.d(TAG, "✅ HIT ${shortenKey(key)}")
+            Log.d(TAG, "✅ HIT (fresh) ${shortenKey(key)}")
             Log.d(TAG, "   ├─ Age: ${ageSeconds}s")
             Log.d(TAG, "   ├─ Expires in: ${remainingSeconds}s")
             Log.d(TAG, "   └─ Size: ${entity.responseBody.size} bytes")
@@ -206,18 +208,18 @@ object ApiCacheManager {
     }
 
     /**
-     * 清理过期缓存
+     * 清理过期缓存（超过 7 天的才删除）
      */
     suspend fun cleanupExpired() = withContext(Dispatchers.IO) {
         val cacheDao = dao ?: return@withContext
-        val expireTime = System.currentTimeMillis() - CACHE_DURATION_MS
+        val expireTime = System.currentTimeMillis() - CACHE_MAX_AGE_MS
         val countBefore = cacheDao.count()
         cacheDao.deleteExpired(expireTime)
         val countAfter = cacheDao.count()
         val cleaned = countBefore - countAfter
 
         if (cleaned > 0) {
-            Log.d(TAG, "🧹 Cleaned $cleaned expired entries")
+            Log.d(TAG, "🧹 Cleaned $cleaned old entries (>7 days)")
         }
     }
 
@@ -242,8 +244,14 @@ object ApiCacheManager {
         return key.substringAfter("://").substringAfter("/").take(50)
     }
 
+    /** 检查缓存是否新鲜（15分钟内） */
+    private fun isFresh(timestamp: Long): Boolean {
+        return System.currentTimeMillis() - timestamp <= CACHE_FRESH_DURATION_MS
+    }
+
+    /** 检查缓存是否已过最大保留期（7天） */
     private fun isExpired(timestamp: Long): Boolean {
-        return System.currentTimeMillis() - timestamp > CACHE_DURATION_MS
+        return System.currentTimeMillis() - timestamp > CACHE_MAX_AGE_MS
     }
 
     private suspend fun enforceMaxSize(cacheDao: ApiCacheDao) {
