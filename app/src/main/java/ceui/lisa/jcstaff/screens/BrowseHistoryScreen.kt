@@ -62,9 +62,9 @@ fun BrowseHistoryScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val tabTitles = listOf(
-        stringResource(R.string.tab_illust),
-        stringResource(R.string.tab_novel),
-        stringResource(R.string.tab_user)
+        stringResource(R.string.tab_illust) + " (${illustState.illusts.size})",
+        stringResource(R.string.tab_novel) + " (${novelState.novels.size})",
+        stringResource(R.string.tab_user) + " (${userState.users.size})"
     )
 
     // 返回键退出选择模式
