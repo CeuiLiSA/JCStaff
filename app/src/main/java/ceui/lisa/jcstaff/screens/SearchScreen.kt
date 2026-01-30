@@ -65,12 +65,16 @@ fun SearchScreen() {
     }
 
     // 返回键处理
-    BackHandler {
+    fun handleBack() {
         if (query.isNotEmpty()) {
             query = ""
         } else {
             navViewModel.goBack()
         }
+    }
+
+    BackHandler {
+        handleBack()
     }
 
     // 执行搜索：记录历史并跳转到 TagDetail
@@ -96,7 +100,7 @@ fun SearchScreen() {
                         }
                     },
                     expanded = true,
-                    onExpandedChange = { },
+                    onExpandedChange = { if (!it) handleBack() },
                     placeholder = { Text(stringResource(R.string.search_placeholder)) },
                     leadingIcon = {
                         IconButton(onClick = { navViewModel.goBack() }) {
@@ -120,7 +124,7 @@ fun SearchScreen() {
                 )
             },
             expanded = true,
-            onExpandedChange = { },
+            onExpandedChange = { if (!it) handleBack() },
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
