@@ -172,6 +172,19 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">已保存到相册</string>
     <string name="save_failed">保存失败</string>
+    <string name="save_gif">保存 GIF</string>
+
+    <!-- Ugoira -->
+    <string name="ugoira_fetching_metadata">获取元数据...</string>
+    <string name="ugoira_downloading">下载中</string>
+    <string name="ugoira_extracting">解压中...</string>
+    <string name="ugoira_encoding">生成 GIF...</string>
+    <string name="ugoira_error_not_generated">GIF 未生成</string>
+    <string name="ugoira_error_no_metadata">无法获取元数据</string>
+    <string name="ugoira_error_no_zip_url">无法获取下载地址</string>
+    <string name="ugoira_error_download_failed">下载失败: %1$d</string>
+    <string name="ugoira_error_empty_response">响应为空</string>
+    <string name="ugoira_error_processing">处理失败</string>
 
     <!-- Tag Detail -->
     <string name="tab_tag_illusts">插画</string>

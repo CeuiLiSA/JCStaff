@@ -171,6 +171,19 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">갤러리에 저장됨</string>
     <string name="save_failed">저장 실패</string>
+    <string name="save_gif">GIF 저장</string>
+
+    <!-- Ugoira -->
+    <string name="ugoira_fetching_metadata">메타데이터 가져오는 중...</string>
+    <string name="ugoira_downloading">다운로드 중</string>
+    <string name="ugoira_extracting">압축 해제 중...</string>
+    <string name="ugoira_encoding">GIF 생성 중...</string>
+    <string name="ugoira_error_not_generated">GIF가 생성되지 않았습니다</string>
+    <string name="ugoira_error_no_metadata">메타데이터를 가져올 수 없습니다</string>
+    <string name="ugoira_error_no_zip_url">다운로드 URL을 가져올 수 없습니다</string>
+    <string name="ugoira_error_download_failed">다운로드 실패: %1$d</string>
+    <string name="ugoira_error_empty_response">빈 응답입니다</string>
+    <string name="ugoira_error_processing">처리에 실패했습니다</string>
 
     <!-- Tag Detail -->
     <string name="tab_tag_illusts">일러스트</string>

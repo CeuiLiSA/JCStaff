@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.ProgressiveImage
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.ugoira.UgoiraPlayer
 
 /**
  * 可折叠图片区域组件
@@ -98,47 +99,60 @@ fun CollapsibleImageSection(
         Layout(
             content = {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // 第一张图片
-                    val firstImageKey = "${illustId}_0"
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(aspectRatio)
-                    ) {
-                        ProgressiveImage(
+                    // 判断是否是 ugoira 类型
+                    val isUgoira = illust?.isGif() == true
+
+                    if (isUgoira) {
+                        // Ugoira 播放器
+                        UgoiraPlayer(
+                            illustId = illustId,
                             previewUrl = previewUrl,
-                            originalUrl = firstOriginalUrl,
-                            contentDescription = title,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = {
-                                onImageClick?.invoke(
-                                    previewUrl,
-                                    firstOriginalUrl,
-                                    firstImageKey
-                                )
-                            }
+                            aspectRatio = aspectRatio,
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    }
+                    } else {
+                        // 普通图片
+                        val firstImageKey = "${illustId}_0"
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(aspectRatio)
+                        ) {
+                            ProgressiveImage(
+                                previewUrl = previewUrl,
+                                originalUrl = firstOriginalUrl,
+                                contentDescription = title,
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    onImageClick?.invoke(
+                                        previewUrl,
+                                        firstOriginalUrl,
+                                        firstImageKey
+                                    )
+                                }
+                            )
+                        }
 
-                    // 多P作品的额外图片
-                    illust?.let { loadedIllust ->
-                        if (loadedIllust.page_count > 1) {
-                            val additionalPages = loadedIllust.meta_pages?.drop(1) ?: emptyList()
-                            additionalPages.forEachIndexed { index, page ->
-                                val pageIndex = index + 1
-                                val imageKey = "${illustId}_$pageIndex"
-                                val largeUrl = page.image_urls?.large ?: ""
-                                val originalUrl = page.image_urls?.original
+                        // 多P作品的额外图片
+                        illust?.let { loadedIllust ->
+                            if (loadedIllust.page_count > 1) {
+                                val additionalPages = loadedIllust.meta_pages?.drop(1) ?: emptyList()
+                                additionalPages.forEachIndexed { index, page ->
+                                    val pageIndex = index + 1
+                                    val imageKey = "${illustId}_$pageIndex"
+                                    val largeUrl = page.image_urls?.large ?: ""
+                                    val originalUrl = page.image_urls?.original
 
-                                ProgressiveImage(
-                                    previewUrl = largeUrl,
-                                    originalUrl = originalUrl,
-                                    contentDescription = loadedIllust.title,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        onImageClick?.invoke(largeUrl, originalUrl, imageKey)
-                                    }
-                                )
+                                    ProgressiveImage(
+                                        previewUrl = largeUrl,
+                                        originalUrl = originalUrl,
+                                        contentDescription = loadedIllust.title,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = {
+                                            onImageClick?.invoke(largeUrl, originalUrl, imageKey)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

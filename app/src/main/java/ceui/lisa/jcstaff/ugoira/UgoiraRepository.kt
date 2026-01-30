@@ -1,9 +1,9 @@
 package ceui.lisa.jcstaff.ugoira
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.UgoiraMetadata
 import kotlinx.coroutines.Dispatchers
@@ -11,55 +11,37 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipFile
 
 /**
- * Ugoira 处理状态
+ * Ugoira processing state
  */
 sealed class UgoiraState {
     object Idle : UgoiraState()
-    data class FetchingMetadata(val progress: String = "获取元数据...") : UgoiraState()
+    object FetchingMetadata : UgoiraState()
     data class Downloading(val progress: Int) : UgoiraState()
-    data class Extracting(val progress: String = "解压中...") : UgoiraState()
-    data class Encoding(val progress: String = "处理中...") : UgoiraState()
-    data class Done(val frames: UgoiraFrames) : UgoiraState()
-    data class Error(val message: String) : UgoiraState()
+    object Extracting : UgoiraState()
+    object Encoding : UgoiraState()
+    data class Done(val data: UgoiraData) : UgoiraState()
+    data class Error(val errorResId: Int, val errorCode: Int? = null) : UgoiraState()
 }
 
 /**
- * Ugoira 帧数据
+ * Exception with string resource ID
  */
-data class UgoiraFrames(
-    val frameFiles: List<File>,
-    val delays: List<Int>,
-    val cacheDir: File
-) {
-    val totalDuration: Int get() = delays.sum()
-
-    fun getFrameAtTime(timeMs: Long): File {
-        val loopedTime = timeMs % totalDuration
-        var accumulated = 0
-        for (i in frameFiles.indices) {
-            accumulated += delays[i]
-            if (loopedTime < accumulated) {
-                return frameFiles[i]
-            }
-        }
-        return frameFiles.last()
-    }
-}
+class UgoiraException(val errorResId: Int, val errorCode: Int? = null) : Exception()
 
 /**
- * Ugoira 仓库
- *
- * 负责：
- * - 获取 ugoira 元数据
- * - 下载 zip 文件
- * - 解压帧图片
- * - 提供帧序列用于播放
+ * Ugoira data (GIF file)
+ */
+data class UgoiraData(
+    val gifFile: File
+)
+
+/**
+ * Ugoira repository
  */
 object UgoiraRepository {
 
@@ -75,21 +57,17 @@ object UgoiraRepository {
         }
         .build()
 
-    // 内存缓存
-    private val framesCache = mutableMapOf<Long, UgoiraFrames>()
+    private val gifCache = mutableMapOf<Long, UgoiraData>()
 
-    /**
-     * 获取或创建 ugoira 帧数据
-     */
-    suspend fun getOrCreateFrames(
+    suspend fun getOrCreateGif(
         context: Context,
         illustId: Long,
         stateFlow: MutableStateFlow<UgoiraState>? = null
-    ): UgoiraFrames? = withContext(Dispatchers.IO) {
-        // 内存缓存
-        framesCache[illustId]?.let { cached ->
-            if (cached.frameFiles.all { it.exists() }) {
-                Log.d(TAG, "Using memory cached frames for $illustId")
+    ): UgoiraData? = withContext(Dispatchers.IO) {
+        // Memory cache
+        gifCache[illustId]?.let { cached ->
+            if (cached.gifFile.exists()) {
+                Log.d(TAG, "Using memory cached GIF for $illustId")
                 stateFlow?.value = UgoiraState.Done(cached)
                 return@withContext cached
             }
@@ -98,75 +76,86 @@ object UgoiraRepository {
         val ugoiraDir = File(context.filesDir, UGOIRA_DIR)
         if (!ugoiraDir.exists()) ugoiraDir.mkdirs()
 
+        val gifFile = File(ugoiraDir, "${illustId}.gif")
+
+        // Check disk cache
+        if (gifFile.exists()) {
+            val data = UgoiraData(gifFile)
+            gifCache[illustId] = data
+            stateFlow?.value = UgoiraState.Done(data)
+            return@withContext data
+        }
+
         val framesDir = File(ugoiraDir, "frames_$illustId")
 
         try {
-            // Step 1: 获取元数据
-            stateFlow?.value = UgoiraState.FetchingMetadata()
+            // Step 1: Fetch metadata
+            stateFlow?.value = UgoiraState.FetchingMetadata
             val response = PixivClient.pixivApi.getUgoiraMetadata(illustId)
             val metadata = response.ugoira_metadata
-                ?: throw Exception("无法获取 ugoira 元数据")
-
-            val zipUrl = metadata.getZipUrl()
-                ?: throw Exception("无法获取 zip 下载地址")
-
-            // 检查是否已有缓存的帧
-            if (framesDir.exists() && framesDir.listFiles()?.isNotEmpty() == true) {
-                val frames = loadFramesFromDir(framesDir, metadata)
-                if (frames != null) {
-                    framesCache[illustId] = frames
-                    stateFlow?.value = UgoiraState.Done(frames)
-                    return@withContext frames
-                }
+            if (metadata == null) {
+                stateFlow?.value = UgoiraState.Error(R.string.ugoira_error_no_metadata)
+                return@withContext null
             }
 
-            // Step 2: 下载 zip
+            val zipUrl = metadata.getZipUrl()
+            if (zipUrl == null) {
+                stateFlow?.value = UgoiraState.Error(R.string.ugoira_error_no_zip_url)
+                return@withContext null
+            }
+
+            // Step 2: Download zip
             val zipFile = File(ugoiraDir, "tmp_$illustId.zip")
             downloadZip(zipUrl, zipFile, stateFlow)
 
-            // Step 3: 解压
-            stateFlow?.value = UgoiraState.Extracting()
+            // Step 3: Extract
+            stateFlow?.value = UgoiraState.Extracting
             extractZip(zipFile, framesDir)
 
-            // 删除 zip 文件
+            // Delete zip file
             zipFile.delete()
 
-            // Step 4: 加载帧数据
-            stateFlow?.value = UgoiraState.Encoding()
-            val frames = loadFramesFromDir(framesDir, metadata)
-                ?: throw Exception("无法加载帧数据")
+            // Step 4: Encode to GIF
+            stateFlow?.value = UgoiraState.Encoding
+            encodeGif(framesDir, metadata, gifFile)
 
-            framesCache[illustId] = frames
-            Log.d(TAG, "Frames loaded: ${frames.frameFiles.size} frames")
-            stateFlow?.value = UgoiraState.Done(frames)
-            frames
+            // Delete frame files
+            framesDir.deleteRecursively()
+
+            val data = UgoiraData(gifFile)
+            gifCache[illustId] = data
+            Log.d(TAG, "GIF created: ${gifFile.absolutePath}")
+            stateFlow?.value = UgoiraState.Done(data)
+            data
+        } catch (e: UgoiraException) {
+            Log.e(TAG, "Failed to process ugoira", e)
+            stateFlow?.value = UgoiraState.Error(e.errorResId, e.errorCode)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to process ugoira: ${e.message}", e)
-            stateFlow?.value = UgoiraState.Error(e.message ?: "处理失败")
+            stateFlow?.value = UgoiraState.Error(R.string.ugoira_error_processing)
             null
         }
     }
 
-    private fun loadFramesFromDir(framesDir: File, metadata: UgoiraMetadata): UgoiraFrames? {
-        val frameFiles = mutableListOf<File>()
-        val delays = mutableListOf<Int>()
+    private fun encodeGif(framesDir: File, metadata: UgoiraMetadata, outputFile: File) {
+        val encoder = AnimatedGifEncoder()
+        encoder.setRepeat(0) // Loop forever
+        encoder.setQuality(10) // Quality (1-20, 1 is best but slowest)
+        encoder.start(outputFile.absolutePath)
 
         for (frame in metadata.frames) {
             val fileName = frame.file ?: continue
             val file = File(framesDir, fileName)
-            if (file.exists()) {
-                frameFiles.add(file)
-                delays.add(frame.delay)
-            }
+            if (!file.exists()) continue
+
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: continue
+            encoder.setDelay(frame.delay)
+            encoder.addFrame(bitmap)
+            bitmap.recycle()
         }
 
-        if (frameFiles.isEmpty()) return null
-
-        return UgoiraFrames(
-            frameFiles = frameFiles,
-            delays = delays,
-            cacheDir = framesDir
-        )
+        encoder.finish()
     }
 
     private suspend fun downloadZip(
@@ -180,10 +169,10 @@ object UgoiraRepository {
         val response = client.newCall(request).execute()
 
         if (!response.isSuccessful) {
-            throw Exception("下载失败: ${response.code}")
+            throw UgoiraException(R.string.ugoira_error_download_failed, response.code)
         }
 
-        val body = response.body ?: throw Exception("响应体为空")
+        val body = response.body ?: throw UgoiraException(R.string.ugoira_error_empty_response)
         val contentLength = body.contentLength()
 
         body.byteStream().use { input ->
@@ -225,55 +214,20 @@ object UgoiraRepository {
         Log.d(TAG, "Zip extracted to: ${outputDir.absolutePath}")
     }
 
-    /**
-     * 将帧序列编码为 WebP（使用第一帧作为静态图）
-     * 注意：Android 原生不支持编码动态 WebP，这里保存的是静态图
-     */
-    suspend fun saveFirstFrameAsWebp(
-        context: Context,
-        illustId: Long,
-        outputFile: File
-    ): Boolean = withContext(Dispatchers.IO) {
-        val frames = framesCache[illustId] ?: return@withContext false
-        val firstFrame = frames.frameFiles.firstOrNull() ?: return@withContext false
-
-        try {
-            val bitmap = BitmapFactory.decodeFile(firstFrame.absolutePath)
-                ?: return@withContext false
-
-            FileOutputStream(outputFile).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 90, out)
-            }
-            bitmap.recycle()
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save WebP: ${e.message}")
-            false
-        }
+    fun getGifFile(illustId: Long): File? {
+        return gifCache[illustId]?.gifFile
     }
 
-    /**
-     * 获取第一帧文件（用于保存到相册）
-     */
-    fun getFirstFrameFile(illustId: Long): File? {
-        return framesCache[illustId]?.frameFiles?.firstOrNull()
-    }
-
-    /**
-     * 清理指定作品的缓存
-     */
     fun clearCache(context: Context, illustId: Long) {
-        framesCache.remove(illustId)
+        gifCache.remove(illustId)
         val ugoiraDir = File(context.filesDir, UGOIRA_DIR)
         File(ugoiraDir, "tmp_$illustId.zip").delete()
         File(ugoiraDir, "frames_$illustId").deleteRecursively()
+        File(ugoiraDir, "${illustId}.gif").delete()
     }
 
-    /**
-     * 清理所有 ugoira 缓存
-     */
     fun clearAllCache(context: Context) {
-        framesCache.clear()
+        gifCache.clear()
         val ugoiraDir = File(context.filesDir, UGOIRA_DIR)
         ugoiraDir.deleteRecursively()
     }

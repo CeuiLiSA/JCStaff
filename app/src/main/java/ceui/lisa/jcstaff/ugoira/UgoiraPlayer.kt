@@ -1,10 +1,12 @@
 package ceui.lisa.jcstaff.ugoira
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,9 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,19 +30,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
+import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 
 /**
- * Ugoira 播放器组件
- *
- * @param illustId 作品 ID
- * @param previewUrl 预览图 URL（加载时显示）
- * @param aspectRatio 宽高比
- * @param modifier Modifier
- * @param viewModel ViewModel
+ * Ugoira player component
  */
 @Composable
 fun UgoiraPlayer(
@@ -56,47 +50,71 @@ fun UgoiraPlayer(
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
-    // 启动加载
     LaunchedEffect(illustId) {
         viewModel.load(context, illustId)
     }
+
+    // ImageLoader with GIF support
+    val gifImageLoader = ImageLoader.Builder(context)
+        .components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }
+        .build()
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(aspectRatio)
-            .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         when (val currentState = state) {
             is UgoiraState.Idle,
             is UgoiraState.FetchingMetadata -> {
-                PreviewWithOverlay(previewUrl, "获取元数据...")
+                PreviewWithOverlay(previewUrl, stringResource(R.string.ugoira_fetching_metadata))
             }
 
             is UgoiraState.Downloading -> {
-                PreviewWithProgress(previewUrl, "下载中", currentState.progress)
+                val text = "${stringResource(R.string.ugoira_downloading)} ${currentState.progress}%"
+                PreviewWithProgress(previewUrl, text, currentState.progress)
             }
 
             is UgoiraState.Extracting -> {
-                PreviewWithOverlay(previewUrl, "解压中...")
+                PreviewWithOverlay(previewUrl, stringResource(R.string.ugoira_extracting))
             }
 
             is UgoiraState.Encoding -> {
-                PreviewWithOverlay(previewUrl, "处理中...")
+                PreviewWithOverlay(previewUrl, stringResource(R.string.ugoira_encoding))
             }
 
             is UgoiraState.Done -> {
-                UgoiraAnimation(frames = currentState.frames)
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(currentState.data.gifFile)
+                        .crossfade(false)
+                        .build(),
+                    imageLoader = gifImageLoader,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             is UgoiraState.Error -> {
+                val errorText = if (currentState.errorCode != null) {
+                    stringResource(currentState.errorResId, currentState.errorCode)
+                } else {
+                    stringResource(currentState.errorResId)
+                }
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = currentState.message,
+                        text = errorText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -111,39 +129,10 @@ fun UgoiraPlayer(
 }
 
 @Composable
-private fun UgoiraAnimation(frames: UgoiraFrames) {
-    val context = LocalContext.current
-    var currentTime by remember { mutableLongStateOf(0L) }
-
-    // 动画循环
-    LaunchedEffect(frames) {
-        val startTime = System.currentTimeMillis()
-        while (isActive) {
-            currentTime = System.currentTimeMillis() - startTime
-            delay(16) // ~60fps
-        }
-    }
-
-    val currentFrame = remember(currentTime, frames) {
-        frames.getFrameAtTime(currentTime)
-    }
-
-    AsyncImage(
-        model = ImageRequest.Builder(context)
-            .data(currentFrame)
-            .crossfade(false)
-            .build(),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
 private fun PreviewWithOverlay(previewUrl: String, text: String) {
     val context = LocalContext.current
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(previewUrl)
@@ -151,9 +140,12 @@ private fun PreviewWithOverlay(previewUrl: String, text: String) {
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
+            modifier = Modifier.fillMaxSize()
         )
-        LoadingOverlay(text = text)
+        LoadingOverlay(
+            text = text,
+            modifier = Modifier.align(Alignment.Center)
+        )
     }
 }
 
@@ -161,7 +153,7 @@ private fun PreviewWithOverlay(previewUrl: String, text: String) {
 private fun PreviewWithProgress(previewUrl: String, text: String, progress: Int) {
     val context = LocalContext.current
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(previewUrl)
@@ -169,22 +161,30 @@ private fun PreviewWithProgress(previewUrl: String, text: String, progress: Int)
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
+            modifier = Modifier.fillMaxSize()
         )
-        LoadingOverlay(text = "$text $progress%", progress = progress / 100f)
+        LoadingOverlay(
+            text = text,
+            progress = progress / 100f,
+            modifier = Modifier.align(Alignment.Center)
+        )
     }
 }
 
 @Composable
 private fun LoadingOverlay(
     text: String,
+    modifier: Modifier = Modifier,
     progress: Float? = null
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
-            .padding(16.dp),
+        modifier = modifier
+            .fillMaxWidth(0.6f)
+            .background(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -194,7 +194,7 @@ private fun LoadingOverlay(
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
-                        .fillMaxWidth(0.6f)
+                        .fillMaxWidth()
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp))
                 )

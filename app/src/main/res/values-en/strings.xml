@@ -171,6 +171,19 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">Saved to gallery</string>
     <string name="save_failed">Save failed</string>
+    <string name="save_gif">Save GIF</string>
+
+    <!-- Ugoira -->
+    <string name="ugoira_fetching_metadata">Fetching metadata...</string>
+    <string name="ugoira_downloading">Downloading</string>
+    <string name="ugoira_extracting">Extracting...</string>
+    <string name="ugoira_encoding">Generating GIF...</string>
+    <string name="ugoira_error_not_generated">GIF not generated</string>
+    <string name="ugoira_error_no_metadata">Cannot get metadata</string>
+    <string name="ugoira_error_no_zip_url">Cannot get download URL</string>
+    <string name="ugoira_error_download_failed">Download failed: %1$d</string>
+    <string name="ugoira_error_empty_response">Empty response</string>
+    <string name="ugoira_error_processing">Processing failed</string>
 
     <!-- Tag Detail -->
     <string name="tab_tag_illusts">Illusts</string>

@@ -171,6 +171,19 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">アルバムに保存しました</string>
     <string name="save_failed">保存に失敗しました</string>
+    <string name="save_gif">GIF を保存</string>
+
+    <!-- Ugoira -->
+    <string name="ugoira_fetching_metadata">メタデータ取得中...</string>
+    <string name="ugoira_downloading">ダウンロード中</string>
+    <string name="ugoira_extracting">展開中...</string>
+    <string name="ugoira_encoding">GIF 生成中...</string>
+    <string name="ugoira_error_not_generated">GIF が生成されていません</string>
+    <string name="ugoira_error_no_metadata">メタデータを取得できません</string>
+    <string name="ugoira_error_no_zip_url">ダウンロードURLを取得できません</string>
+    <string name="ugoira_error_download_failed">ダウンロード失敗: %1$d</string>
+    <string name="ugoira_error_empty_response">レスポンスが空です</string>
+    <string name="ugoira_error_processing">処理に失敗しました</string>
 
     <!-- Tag Detail -->
     <string name="tab_tag_illusts">イラスト</string>

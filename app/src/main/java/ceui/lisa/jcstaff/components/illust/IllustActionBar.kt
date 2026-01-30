@@ -37,7 +37,9 @@ import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.ugoira.UgoiraViewModel
 import ceui.lisa.jcstaff.utils.formatCount
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -119,7 +121,12 @@ fun IllustActionBar(
             )
         }
 
-        // 下载按钮
+        // 下载按钮 (Ugoira 保存为 GIF, 其他保存原图)
+        val isUgoira = illust.isGif()
+        val ugoiraViewModel: UgoiraViewModel? = if (isUgoira) {
+            viewModel(key = "ugoira_${illust.id}")
+        } else null
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -127,20 +134,26 @@ fun IllustActionBar(
                 .clickable(enabled = !isDownloading) {
                     coroutineScope.launch {
                         isDownloading = true
-                        val fileName = "pixiv_${illust.id}_${System.currentTimeMillis()}"
-                        val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
-                        val result = if (cachedFilePath != null) {
-                            ImageDownloader.saveFromCacheToGallery(
-                                context = context,
-                                cachedFilePath = cachedFilePath,
-                                fileName = fileName
-                            )
+                        val result = if (isUgoira && ugoiraViewModel != null) {
+                            // Ugoira: 保存 GIF
+                            ugoiraViewModel.saveToGallery(context)
                         } else {
-                            ImageDownloader.downloadToGallery(
-                                context = context,
-                                imageUrl = downloadUrl,
-                                fileName = fileName
-                            )
+                            // 普通图片: 保存原图
+                            val fileName = "pixiv_${illust.id}_${System.currentTimeMillis()}"
+                            val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
+                            if (cachedFilePath != null) {
+                                ImageDownloader.saveFromCacheToGallery(
+                                    context = context,
+                                    cachedFilePath = cachedFilePath,
+                                    fileName = fileName
+                                )
+                            } else {
+                                ImageDownloader.downloadToGallery(
+                                    context = context,
+                                    imageUrl = downloadUrl,
+                                    fileName = fileName
+                                )
+                            }
                         }
                         isDownloading = false
                         if (result.isSuccess) {
@@ -171,7 +184,7 @@ fun IllustActionBar(
                 )
             }
             Text(
-                text = stringResource(R.string.download),
+                text = if (isUgoira) stringResource(R.string.save_gif) else stringResource(R.string.download),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 6.dp)

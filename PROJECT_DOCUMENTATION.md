@@ -146,6 +146,11 @@ ceui.lisa.jcstaff/
 │   └── TagNovelSearchViewModel.kt    # 标签小说搜索 ViewModel
 ├── history/                      # 浏览历史模块
 │   └── BrowseHistoryViewModel.kt # 浏览历史逻辑
+├── ugoira/                       # Ugoira (动图) 模块
+│   ├── UgoiraPlayer.kt           # Ugoira 播放器组件
+│   ├── UgoiraViewModel.kt        # Ugoira 状态管理
+│   ├── UgoiraRepository.kt       # Ugoira 下载/编码仓库
+│   └── AnimatedGifEncoder.kt     # 纯 Java GIF 编码器
 ├── ui/theme/                     # 主题
 │   ├── Color.kt                  # 颜色定义
 │   ├── Theme.kt                  # 主题配置

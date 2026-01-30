@@ -3,6 +3,8 @@ package ceui.lisa.jcstaff.ugoira
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.core.ImageDownloader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,23 +20,17 @@ class UgoiraViewModel : ViewModel() {
 
     private var currentIllustId: Long? = null
 
-    /**
-     * 加载 ugoira
-     */
     fun load(context: Context, illustId: Long) {
         if (currentIllustId == illustId && _state.value is UgoiraState.Done) {
-            return // 已加载
+            return
         }
 
         currentIllustId = illustId
         viewModelScope.launch {
-            UgoiraRepository.getOrCreateFrames(context, illustId, _state)
+            UgoiraRepository.getOrCreateGif(context, illustId, _state)
         }
     }
 
-    /**
-     * 重试
-     */
     fun retry(context: Context) {
         currentIllustId?.let { id ->
             _state.value = UgoiraState.Idle
@@ -42,17 +38,22 @@ class UgoiraViewModel : ViewModel() {
         }
     }
 
-    /**
-     * 获取当前帧数据
-     */
-    fun getFrames(): UgoiraFrames? {
-        return (_state.value as? UgoiraState.Done)?.frames
+    fun getData(): UgoiraData? {
+        return (_state.value as? UgoiraState.Done)?.data
     }
 
-    /**
-     * 获取第一帧文件（用于保存）
-     */
-    fun getFirstFrameFile(): java.io.File? {
-        return currentIllustId?.let { UgoiraRepository.getFirstFrameFile(it) }
+    suspend fun saveToGallery(context: Context): Result<Unit> {
+        val illustId = currentIllustId
+            ?: return Result.failure(UgoiraException(R.string.ugoira_error_not_generated))
+
+        val gifFile = UgoiraRepository.getGifFile(illustId)
+            ?: return Result.failure(UgoiraException(R.string.ugoira_error_not_generated))
+
+        return ImageDownloader.saveFileToGallery(
+            context = context,
+            sourceFile = gifFile,
+            fileName = "pixiv_${illustId}.gif",
+            mimeType = "image/gif"
+        )
     }
 }
