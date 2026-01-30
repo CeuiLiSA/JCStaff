@@ -205,6 +205,10 @@ data class TrendingTagsResponse(
     val next_url: String? = null
 ) : Serializable
 
+data class AutocompleteResponse(
+    val tags: List<Tag> = listOf()
+) : Serializable
+
 data class SingleNovelResponse(
     val novel: Novel? = null,
 ) : Serializable

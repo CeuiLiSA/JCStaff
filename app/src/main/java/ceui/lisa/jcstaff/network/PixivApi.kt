@@ -42,6 +42,12 @@ interface PixivApi {
         @Query("filter") filter: String = "for_ios"
     ): TrendingTagsResponse
 
+    @GET("/v2/search/autocomplete")
+    suspend fun searchAutocomplete(
+        @Query("word") word: String,
+        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
+    ): AutocompleteResponse
+
     @GET("/v1/search/illust")
     suspend fun searchIllusts(
         @Query("word") word: String,
