@@ -37,25 +37,61 @@ data class SimpleState<T>(
     val error: String? = null
 )
 
+private val CACHE_DURATION_MS = TimeUnit.MINUTES.toMillis(15)
+
 /**
  * 缓存配置
  */
 data class CacheConfig(
     val path: String,
     val queryParams: Map<String, String> = emptyMap()
-)
+) {
+    fun buildUrl(): String {
+        val baseUrl = "https://app-api.pixiv.net$path"
+        if (queryParams.isEmpty()) return baseUrl
+        val queryString = queryParams.entries.joinToString("&") { (k, v) -> "$k=$v" }
+        return "$baseUrl?$queryString"
+    }
+
+    fun buildCacheKey(): String = ApiCacheManager.buildCacheKey("GET", buildUrl())
+
+    /**
+     * 从缓存加载数据
+     */
+    suspend fun <T> loadFromCache(clazz: Class<T>): CacheResult<T>? = withContext(Dispatchers.Default) {
+        val cacheEntry = ApiCacheManager.getStale(buildCacheKey()) ?: return@withContext null
+        try {
+            val json = String(cacheEntry.responseBody, Charsets.UTF_8)
+            val response = com.google.gson.Gson().fromJson(json, clazz)
+            CacheResult(response, cacheEntry.timestamp)
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+/**
+ * 缓存加载结果
+ */
+data class CacheResult<T>(
+    val data: T,
+    val timestamp: Long
+) {
+    val isFresh: Boolean get() = System.currentTimeMillis() - timestamp <= CACHE_DURATION_MS
+
+    fun shouldFetch(forceRefresh: Boolean): Boolean = forceRefresh || !isFresh
+}
+
+/** 判断是否需要发网络请求 */
+fun CacheResult<*>?.shouldFetch(forceRefresh: Boolean): Boolean {
+    return this?.shouldFetch(forceRefresh) ?: true
+}
 
 /**
  * 通用分页数据加载器
  *
  * 使用组合而非继承，ViewModel 持有此 loader 实例
- *
- * 缓存策略 (stale-while-revalidate):
- * 1. 首先检查并展示缓存（无论是否过期）
- * 2. 如果是初次加载且缓存未过期，不发网络请求
- * 3. 如果是强制刷新、缓存过期或不存在，发网络请求
- * 4. 网络请求成功则更新数据
- * 5. 网络请求失败且无缓存，才显示错误
+ * 使用 CacheStrategy 处理缓存逻辑
  *
  * @param T 列表项类型
  * @param R API 响应类型，必须实现 PagedResponse<T>
@@ -69,45 +105,31 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
     private val _state = MutableStateFlow(PagedState<T>())
     val state: StateFlow<PagedState<T>> = _state.asStateFlow()
 
-    companion object {
-        private val CACHE_DURATION_MS = TimeUnit.MINUTES.toMillis(15)
-    }
-
     /**
      * 加载数据
-     * @param forceRefresh 是否强制刷新（下拉刷新/点击重试时为 true，始终发网络请求）
+     * @param forceRefresh 是否强制刷新（下拉刷新/点击重试时为 true）
      */
     suspend fun load(forceRefresh: Boolean = false) {
-        _state.value = _state.value.copy(
-            isLoading = true,
-            error = null
-        )
+        _state.value = _state.value.copy(isLoading = true, error = null)
 
-        var hasFreshCache = false
+        // Step 1: 从缓存加载
+        val cacheResult = cacheConfig?.loadFromCache(responseClass)
 
-        // Step 1: 立即展示缓存（如果有）
-        if (cacheConfig != null) {
-            val cacheResult = loadFromCache()
-            if (cacheResult != null) {
-                val (cached, timestamp) = cacheResult
-                hasFreshCache = !isExpired(timestamp)
-
-                onItemsLoaded(cached.displayList)
-                _state.value = _state.value.copy(
-                    items = cached.displayList,
-                    // 如果缓存未过期且非强制刷新，不需要显示 loading
-                    isLoading = if (forceRefresh) true else !hasFreshCache,
-                    nextUrl = cached.nextUrl
-                )
-            }
+        if (cacheResult != null) {
+            onItemsLoaded(cacheResult.data.displayList)
+            _state.value = _state.value.copy(
+                items = cacheResult.data.displayList,
+                isLoading = cacheResult.shouldFetch(forceRefresh),
+                nextUrl = cacheResult.data.nextUrl
+            )
         }
 
-        // Step 2: 如果缓存未过期且非强制刷新，不需要发网络请求
-        if (hasFreshCache && !forceRefresh) {
+        // Step 2: 判断是否需要发网络请求
+        if (!cacheResult.shouldFetch(forceRefresh)) {
             return
         }
 
-        // Step 3: 强制刷新、缓存过期或不存在，从网络加载
+        // Step 3: 从网络加载
         try {
             val response = loadFirstPage()
             onItemsLoaded(response.displayList)
@@ -118,50 +140,11 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
                 error = null
             )
         } catch (e: Exception) {
-            // 网络请求失败
             _state.value = _state.value.copy(
                 isLoading = false,
-                // 只有当没有缓存数据时才显示错误
-                error = if (_state.value.items.isEmpty()) {
-                    e.message ?: "加载失败"
-                } else null
+                error = if (_state.value.items.isEmpty()) e.message ?: "加载失败" else null
             )
         }
-    }
-
-    /**
-     * 从缓存加载数据
-     * @return Pair<响应数据, 缓存时间戳> 或 null
-     */
-    private suspend fun loadFromCache(): Pair<R, Long>? = withContext(Dispatchers.Default) {
-        if (cacheConfig == null) return@withContext null
-
-        val url = buildCacheUrl()
-        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
-        val cacheEntry = ApiCacheManager.getStale(cacheKey) ?: return@withContext null
-
-        try {
-            val json = String(cacheEntry.responseBody, Charsets.UTF_8)
-            val response = com.google.gson.Gson().fromJson(json, responseClass)
-            Pair(response, cacheEntry.timestamp)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun buildCacheUrl(): String {
-        val config = cacheConfig ?: return ""
-        val baseUrl = "https://app-api.pixiv.net" + config.path
-        if (config.queryParams.isEmpty()) return baseUrl
-
-        val queryString = config.queryParams.entries.joinToString("&") { (key, value) ->
-            "$key=$value"
-        }
-        return "$baseUrl?$queryString"
-    }
-
-    private fun isExpired(timestamp: Long): Boolean {
-        return System.currentTimeMillis() - timestamp > CACHE_DURATION_MS
     }
 
     suspend fun loadMore() {
@@ -185,9 +168,6 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
         }
     }
 
-    /**
-     * 强制刷新，始终发网络请求
-     */
     suspend fun refresh() {
         load(forceRefresh = true)
     }

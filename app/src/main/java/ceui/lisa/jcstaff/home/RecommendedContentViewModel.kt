@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.shouldFetch
 import ceui.lisa.jcstaff.network.HomeIllustResponse
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
@@ -45,28 +46,29 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
     )
 
     init {
-        load()
+        load(forceRefresh = false)
     }
 
-    fun load() {
+    private fun load(forceRefresh: Boolean) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             // 从缓存加载
-            val cached = PixivClient.getFromStaleCache(
-                path = cacheConfig.path,
-                queryParams = cacheConfig.queryParams,
-                clazz = HomeIllustResponse::class.java
-            )
-            if (cached != null) {
-                storeIllusts(cached.illusts)
-                storeIllusts(cached.ranking_illusts)
+            val cacheResult = cacheConfig.loadFromCache(HomeIllustResponse::class.java)
+            if (cacheResult != null) {
+                storeIllusts(cacheResult.data.illusts)
+                storeIllusts(cacheResult.data.ranking_illusts)
                 _state.value = _state.value.copy(
-                    illusts = cached.illusts,
-                    rankingIllusts = cached.ranking_illusts,
-                    isLoading = false,
-                    nextUrl = cached.next_url
+                    illusts = cacheResult.data.illusts,
+                    rankingIllusts = cacheResult.data.ranking_illusts,
+                    isLoading = cacheResult.shouldFetch(forceRefresh),
+                    nextUrl = cacheResult.data.next_url
                 )
+            }
+
+            // 判断是否需要发网络请求
+            if (!cacheResult.shouldFetch(forceRefresh)) {
+                return@launch
             }
 
             // 从网络加载
@@ -83,9 +85,7 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = if (_state.value.illusts.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
+                    error = if (_state.value.illusts.isEmpty()) e.message ?: "加载失败" else null
                 )
             }
         }
@@ -115,7 +115,7 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
     }
 
     fun refresh() {
-        load()
+        load(forceRefresh = true)
     }
 
     private fun storeIllusts(illusts: List<Illust>) {

@@ -957,6 +957,38 @@ typealias TrendingIllustTagsState = SimpleState<TrendingTag>
 // SimpleState 只有 items、isLoading、error，无分页相关字段
 ```
 
+**CacheConfig 与 CacheResult — 统一缓存策略：**
+
+所有 ViewModel 共享同一套缓存逻辑，避免重复代码：
+
+```kotlin
+// CacheConfig 负责构建 URL 和从缓存加载
+data class CacheConfig(val path: String, val queryParams: Map<String, String>) {
+    fun buildUrl(): String
+    fun buildCacheKey(): String
+    suspend fun <T> loadFromCache(clazz: Class<T>): CacheResult<T>?
+}
+
+// CacheResult 封装缓存数据，知道自己是否过期
+data class CacheResult<T>(val data: T, val timestamp: Long) {
+    val isFresh: Boolean  // 15 分钟内为 true
+    fun shouldFetch(forceRefresh: Boolean): Boolean
+}
+
+// 扩展函数处理 null 情况
+fun CacheResult<*>?.shouldFetch(forceRefresh: Boolean): Boolean
+```
+
+**ViewModel 使用示例：**
+```kotlin
+val cacheResult = cacheConfig.loadFromCache(Response::class.java)
+if (cacheResult != null) { /* 展示缓存 */ }
+if (!cacheResult.shouldFetch(forceRefresh)) return@launch
+// 发网络请求
+```
+
+这种设计将缓存逻辑内聚到数据类本身，无需单例或工具类。
+
 ---
 
 ### ObjectStore — 全局响应式对象池

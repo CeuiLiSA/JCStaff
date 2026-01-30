@@ -3,7 +3,9 @@ package ceui.lisa.jcstaff.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.shouldFetch
 import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.IllustResponse
@@ -28,12 +30,34 @@ class RankingViewModel(
     val state: StateFlow<RankingUiState> = _state.asStateFlow()
 
     init {
-        load()
+        load(forceRefresh = false)
     }
 
-    fun load() {
+    private fun buildCacheConfig(): CacheConfig {
+        val queryParams = mutableMapOf("mode" to mode, "filter" to "for_ios")
+        _state.value.selectedDate?.let { queryParams["date"] = it }
+        return CacheConfig(path = "/v1/illust/ranking", queryParams = queryParams)
+    }
+
+    private fun load(forceRefresh: Boolean) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
+
+            // 从缓存加载
+            val cacheResult = buildCacheConfig().loadFromCache(IllustResponse::class.java)
+            if (cacheResult != null) {
+                storeIllusts(cacheResult.data.illusts)
+                _state.value = _state.value.copy(
+                    items = cacheResult.data.illusts,
+                    isLoading = cacheResult.shouldFetch(forceRefresh),
+                    nextUrl = cacheResult.data.next_url
+                )
+            }
+
+            // 判断是否需要发网络请求
+            if (!cacheResult.shouldFetch(forceRefresh)) {
+                return@launch
+            }
 
             try {
                 val response = PixivClient.pixivApi.getRankingIllusts(
@@ -49,9 +73,7 @@ class RankingViewModel(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = if (_state.value.items.isEmpty()) {
-                        e.message ?: "加载失败"
-                    } else null
+                    error = if (_state.value.items.isEmpty()) e.message ?: "加载失败" else null
                 )
             }
         }
@@ -87,11 +109,11 @@ class RankingViewModel(
             items = emptyList(),
             nextUrl = null
         )
-        load()
+        load(forceRefresh = false)
     }
 
     fun refresh() {
-        load()
+        load(forceRefresh = true)
     }
 
     private fun storeIllusts(illusts: List<Illust>) {

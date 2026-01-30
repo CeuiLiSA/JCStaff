@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.shouldFetch
 import ceui.lisa.jcstaff.core.SimpleState
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.TrendingTag
@@ -29,25 +30,26 @@ class TrendingIllustTagsViewModel : ViewModel() {
     )
 
     init {
-        load()
+        load(forceRefresh = false)
     }
 
-    fun load() {
+    private fun load(forceRefresh: Boolean) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             // 从缓存加载
-            val cached = PixivClient.getFromStaleCache(
-                path = cacheConfig.path,
-                queryParams = cacheConfig.queryParams,
-                clazz = TrendingTagsResponse::class.java
-            )
-            if (cached != null) {
-                storeTrendingTags(cached.trend_tags)
+            val cacheResult = cacheConfig.loadFromCache(TrendingTagsResponse::class.java)
+            if (cacheResult != null) {
+                storeTrendingTags(cacheResult.data.trend_tags)
                 _state.value = _state.value.copy(
-                    items = cached.trend_tags,
-                    isLoading = false
+                    items = cacheResult.data.trend_tags,
+                    isLoading = cacheResult.shouldFetch(forceRefresh)
                 )
+            }
+
+            // 判断是否需要发网络请求
+            if (!cacheResult.shouldFetch(forceRefresh)) {
+                return@launch
             }
 
             // 从网络加载
@@ -67,7 +69,7 @@ class TrendingIllustTagsViewModel : ViewModel() {
         }
     }
 
-    fun refresh() = load()
+    fun refresh() = load(forceRefresh = true)
 
     private fun storeTrendingTags(tags: List<TrendingTag>) {
         tags.forEach { tag ->

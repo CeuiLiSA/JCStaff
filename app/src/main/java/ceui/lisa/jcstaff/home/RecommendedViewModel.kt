@@ -15,13 +15,7 @@ class RecommendedViewModel : ViewModel() {
 
     val state: StateFlow<RecommendedUiState> = delegate.state
 
-    init {
-        load()
-    }
-
-    fun load() {
-        viewModelScope.launch { delegate.load() }
-    }
+    // delegate 的 init 已经调用过 load()，不需要再调用
 
     fun loadMore() {
         viewModelScope.launch { delegate.loadMore() }
