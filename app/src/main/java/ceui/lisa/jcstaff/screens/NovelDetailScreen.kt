@@ -52,7 +52,7 @@ import ceui.lisa.jcstaff.components.illust.IllustAuthorRow
 import ceui.lisa.jcstaff.components.illust.IllustCaption
 import ceui.lisa.jcstaff.components.illust.IllustTags
 import ceui.lisa.jcstaff.components.novel.NovelActionBar
-import ceui.lisa.jcstaff.cache.NovelBrowseHistoryManager
+import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
@@ -96,7 +96,7 @@ fun NovelDetailScreen(
 
     // 记录小说浏览历史
     LaunchedEffect(novel) {
-        novel?.let { NovelBrowseHistoryManager.recordView(it) }
+        novel?.let { BrowseHistoryRepository.recordNovel(it) }
     }
 
     val loadedNovel = novel ?: return

@@ -91,19 +91,32 @@ fun CacheResult<*>?.shouldFetch(forceRefresh: Boolean): Boolean {
  * 通用分页数据加载器
  *
  * 使用组合而非继承，ViewModel 持有此 loader 实例
- * 使用 CacheStrategy 处理缓存逻辑
  *
  * @param T 列表项类型
  * @param R API 响应类型，必须实现 PagedResponse<T>
+ * @param cacheConfigProvider 动态缓存配置提供者，支持根据当前状态构建不同的缓存 key
  */
 class PagedDataLoader<T, R : PagedResponse<T>>(
-    private val cacheConfig: CacheConfig?,
+    private val cacheConfigProvider: () -> CacheConfig?,
     private val responseClass: Class<R>,
     private val loadFirstPage: suspend () -> R,
     private val onItemsLoaded: (List<T>) -> Unit = {}
 ) {
     private val _state = MutableStateFlow(PagedState<T>())
     val state: StateFlow<PagedState<T>> = _state.asStateFlow()
+
+    /** 便捷构造器：固定 cacheConfig */
+    constructor(
+        cacheConfig: CacheConfig?,
+        responseClass: Class<R>,
+        loadFirstPage: suspend () -> R,
+        onItemsLoaded: (List<T>) -> Unit = {}
+    ) : this({ cacheConfig }, responseClass, loadFirstPage, onItemsLoaded)
+
+    /** 重置状态（用于切换筛选条件等场景） */
+    fun reset() {
+        _state.value = PagedState()
+    }
 
     /**
      * 加载数据
@@ -112,8 +125,8 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
     suspend fun load(forceRefresh: Boolean = false) {
         _state.value = _state.value.copy(isLoading = true, error = null)
 
-        // Step 1: 从缓存加载
-        val cacheResult = cacheConfig?.loadFromCache(responseClass)
+        // Step 1: 从缓存加载（每次调用 cacheConfigProvider 获取最新配置）
+        val cacheResult = cacheConfigProvider()?.loadFromCache(responseClass)
 
         if (cacheResult != null) {
             onItemsLoaded(cacheResult.data.displayList)

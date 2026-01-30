@@ -37,7 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
-import ceui.lisa.jcstaff.cache.BrowseHistoryManager
+import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.SelectionTopBar
@@ -148,7 +148,7 @@ fun IllustDetailScreen(
 
     // 记录浏览历史
     LaunchedEffect(illust) {
-        illust?.let { BrowseHistoryManager.recordView(it) }
+        illust?.let { BrowseHistoryRepository.recordIllust(it) }
     }
 
     val firstOriginalUrl = remember(illust) {

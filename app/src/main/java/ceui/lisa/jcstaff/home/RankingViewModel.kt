@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
-import ceui.lisa.jcstaff.core.shouldFetch
+import ceui.lisa.jcstaff.core.PagedDataLoader
 import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.IllustResponse
@@ -13,107 +13,64 @@ import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 
 /**
  * 排行榜 ViewModel
- * 特殊：支持日期切换，不使用 PagedDataLoader 以支持日期状态
+ * 使用 PagedDataLoader + 独立的日期状态
  */
 class RankingViewModel(
     private val mode: String,
     initialDate: String? = null
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(
-        PagedState<Illust>().copy(selectedDate = initialDate)
+    private val _selectedDate = MutableStateFlow(initialDate)
+    val selectedDate: StateFlow<String?> = _selectedDate.asStateFlow()
+
+    private val loader = PagedDataLoader(
+        cacheConfigProvider = { buildCacheConfig() },
+        responseClass = IllustResponse::class.java,
+        loadFirstPage = { PixivClient.pixivApi.getRankingIllusts(mode, _selectedDate.value) },
+        onItemsLoaded = { storeIllusts(it) }
     )
-    val state: StateFlow<RankingUiState> = _state.asStateFlow()
+
+    val state: StateFlow<RankingUiState> = combine(loader.state, _selectedDate) { pagedState, date ->
+        RankingUiState(
+            items = pagedState.items,
+            isLoading = pagedState.isLoading,
+            isLoadingMore = pagedState.isLoadingMore,
+            error = pagedState.error,
+            nextUrl = pagedState.nextUrl,
+            selectedDate = date
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, RankingUiState(selectedDate = initialDate))
 
     init {
-        load(forceRefresh = false)
+        viewModelScope.launch { loader.load(forceRefresh = false) }
     }
 
     private fun buildCacheConfig(): CacheConfig {
         val queryParams = mutableMapOf("mode" to mode, "filter" to "for_ios")
-        _state.value.selectedDate?.let { queryParams["date"] = it }
+        _selectedDate.value?.let { queryParams["date"] = it }
         return CacheConfig(path = "/v1/illust/ranking", queryParams = queryParams)
     }
 
-    private fun load(forceRefresh: Boolean) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
-
-            // 从缓存加载
-            val cacheResult = buildCacheConfig().loadFromCache(IllustResponse::class.java)
-            if (cacheResult != null) {
-                storeIllusts(cacheResult.data.illusts)
-                _state.value = _state.value.copy(
-                    items = cacheResult.data.illusts,
-                    isLoading = cacheResult.shouldFetch(forceRefresh),
-                    nextUrl = cacheResult.data.next_url
-                )
-            }
-
-            // 判断是否需要发网络请求
-            if (!cacheResult.shouldFetch(forceRefresh)) {
-                return@launch
-            }
-
-            try {
-                val response = PixivClient.pixivApi.getRankingIllusts(
-                    mode = mode,
-                    date = _state.value.selectedDate
-                )
-                storeIllusts(response.illusts)
-                _state.value = _state.value.copy(
-                    items = response.illusts,
-                    isLoading = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = if (_state.value.items.isEmpty()) e.message ?: "加载失败" else null
-                )
-            }
-        }
-    }
-
     fun loadMore() {
-        val nextUrl = _state.value.nextUrl ?: return
-        if (_state.value.isLoadingMore) return
-
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingMore = true)
-            try {
-                val response = PixivClient.getNextPage(nextUrl, IllustResponse::class.java)
-                storeIllusts(response.illusts)
-                _state.value = _state.value.copy(
-                    items = _state.value.items + response.illusts,
-                    isLoadingMore = false,
-                    nextUrl = response.next_url
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoadingMore = false,
-                    error = e.message ?: "加载更多失败"
-                )
-            }
-        }
+        viewModelScope.launch { loader.loadMore() }
     }
 
     fun setDate(date: String?) {
-        if (date == _state.value.selectedDate) return
-        _state.value = _state.value.copy(
-            selectedDate = date,
-            items = emptyList(),
-            nextUrl = null
-        )
-        load(forceRefresh = false)
+        if (date == _selectedDate.value) return
+        _selectedDate.value = date
+        loader.reset()
+        viewModelScope.launch { loader.load(forceRefresh = false) }
     }
 
     fun refresh() {
-        load(forceRefresh = true)
+        viewModelScope.launch { loader.refresh() }
     }
 
     private fun storeIllusts(illusts: List<Illust>) {
@@ -133,16 +90,6 @@ class RankingViewModel(
     }
 }
 
-// 扩展 PagedState 用于排行榜的日期字段
-private fun <T> PagedState<T>.copy(selectedDate: String?) = RankingUiState(
-    items = this.items as List<Illust>,
-    isLoading = this.isLoading,
-    isLoadingMore = this.isLoadingMore,
-    error = this.error,
-    nextUrl = this.nextUrl,
-    selectedDate = selectedDate
-)
-
 data class RankingUiState(
     val items: List<Illust> = emptyList(),
     val isLoading: Boolean = false,
@@ -152,7 +99,5 @@ data class RankingUiState(
     val selectedDate: String? = null
 ) {
     val canLoadMore: Boolean get() = nextUrl != null && !isLoadingMore
-
-    // 兼容旧代码
     val illusts: List<Illust> get() = items
 }

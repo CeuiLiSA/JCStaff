@@ -2,9 +2,7 @@ package ceui.lisa.jcstaff.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import ceui.lisa.jcstaff.cache.BrowseHistoryManager
-import ceui.lisa.jcstaff.cache.NovelBrowseHistoryManager
-import ceui.lisa.jcstaff.cache.UserBrowseHistoryManager
+import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.User
@@ -71,7 +69,7 @@ class BrowseHistoryViewModel : ViewModel() {
 
     private fun observeIllustHistory() {
         viewModelScope.launch {
-            BrowseHistoryManager.getHistoryFlow()
+            BrowseHistoryRepository.getIllustHistoryFlow()
                 .catch { e ->
                     _illustState.value = _illustState.value.copy(
                         isLoading = false,
@@ -90,7 +88,7 @@ class BrowseHistoryViewModel : ViewModel() {
 
     private fun observeNovelHistory() {
         viewModelScope.launch {
-            NovelBrowseHistoryManager.getHistoryFlow()
+            BrowseHistoryRepository.getNovelHistoryFlow()
                 .catch { e ->
                     _novelState.value = _novelState.value.copy(
                         isLoading = false,
@@ -109,7 +107,7 @@ class BrowseHistoryViewModel : ViewModel() {
 
     private fun observeUserHistory() {
         viewModelScope.launch {
-            UserBrowseHistoryManager.getHistoryFlow()
+            BrowseHistoryRepository.getUserHistoryFlow()
                 .catch { e ->
                     _userState.value = _userState.value.copy(
                         isLoading = false,
@@ -127,20 +125,20 @@ class BrowseHistoryViewModel : ViewModel() {
     }
 
     fun clearIllustHistory() {
-        BrowseHistoryManager.clearAll()
+        BrowseHistoryRepository.clearIllustHistory()
     }
 
     fun clearNovelHistory() {
-        NovelBrowseHistoryManager.clearAll()
+        BrowseHistoryRepository.clearNovelHistory()
     }
 
     fun clearUserHistory() {
-        UserBrowseHistoryManager.clearAll()
+        BrowseHistoryRepository.clearUserHistory()
     }
 
     fun clearAll() {
-        BrowseHistoryManager.clearAll()
-        NovelBrowseHistoryManager.clearAll()
-        UserBrowseHistoryManager.clearAll()
+        BrowseHistoryRepository.clearIllustHistory()
+        BrowseHistoryRepository.clearNovelHistory()
+        BrowseHistoryRepository.clearUserHistory()
     }
 }
