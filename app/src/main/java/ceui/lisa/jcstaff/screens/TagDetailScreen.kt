@@ -63,7 +63,8 @@ import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.tagdetail.SearchSort
 import ceui.lisa.jcstaff.tagdetail.SearchTarget
-import ceui.lisa.jcstaff.tagdetail.TagDetailViewModel
+import ceui.lisa.jcstaff.tagdetail.TagIllustSearchViewModel
+import ceui.lisa.jcstaff.tagdetail.TagNovelSearchViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,10 +73,12 @@ fun TagDetailScreen(
     tag: Tag,
     isPremium: Boolean,
     initialTab: Int = 0,
-    viewModel: TagDetailViewModel = viewModel(key = "tag_detail_${tag.name}")
+    illustViewModel: TagIllustSearchViewModel = viewModel(key = "tag_illust_${tag.name}"),
+    novelViewModel: TagNovelSearchViewModel = viewModel(key = "tag_novel_${tag.name}")
 ) {
     val navViewModel = LocalNavigationViewModel.current
-    val state by viewModel.state.collectAsState()
+    val illustState by illustViewModel.state.collectAsState()
+    val novelState by novelViewModel.state.collectAsState()
     val selectionManager = LocalSelectionManager.current
     val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
@@ -87,9 +90,10 @@ fun TagDetailScreen(
 
     val premiumHint = stringResource(R.string.premium_sort_hint)
 
-    // Initialize with the tag
+    // Initialize both ViewModels with the tag
     LaunchedEffect(tag) {
-        viewModel.init(tag, isPremium)
+        illustViewModel.init(tag, isPremium)
+        novelViewModel.init(tag, isPremium)
     }
 
     // Back handler for selection mode
@@ -120,8 +124,8 @@ fun TagDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            state.tags.forEach { currentTag ->
-                                val canRemove = state.tags.size > 1
+                            illustState.tags.forEach { currentTag ->
+                                val canRemove = illustState.tags.size > 1
                                 InputChip(
                                     selected = false,
                                     onClick = {
@@ -193,7 +197,7 @@ fun TagDetailScreen(
                     when (page) {
                         0 -> {
                             IllustGrid(
-                                illusts = state.illusts,
+                                illusts = illustState.illusts,
                                 onIllustClick = { illust ->
                                     navViewModel.navigate(NavRoute.IllustDetail(
                                         illustId = illust.id,
@@ -203,23 +207,23 @@ fun TagDetailScreen(
                                     ))
                                 },
                                 modifier = Modifier.fillMaxSize(),
-                                isLoading = state.isLoading,
-                                isLoadingMore = state.isLoadingMore,
-                                canLoadMore = state.canLoadMore,
-                                error = state.error,
-                                onRefresh = { viewModel.refresh() },
-                                onLoadMore = { viewModel.loadMore() },
-                                                                headerContent = {
+                                isLoading = illustState.isLoading,
+                                isLoadingMore = illustState.isLoadingMore,
+                                canLoadMore = illustState.canLoadMore,
+                                error = illustState.error,
+                                onRefresh = { illustViewModel.refresh() },
+                                onLoadMore = { illustViewModel.loadMore() },
+                                headerContent = {
                                     item(
                                         key = "search_filter_bar",
                                         span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine
                                     ) {
                                         SearchFilterBar(
-                                            sort = state.sort,
-                                            searchTarget = state.searchTarget,
+                                            sort = illustState.sort,
+                                            searchTarget = illustState.searchTarget,
                                             isPremium = isPremium,
-                                            onSortChanged = { viewModel.setSort(it) },
-                                            onSearchTargetChanged = { viewModel.setSearchTarget(it) },
+                                            onSortChanged = { illustViewModel.setSort(it) },
+                                            onSearchTargetChanged = { illustViewModel.setSearchTarget(it) },
                                             onPremiumRequired = {
                                                 coroutineScope.launch {
                                                     snackbarHostState.currentSnackbarData?.dismiss()
@@ -234,11 +238,11 @@ fun TagDetailScreen(
                         1 -> {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 SearchFilterBar(
-                                    sort = state.novelSort,
-                                    searchTarget = state.novelSearchTarget,
+                                    sort = novelState.sort,
+                                    searchTarget = novelState.searchTarget,
                                     isPremium = isPremium,
-                                    onSortChanged = { viewModel.setNovelSort(it) },
-                                    onSearchTargetChanged = { viewModel.setNovelSearchTarget(it) },
+                                    onSortChanged = { novelViewModel.setSort(it) },
+                                    onSearchTargetChanged = { novelViewModel.setSearchTarget(it) },
                                     onPremiumRequired = {
                                         coroutineScope.launch {
                                             snackbarHostState.currentSnackbarData?.dismiss()
@@ -247,17 +251,17 @@ fun TagDetailScreen(
                                     }
                                 )
                                 NovelList(
-                                    novels = state.novels,
+                                    novels = novelState.novels,
                                     onNovelClick = { novel ->
                                         navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
                                     },
                                     modifier = Modifier.fillMaxSize(),
-                                    isLoading = state.isNovelLoading,
-                                    isLoadingMore = state.isNovelLoadingMore,
-                                    canLoadMore = state.canLoadMoreNovels,
-                                    error = state.novelError,
-                                    onRefresh = { viewModel.refreshNovels() },
-                                    onLoadMore = { viewModel.loadMoreNovels() },
+                                    isLoading = novelState.isLoading,
+                                    isLoadingMore = novelState.isLoadingMore,
+                                    canLoadMore = novelState.canLoadMore,
+                                    error = novelState.error,
+                                    onRefresh = { novelViewModel.refresh() },
+                                    onLoadMore = { novelViewModel.loadMore() },
                                     listState = novelListState
                                 )
                             }
@@ -269,7 +273,7 @@ fun TagDetailScreen(
 
         // Selection top bar overlay
         SelectionTopBar(
-                        allIllusts = state.illusts
+            allIllusts = illustState.illusts
         )
     }
 
@@ -283,7 +287,8 @@ fun TagDetailScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.removeTag(pendingTag)
+                    illustViewModel.removeTag(pendingTag)
+                    novelViewModel.removeTag(pendingTag)
                     tagPendingRemoval = null
                 }) {
                     Text(stringResource(R.string.remove_tag_title))
@@ -302,7 +307,9 @@ fun TagDetailScreen(
         AddTagDialog(
             onDismiss = { showAddTagDialog = false },
             onConfirm = { tagName ->
-                viewModel.addTag(Tag(name = tagName))
+                val newTag = Tag(name = tagName)
+                illustViewModel.addTag(newTag)
+                novelViewModel.addTag(newTag)
                 showAddTagDialog = false
             }
         )

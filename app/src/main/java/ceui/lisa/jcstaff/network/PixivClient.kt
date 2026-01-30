@@ -43,10 +43,12 @@ object PixivClient {
             cookieStore[url.host] = cookies.toMutableList()
             Log.d("CookieJar", "saveFromResponse [${url.host}] cookies:")
             cookies.forEach { cookie ->
-                Log.d("CookieJar", "  ${cookie.name}=${cookie.value} " +
-                        "(domain=${cookie.domain}, path=${cookie.path}, " +
-                        "secure=${cookie.secure}, httpOnly=${cookie.httpOnly}, " +
-                        "expiresAt=${cookie.expiresAt})")
+                Log.d(
+                    "CookieJar", "  ${cookie.name}=${cookie.value} " +
+                            "(domain=${cookie.domain}, path=${cookie.path}, " +
+                            "secure=${cookie.secure}, httpOnly=${cookie.httpOnly}, " +
+                            "expiresAt=${cookie.expiresAt})"
+                )
             }
         }
 
@@ -140,7 +142,11 @@ object PixivClient {
      * @param clazz 响应类型
      * @return 缓存的数据，如果没有缓存则返回 null
      */
-    suspend fun <T> getFromStaleCache(path: String, queryParams: Map<String, String> = emptyMap(), clazz: Class<T>): T? {
+    suspend fun <T> getFromStaleCache(
+        path: String,
+        queryParams: Map<String, String> = emptyMap(),
+        clazz: Class<T>
+    ): T? {
         val url = buildUrl(path, queryParams)
         val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
         android.util.Log.d("PixivClient", "🔍 Looking for cache: $cacheKey")

@@ -73,7 +73,8 @@ ceui.lisa.jcstaff/
 │   ├── RecommendedNovelsViewModel.kt # 推荐小说
 │   ├── RecommendedUsersViewModel.kt  # 推荐作者
 │   ├── TrendingViewModel.kt      # 热门排行（旧版）
-│   ├── TrendingTagsViewModel.kt  # 热门标签（插画漫画 + 小说）
+│   ├── TrendingIllustTagsViewModel.kt  # 热门插画标签
+│   ├── TrendingNovelTagsViewModel.kt   # 热门小说标签
 │   ├── FollowingViewModel.kt     # 关注的插画/漫画新作
 │   ├── FollowingNovelsViewModel.kt   # 关注的小说新作
 │   ├── LatestContentViewModel.kt # 全站最新插画/漫画/小说
@@ -140,7 +141,9 @@ ceui.lisa.jcstaff/
 ├── profile/                      # 用户主页模块
 │   └── UserProfileViewModel.kt   # 用户主页逻辑
 ├── tagdetail/                    # 标签详情模块
-│   └── TagDetailViewModel.kt     # 标签搜索逻辑
+│   ├── TagDetailViewModel.kt     # 搜索排序/匹配选项枚举定义
+│   ├── TagIllustSearchViewModel.kt   # 标签插画搜索 ViewModel
+│   └── TagNovelSearchViewModel.kt    # 标签小说搜索 ViewModel
 ├── history/                      # 浏览历史模块
 │   └── BrowseHistoryViewModel.kt # 浏览历史逻辑
 ├── ui/theme/                     # 主题
@@ -946,6 +949,13 @@ val state: StateFlow<PagedState<Illust>> = loader.state
 - 无需传入 `extractItems`、`extractNextUrl`、`loadNextPage` — 全部由接口约束自动推导
 - 统一的缓存加载、网络加载、错误处理逻辑
 - `PagedState<T>` 提供 `items`、`isLoading`、`isLoadingMore`、`canLoadMore` 等标准状态
+
+**非分页数据：**
+对于不需要分页的列表（如热门标签），使用 `SimpleState<T>`：
+```kotlin
+typealias TrendingIllustTagsState = SimpleState<TrendingTag>
+// SimpleState 只有 items、isLoading、error，无分页相关字段
+```
 
 ---
 

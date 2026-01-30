@@ -1,0 +1,80 @@
+package ceui.lisa.jcstaff.home
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.CacheConfig
+import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.SimpleState
+import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.network.TrendingTag
+import ceui.lisa.jcstaff.network.TrendingTagsResponse
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+typealias TrendingIllustTagsState = SimpleState<TrendingTag>
+
+/**
+ * 热门插画标签 ViewModel
+ */
+class TrendingIllustTagsViewModel : ViewModel() {
+
+    private val _state = MutableStateFlow(TrendingIllustTagsState())
+    val state: StateFlow<TrendingIllustTagsState> = _state.asStateFlow()
+
+    private val cacheConfig = CacheConfig(
+        path = "/v1/trending-tags/illust",
+        queryParams = mapOf("filter" to "for_ios")
+    )
+
+    init {
+        load()
+    }
+
+    fun load() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+
+            // 从缓存加载
+            val cached = PixivClient.getFromStaleCache(
+                path = cacheConfig.path,
+                queryParams = cacheConfig.queryParams,
+                clazz = TrendingTagsResponse::class.java
+            )
+            if (cached != null) {
+                storeTrendingTags(cached.trend_tags)
+                _state.value = _state.value.copy(
+                    items = cached.trend_tags,
+                    isLoading = false
+                )
+            }
+
+            // 从网络加载
+            try {
+                val response = PixivClient.pixivApi.getTrendingTags()
+                storeTrendingTags(response.trend_tags)
+                _state.value = _state.value.copy(
+                    items = response.trend_tags,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = if (_state.value.items.isEmpty()) e.message ?: "加载失败" else null
+                )
+            }
+        }
+    }
+
+    fun refresh() = load()
+
+    private fun storeTrendingTags(tags: List<TrendingTag>) {
+        tags.forEach { tag ->
+            tag.illust?.let { illust ->
+                ObjectStore.put(illust)
+                illust.user?.let { user -> ObjectStore.put(user) }
+            }
+        }
+    }
+}

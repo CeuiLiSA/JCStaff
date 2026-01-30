@@ -29,6 +29,15 @@ data class PagedState<T>(
 }
 
 /**
+ * 通用非分页数据状态
+ */
+data class SimpleState<T>(
+    val items: List<T> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+/**
  * 缓存配置
  */
 data class CacheConfig(

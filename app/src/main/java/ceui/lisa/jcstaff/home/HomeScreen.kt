@@ -1,12 +1,13 @@
 package ceui.lisa.jcstaff.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,13 +17,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -30,32 +37,32 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.FiberNew
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import ceui.lisa.jcstaff.components.ErrorRetryState
-import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,46 +80,38 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
-import androidx.activity.compose.BackHandler
-import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.IllustFeed
 import ceui.lisa.jcstaff.components.IllustGrid
+import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.LocalSelectionManager
@@ -225,7 +224,8 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
-                                        text = currentUser?.name ?: stringResource(R.string.app_name),
+                                        text = currentUser?.name
+                                            ?: stringResource(R.string.app_name),
                                         style = MaterialTheme.typography.titleMedium,
                                         maxLines = 1
                                     )
@@ -355,12 +355,14 @@ private fun RecommendedTabPage() {
                     IllustGrid(
                         illusts = state.illusts,
                         onIllustClick = { illust ->
-                            navViewModel.navigate(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
+                            navViewModel.navigate(
+                                NavRoute.IllustDetail(
+                                    illustId = illust.id,
+                                    title = illust.title ?: "",
+                                    previewUrl = illust.previewUrl(),
+                                    aspectRatio = illust.aspectRatio()
+                                )
+                            )
                         },
                         isLoading = state.isLoading,
                         isLoadingMore = state.isLoadingMore,
@@ -377,12 +379,14 @@ private fun RecommendedTabPage() {
                                     RankingCarousel(
                                         illusts = state.rankingIllusts,
                                         onIllustClick = { illust ->
-                                            navViewModel.navigate(NavRoute.IllustDetail(
-                                                illustId = illust.id,
-                                                title = illust.title ?: "",
-                                                previewUrl = illust.previewUrl(),
-                                                aspectRatio = illust.aspectRatio()
-                                            ))
+                                            navViewModel.navigate(
+                                                NavRoute.IllustDetail(
+                                                    illustId = illust.id,
+                                                    title = illust.title ?: "",
+                                                    previewUrl = illust.previewUrl(),
+                                                    aspectRatio = illust.aspectRatio()
+                                                )
+                                            )
                                         },
                                         onViewAllClick = {
                                             navViewModel.navigate(NavRoute.RankingDetail(objectType = "illust"))
@@ -400,6 +404,7 @@ private fun RecommendedTabPage() {
                         }
                     )
                 }
+
                 1 -> {
                     val vm: RecommendedContentViewModel = viewModel(
                         key = "recommended_manga",
@@ -409,12 +414,14 @@ private fun RecommendedTabPage() {
                     IllustGrid(
                         illusts = state.illusts,
                         onIllustClick = { illust ->
-                            navViewModel.navigate(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
+                            navViewModel.navigate(
+                                NavRoute.IllustDetail(
+                                    illustId = illust.id,
+                                    title = illust.title ?: "",
+                                    previewUrl = illust.previewUrl(),
+                                    aspectRatio = illust.aspectRatio()
+                                )
+                            )
                         },
                         isLoading = state.isLoading,
                         isLoadingMore = state.isLoadingMore,
@@ -431,12 +438,14 @@ private fun RecommendedTabPage() {
                                     RankingCarousel(
                                         illusts = state.rankingIllusts,
                                         onIllustClick = { illust ->
-                                            navViewModel.navigate(NavRoute.IllustDetail(
-                                                illustId = illust.id,
-                                                title = illust.title ?: "",
-                                                previewUrl = illust.previewUrl(),
-                                                aspectRatio = illust.aspectRatio()
-                                            ))
+                                            navViewModel.navigate(
+                                                NavRoute.IllustDetail(
+                                                    illustId = illust.id,
+                                                    title = illust.title ?: "",
+                                                    previewUrl = illust.previewUrl(),
+                                                    aspectRatio = illust.aspectRatio()
+                                                )
+                                            )
                                         },
                                         onViewAllClick = {
                                             navViewModel.navigate(NavRoute.RankingDetail(objectType = "manga"))
@@ -454,6 +463,7 @@ private fun RecommendedTabPage() {
                         }
                     )
                 }
+
                 2 -> {
                     val vm: RecommendedNovelsViewModel = viewModel()
                     val state by vm.state.collectAsState()
@@ -473,9 +483,11 @@ private fun RecommendedTabPage() {
 @Composable
 private fun DiscoverTabPage() {
     val navViewModel = LocalNavigationViewModel.current
-    val trendingTagsViewModel: TrendingTagsViewModel = viewModel()
+    val trendingIllustTagsViewModel: TrendingIllustTagsViewModel = viewModel()
+    val trendingNovelTagsViewModel: TrendingNovelTagsViewModel = viewModel()
     val recommendedUsersViewModel: RecommendedUsersViewModel = viewModel()
-    val trendingTagsState by trendingTagsViewModel.state.collectAsState()
+    val illustTagsState by trendingIllustTagsViewModel.state.collectAsState()
+    val novelTagsState by trendingNovelTagsViewModel.state.collectAsState()
     val usersState by recommendedUsersViewModel.state.collectAsState()
 
     val innerPagerState = rememberPagerState(pageCount = { 3 })
@@ -510,25 +522,27 @@ private fun DiscoverTabPage() {
         ) { page ->
             when (page) {
                 0 -> TrendingTagGrid(
-                    tags = trendingTagsState.illustTags,
-                    isLoading = trendingTagsState.isIllustLoading,
-                    error = trendingTagsState.illustError,
-                    onRefresh = { trendingTagsViewModel.loadIllustTags() },
+                    tags = illustTagsState.items,
+                    isLoading = illustTagsState.isLoading,
+                    error = illustTagsState.error,
+                    onRefresh = { trendingIllustTagsViewModel.refresh() },
                     onTagClick = { tag ->
                         val navTag = Tag(name = tag.tag, translated_name = tag.translated_name)
                         navViewModel.navigate(NavRoute.TagDetail(tag = navTag, initialTab = 0))
                     }
                 )
+
                 1 -> TrendingTagGrid(
-                    tags = trendingTagsState.novelTags,
-                    isLoading = trendingTagsState.isNovelLoading,
-                    error = trendingTagsState.novelError,
-                    onRefresh = { trendingTagsViewModel.loadNovelTags() },
+                    tags = novelTagsState.items,
+                    isLoading = novelTagsState.isLoading,
+                    error = novelTagsState.error,
+                    onRefresh = { trendingNovelTagsViewModel.refresh() },
                     onTagClick = { tag ->
                         val navTag = Tag(name = tag.tag, translated_name = tag.translated_name)
                         navViewModel.navigate(NavRoute.TagDetail(tag = navTag, initialTab = 1))
                     }
                 )
+
                 2 -> RecommendedUsersList(
                     usersState = usersState,
                     onRefresh = { recommendedUsersViewModel.refresh() },
@@ -537,12 +551,14 @@ private fun DiscoverTabPage() {
                         navViewModel.navigate(NavRoute.UserProfile(userId = userId))
                     },
                     onIllustClick = { illust ->
-                        navViewModel.navigate(NavRoute.IllustDetail(
-                            illustId = illust.id,
-                            title = illust.title ?: "",
-                            previewUrl = illust.previewUrl(),
-                            aspectRatio = illust.aspectRatio()
-                        ))
+                        navViewModel.navigate(
+                            NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            )
+                        )
                     }
                 )
             }
@@ -600,6 +616,7 @@ private fun NewWorksTabPage() {
                         onLoadMore = { vm.loadMore() }
                     )
                 }
+
                 1 -> {
                     val vm: FollowingNovelsViewModel = viewModel()
                     val state by vm.state.collectAsState()
@@ -609,6 +626,7 @@ private fun NewWorksTabPage() {
                         onLoadMore = { vm.loadMore() },
                     )
                 }
+
                 2 -> {
                     val vm: LatestIllustsViewModel = viewModel(
                         key = "latest_illust",
@@ -619,8 +637,9 @@ private fun NewWorksTabPage() {
                         state = state,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                                            )
+                    )
                 }
+
                 3 -> {
                     val vm: LatestNovelsViewModel = viewModel()
                     val state by vm.state.collectAsState()
@@ -1038,9 +1057,11 @@ private fun DrawerContent(
                 onClick = onShaderDemoClick
             )
 
-            Spacer(modifier = Modifier.height(
-                16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            ))
+            Spacer(
+                modifier = Modifier.height(
+                    16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                )
+            )
         }
     }
 
@@ -1585,7 +1606,7 @@ private fun TrendingTagCard(
                 Text(
                     text = tag.translated_name,
                     style = if (isFirst) MaterialTheme.typography.bodyMedium
-                            else MaterialTheme.typography.bodySmall,
+                    else MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.85f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -1594,7 +1615,7 @@ private fun TrendingTagCard(
             Text(
                 text = "#${tag.tag ?: ""}",
                 style = if (isFirst) MaterialTheme.typography.titleMedium
-                        else MaterialTheme.typography.labelLarge,
+                else MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 maxLines = 1,
@@ -1637,6 +1658,7 @@ private fun RecommendedUsersList(
                     onRetry = onRefresh
                 )
             }
+
             usersState.users.isEmpty() && usersState.isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -1645,6 +1667,7 @@ private fun RecommendedUsersList(
                     LoadingIndicator()
                 }
             }
+
             else -> {
                 LazyColumn(
                     state = listState,
@@ -1841,7 +1864,8 @@ private fun UserPreviewCard(
                     }
 
                     // Illust titles (up to 3)
-                    val illustTitles = userPreview.illusts.take(3).mapNotNull { it.title }.filter { it.isNotBlank() }
+                    val illustTitles = userPreview.illusts.take(3).mapNotNull { it.title }
+                        .filter { it.isNotBlank() }
                     if (illustTitles.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
@@ -1925,8 +1949,20 @@ private fun UserPreviewCard(
                                 .aspectRatio(1f)
                                 .clip(
                                     when (index) {
-                                        0 -> RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp, topEnd = 4.dp, bottomEnd = 4.dp)
-                                        illusts.size - 1 -> RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp, topEnd = 12.dp, bottomEnd = 12.dp)
+                                        0 -> RoundedCornerShape(
+                                            topStart = 12.dp,
+                                            bottomStart = 12.dp,
+                                            topEnd = 4.dp,
+                                            bottomEnd = 4.dp
+                                        )
+
+                                        illusts.size - 1 -> RoundedCornerShape(
+                                            topStart = 4.dp,
+                                            bottomStart = 4.dp,
+                                            topEnd = 12.dp,
+                                            bottomEnd = 12.dp
+                                        )
+
                                         else -> RoundedCornerShape(4.dp)
                                     }
                                 )
@@ -1970,7 +2006,10 @@ private fun UserPreviewCard(
                                             text = formatNumber(bookmarks),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = Color.White,
-                                            fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp)
+                                            fontSize = androidx.compose.ui.unit.TextUnit(
+                                                10f,
+                                                androidx.compose.ui.unit.TextUnitType.Sp
+                                            )
                                         )
                                     }
                                 }
@@ -2052,12 +2091,14 @@ private fun SpotlightPage() {
                     LoadingIndicator()
                 }
             }
+
             state.error != null && state.items.isEmpty() -> {
                 ErrorRetryState(
                     error = state.error ?: stringResource(R.string.load_error),
                     onRetry = { vm.refresh() }
                 )
             }
+
             state.items.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -2069,6 +2110,7 @@ private fun SpotlightPage() {
                     )
                 }
             }
+
             else -> {
                 val listState = rememberLazyListState()
 
@@ -2078,9 +2120,9 @@ private fun SpotlightPage() {
                         .distinctUntilChanged()
                         .filter { lastIndex ->
                             lastIndex != null &&
-                            lastIndex >= state.items.size - 3 &&
-                            state.canLoadMore &&
-                            !state.isLoadingMore
+                                    lastIndex >= state.items.size - 3 &&
+                                    state.canLoadMore &&
+                                    !state.isLoadingMore
                         }
                         .collect { vm.loadMore() }
                 }
@@ -2208,13 +2250,14 @@ private fun SpotlightCard(
 
                 // 日期
                 if (article.publish_date != null) {
-                    ceui.lisa.jcstaff.utils.formatRelativeDate(article.publish_date)?.let { dateText ->
-                        Text(
-                            text = dateText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
-                    }
+                    ceui.lisa.jcstaff.utils.formatRelativeDate(article.publish_date)
+                        ?.let { dateText ->
+                            Text(
+                                text = dateText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
                 }
             }
         }
