@@ -15,17 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
-import ceui.lisa.jcstaff.components.ErrorRetryState
-import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,14 +46,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
-import ceui.lisa.jcstaff.components.IllustCard
-import ceui.lisa.jcstaff.core.SettingsStore
-import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.search.SearchViewModel
 
 /**
- * MD3 搜索页面
- * 使用 Material3 SearchBar 组件实现标准搜索动画
+ * 简化的搜索页面
+ * 输入关键字后直接跳转到 TagDetail 页面
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +61,6 @@ fun SearchScreen(
     val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
-    var expanded by rememberSaveable { mutableStateOf(true) }
     val focusRequester = remember { FocusRequester() }
 
     // 进入页面时自动聚焦搜索框
@@ -79,10 +70,19 @@ fun SearchScreen(
 
     // 返回键处理
     BackHandler {
-        if (expanded && query.isNotEmpty()) {
+        if (query.isNotEmpty()) {
             query = ""
         } else {
             navViewModel.goBack()
+        }
+    }
+
+    // 执行搜索：添加到历史并跳转到 TagDetail
+    fun performSearch(searchQuery: String) {
+        if (searchQuery.isNotBlank()) {
+            viewModel.addToHistory(searchQuery)
+            val tag = Tag(name = searchQuery.trim())
+            navViewModel.navigate(NavRoute.TagDetail(tag = tag))
         }
     }
 
@@ -94,14 +94,9 @@ fun SearchScreen(
                 SearchBarDefaults.InputField(
                     query = query,
                     onQueryChange = { query = it },
-                    onSearch = {
-                        expanded = false
-                        if (query.isNotBlank()) {
-                            viewModel.search(query)
-                        }
-                    },
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it },
+                    onSearch = { performSearch(query) },
+                    expanded = true,
+                    onExpandedChange = { },
                     placeholder = { Text(stringResource(R.string.search_placeholder)) },
                     leadingIcon = {
                         IconButton(onClick = { navViewModel.goBack() }) {
@@ -124,54 +119,29 @@ fun SearchScreen(
                     modifier = Modifier.focusRequester(focusRequester)
                 )
             },
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
+            expanded = true,
+            onExpandedChange = { },
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .padding(horizontal = if (expanded) 0.dp else 16.dp)
         ) {
-            // 搜索建议和历史记录
-            SearchSuggestions(
+            // 搜索历史
+            SearchHistory(
                 recentSearches = state.recentSearches,
-                onSuggestionClick = { suggestion ->
+                onHistoryClick = { suggestion ->
                     query = suggestion
-                    expanded = false
-                    viewModel.search(suggestion)
+                    performSearch(suggestion)
                 },
                 onClearHistory = { viewModel.clearSearchHistory() }
-            )
-        }
-
-        // 搜索结果
-        if (!expanded) {
-            SearchResults(
-                state = state,
-                onIllustClick = { illust ->
-                    navViewModel.navigate(NavRoute.IllustDetail(
-                        illustId = illust.id,
-                        title = illust.title ?: "",
-                        previewUrl = illust.previewUrl(),
-                        aspectRatio = illust.aspectRatio()
-                    ))
-                },
-                onUserClick = { userId ->
-                    navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                },
-                onLoadMore = { viewModel.loadMore() },
-                onRetry = { viewModel.search(state.query) },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 72.dp)
             )
         }
     }
 }
 
 @Composable
-private fun SearchSuggestions(
+private fun SearchHistory(
     recentSearches: List<String>,
-    onSuggestionClick: (String) -> Unit,
+    onHistoryClick: (String) -> Unit,
     onClearHistory: () -> Unit
 ) {
     LazyColumn(
@@ -211,7 +181,7 @@ private fun SearchSuggestions(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
-                    modifier = Modifier.clickable { onSuggestionClick(search) }
+                    modifier = Modifier.clickable { onHistoryClick(search) }
                 )
             }
         } else {
@@ -237,92 +207,6 @@ private fun SearchSuggestions(
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchResults(
-    state: ceui.lisa.jcstaff.search.SearchState,
-    onIllustClick: (Illust) -> Unit,
-    onUserClick: (Long) -> Unit,
-    onLoadMore: () -> Unit,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-    val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-
-    Box(modifier = modifier) {
-        when {
-            state.isLoading && state.illusts.isEmpty() -> {
-                LoadingIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-            state.error != null && state.illusts.isEmpty() -> {
-                ErrorRetryState(
-                    error = state.error ?: stringResource(R.string.search_error),
-                    onRetry = onRetry,
-                    scrollable = false,
-                    showPullToRefreshHint = false
-                )
-            }
-            state.illusts.isEmpty() && !state.isLoading && state.hasSearched -> {
-                Text(
-                    text = stringResource(R.string.no_results),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp)
-                )
-            }
-            state.illusts.isNotEmpty() -> {
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    contentPadding = PaddingValues(
-                        start = 8.dp,
-                        end = 8.dp,
-                        top = 8.dp,
-                        bottom = 16.dp
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(state.illusts, key = { it.id }) { illust ->
-                        IllustCard(
-                            illust = illust,
-                            onClick = { onIllustClick(illust) },
-                            showIllustInfo = showIllustInfo,
-                            cornerRadius = illustCornerRadius
-                        )
-                    }
-
-                    if (state.isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // 加载更多逻辑
-                LaunchedEffect(state.illusts.size, state.canLoadMore) {
-                    if (state.canLoadMore && !state.isLoadingMore) {
-                        onLoadMore()
                     }
                 }
             }

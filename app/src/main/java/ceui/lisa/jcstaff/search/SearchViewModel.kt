@@ -43,17 +43,26 @@ class SearchViewModel : ViewModel() {
     }
 
     /**
+     * 添加到搜索历史（不执行搜索）
+     */
+    fun addToHistory(query: String) {
+        if (query.isBlank()) return
+        searchHistory.remove(query)
+        searchHistory.add(0, query)
+        if (searchHistory.size > 10) {
+            searchHistory.removeAt(searchHistory.lastIndex)
+        }
+        _state.value = _state.value.copy(recentSearches = searchHistory.toList())
+    }
+
+    /**
      * 执行搜索
      */
     fun search(query: String) {
         if (query.isBlank()) return
 
         // 添加到搜索历史
-        searchHistory.remove(query)
-        searchHistory.add(0, query)
-        if (searchHistory.size > 10) {
-            searchHistory.removeAt(searchHistory.lastIndex)
-        }
+        addToHistory(query)
 
         viewModelScope.launch {
             _state.value = _state.value.copy(
@@ -62,7 +71,6 @@ class SearchViewModel : ViewModel() {
                 error = null,
                 illusts = emptyList(),
                 nextUrl = null,
-                recentSearches = searchHistory.toList(),
                 hasSearched = true
             )
 
