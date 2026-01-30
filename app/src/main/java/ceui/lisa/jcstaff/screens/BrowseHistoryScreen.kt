@@ -19,12 +19,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -237,35 +240,12 @@ private fun IllustHistoryPage(
     }
 
     // Action menu dialog
-    menuIllustId?.let { illustId ->
-        AlertDialog(
-            onDismissRequest = { menuIllustId = null },
-            confirmButton = {},
-            text = {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onDeleteIllust(illustId)
-                                menuIllustId = null
-                            }
-                            .padding(vertical = 14.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = stringResource(R.string.delete),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
+    if (menuIllustId != null) {
+        HistoryActionMenu(
+            onDismiss = { menuIllustId = null },
+            onDelete = {
+                menuIllustId?.let { onDeleteIllust(it) }
+                menuIllustId = null
             }
         )
     }
@@ -313,35 +293,12 @@ private fun NovelHistoryPage(
     }
 
     // Action menu dialog
-    menuNovelId?.let { novelId ->
-        AlertDialog(
-            onDismissRequest = { menuNovelId = null },
-            confirmButton = {},
-            text = {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onDeleteNovel(novelId)
-                                menuNovelId = null
-                            }
-                            .padding(vertical = 14.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = stringResource(R.string.delete),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
+    if (menuNovelId != null) {
+        HistoryActionMenu(
+            onDismiss = { menuNovelId = null },
+            onDelete = {
+                menuNovelId?.let { onDeleteNovel(it) }
+                menuNovelId = null
             }
         )
     }
@@ -387,36 +344,53 @@ private fun UserHistoryPage(
     }
 
     // Action menu dialog
-    menuUserId?.let { userId ->
-        AlertDialog(
-            onDismissRequest = { menuUserId = null },
-            confirmButton = {},
-            text = {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onDeleteUser(userId)
-                                menuUserId = null
-                            }
-                            .padding(vertical = 14.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = stringResource(R.string.delete),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
+    if (menuUserId != null) {
+        HistoryActionMenu(
+            onDismiss = { menuUserId = null },
+            onDelete = {
+                menuUserId?.let { onDeleteUser(it) }
+                menuUserId = null
             }
         )
+    }
+}
+
+/**
+ * 历史记录操作菜单
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HistoryActionMenu(
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit
+) {
+    BasicAlertDialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onDelete()
+                    }
+                    .padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Text(
+                    text = stringResource(R.string.delete),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
     }
 }
