@@ -11,14 +11,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
+import ceui.lisa.jcstaff.network.PixivClient
 import okhttp3.Request
 import okio.buffer
 import okio.sink
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -112,12 +111,6 @@ object LoadTaskManager {
     private val downloadJobs = ConcurrentHashMap<String, Job>()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
 
     private var cacheDir: File? = null
 
@@ -223,10 +216,9 @@ object LoadTaskManager {
 
                 val request = Request.Builder()
                     .url(taskId)
-                    .addHeader("Referer", "https://app-api.pixiv.net/")
                     .build()
 
-                val response = okHttpClient.newCall(request).execute()
+                val response = PixivClient.imageClient.newCall(request).execute()
 
                 if (!response.isSuccessful) {
                     throw Exception("HTTP ${response.code}")

@@ -9,7 +9,6 @@ import ceui.lisa.jcstaff.network.UgoiraMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
@@ -47,15 +46,6 @@ object UgoiraRepository {
 
     private const val TAG = "UgoiraRepository"
     private const val UGOIRA_DIR = "ugoira"
-
-    private val client = OkHttpClient.Builder()
-        .addInterceptor { chain ->
-            val request = chain.request().newBuilder()
-                .header("Referer", "https://app-api.pixiv.net/")
-                .build()
-            chain.proceed(request)
-        }
-        .build()
 
     private val gifCache = mutableMapOf<Long, UgoiraData>()
 
@@ -166,7 +156,7 @@ object UgoiraRepository {
         stateFlow?.value = UgoiraState.Downloading(0)
 
         val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
+        val response = PixivClient.imageClient.newCall(request).execute()
 
         if (!response.isSuccessful) {
             throw UgoiraException(R.string.ugoira_error_download_failed, response.code)

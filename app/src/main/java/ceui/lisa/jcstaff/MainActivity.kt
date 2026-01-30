@@ -65,7 +65,6 @@ import coil.ImageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
 
 class MainActivity : AppCompatActivity() {
 
@@ -75,19 +74,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 设置全局 Coil ImageLoader，统一添加 Pixiv Referer 头
+        // 设置全局 Coil ImageLoader，使用共享的 imageClient（带 Referer 头）
         Coil.setImageLoader(
             ImageLoader.Builder(this)
-                .okHttpClient {
-                    OkHttpClient.Builder()
-                        .addInterceptor { chain ->
-                            val request = chain.request().newBuilder()
-                                .addHeader("Referer", "https://app-api.pixiv.net/")
-                                .build()
-                            chain.proceed(request)
-                        }
-                        .build()
-                }
+                .okHttpClient { PixivClient.imageClient }
                 .build()
         )
 

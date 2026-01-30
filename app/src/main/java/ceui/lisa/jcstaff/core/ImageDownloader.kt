@@ -8,13 +8,12 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import ceui.lisa.jcstaff.network.Illust
+import ceui.lisa.jcstaff.network.PixivClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
-import java.util.concurrent.TimeUnit
 
 /**
  * 批量下载进度回调
@@ -28,38 +27,27 @@ data class BatchDownloadProgress(
 
 object ImageDownloader {
 
-    private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .build()
-    }
-
     /**
      * 下载图片并保存到相册
      * @param context Context
      * @param imageUrl 图片URL
      * @param fileName 文件名（不含扩展名）
-     * @param referer Referer header（Pixiv 需要）
      * @return 是否成功
      */
     suspend fun downloadToGallery(
         context: Context,
         imageUrl: String,
-        fileName: String,
-        referer: String = "https://app-api.pixiv.net/"
+        fileName: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            // 构建请求
+            // 构建请求（Referer 由 PixivClient.imageClient 的拦截器添加）
             val request = Request.Builder()
                 .url(imageUrl)
-                .addHeader("Referer", referer)
                 .addHeader("User-Agent", "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)")
                 .build()
 
             // 执行请求
-            val response = client.newCall(request).execute()
+            val response = PixivClient.imageClient.newCall(request).execute()
 
             if (!response.isSuccessful) {
                 return@withContext Result.failure(Exception("HTTP ${response.code}"))

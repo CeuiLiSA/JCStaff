@@ -18,6 +18,18 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
+/**
+ * Interceptor that adds Referer header for Pixiv image downloads
+ */
+class RefererInterceptor : okhttp3.Interceptor {
+    override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
+        val request = chain.request().newBuilder()
+            .addHeader("Referer", "https://app-api.pixiv.net/")
+            .build()
+        return chain.proceed(request)
+    }
+}
+
 object PixivClient {
 
     const val CLIENT_ID = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
@@ -29,6 +41,21 @@ object PixivClient {
     private const val APP_API_HOST = "https://app-api.pixiv.net"
     private const val OAUTH_HOST = "https://oauth.secure.pixiv.net"
     private const val REQUEST_TIMEOUT = 15L
+    private const val IMAGE_TIMEOUT = 60L
+
+    /**
+     * Shared OkHttpClient for image downloads with Referer header.
+     * Use this for Coil, image downloads, ugoira downloads, etc.
+     * Can be extended with .newBuilder() if additional interceptors are needed.
+     */
+    val imageClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(IMAGE_TIMEOUT, TimeUnit.SECONDS)
+            .writeTimeout(IMAGE_TIMEOUT, TimeUnit.SECONDS)
+            .addInterceptor(RefererInterceptor())
+            .build()
+    }
 
     private var _pixivApi: PixivApi? = null
     private var currentPkce: PKCEItem? = null

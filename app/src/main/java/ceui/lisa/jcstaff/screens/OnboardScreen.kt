@@ -47,7 +47,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.delay
-import okhttp3.OkHttpClient
+import ceui.lisa.jcstaff.network.PixivClient
 import kotlin.random.Random
 
 // region — JSON parsing helpers
@@ -94,17 +94,8 @@ internal fun loadLandingImageUrls(context: Context): List<String> {
 // endregion
 
 internal fun createLandingImageLoader(context: Context): ImageLoader {
-    val client = OkHttpClient.Builder()
-        .addInterceptor { chain ->
-            val request = chain.request().newBuilder()
-                .addHeader("Referer", "https://app-api.pixiv.net/")
-                .build()
-            chain.proceed(request)
-        }
-        .build()
-
     return ImageLoader.Builder(context)
-        .okHttpClient(client)
+        .okHttpClient(PixivClient.imageClient)
         .memoryCache {
             MemoryCache.Builder(context)
                 .maxSizePercent(0.10)

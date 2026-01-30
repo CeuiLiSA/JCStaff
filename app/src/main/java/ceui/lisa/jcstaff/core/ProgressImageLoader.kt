@@ -3,10 +3,10 @@ package ceui.lisa.jcstaff.core
 import android.content.Context
 import coil.ImageLoader
 import coil.disk.DiskCache
+import ceui.lisa.jcstaff.network.PixivClient
 import coil.memory.MemoryCache
 import okhttp3.Interceptor
 import okhttp3.MediaType
-import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okio.Buffer
@@ -99,14 +99,8 @@ class ProgressResponseBody(
  * 创建带进度追踪的 ImageLoader
  */
 fun createProgressImageLoader(context: Context): ImageLoader {
-    val okHttpClient = OkHttpClient.Builder()
+    val okHttpClient = PixivClient.imageClient.newBuilder()
         .addNetworkInterceptor(ProgressInterceptor())
-        .addInterceptor { chain ->
-            val request = chain.request().newBuilder()
-                .addHeader("Referer", "https://app-api.pixiv.net/")
-                .build()
-            chain.proceed(request)
-        }
         .build()
 
     return ImageLoader.Builder(context)
