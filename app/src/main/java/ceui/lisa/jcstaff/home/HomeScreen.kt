@@ -108,6 +108,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
+import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.IllustFeed
 import ceui.lisa.jcstaff.components.IllustGrid
@@ -528,6 +529,7 @@ private fun DiscoverTabPage() {
                     onRefresh = { trendingIllustTagsViewModel.refresh() },
                     onTagClick = { tag ->
                         val navTag = Tag(name = tag.tag, translated_name = tag.translated_name)
+                        BrowseHistoryRepository.recordSearch(navTag)
                         navViewModel.navigate(NavRoute.TagDetail(tag = navTag, initialTab = 0))
                     }
                 )
@@ -539,6 +541,7 @@ private fun DiscoverTabPage() {
                     onRefresh = { trendingNovelTagsViewModel.refresh() },
                     onTagClick = { tag ->
                         val navTag = Tag(name = tag.tag, translated_name = tag.translated_name)
+                        BrowseHistoryRepository.recordSearch(navTag)
                         navViewModel.navigate(NavRoute.TagDetail(tag = navTag, initialTab = 1))
                     }
                 )

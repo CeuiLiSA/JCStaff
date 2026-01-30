@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Novel
+import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.network.User
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +31,7 @@ object BrowseHistoryRepository {
     private var illustDao: BrowseHistoryDao? = null
     private var novelDao: NovelBrowseHistoryDao? = null
     private var userDao: UserBrowseHistoryDao? = null
+    private var searchDao: SearchHistoryDao? = null
 
     private val gson = Gson()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -39,6 +41,7 @@ object BrowseHistoryRepository {
         illustDao = db.browseHistoryDao()
         novelDao = db.novelBrowseHistoryDao()
         userDao = db.userBrowseHistoryDao()
+        searchDao = db.searchHistoryDao()
         Log.d(TAG, "BrowseHistoryRepository initialized for user $userId")
         scope.launch { cleanupAllExpired() }
     }
@@ -47,6 +50,7 @@ object BrowseHistoryRepository {
         illustDao = null
         novelDao = null
         userDao = null
+        searchDao = null
         Log.d(TAG, "BrowseHistoryRepository reset")
     }
 
@@ -167,6 +171,39 @@ object BrowseHistoryRepository {
 
     fun deleteUser(userId: Long) {
         userDao?.let { dao -> scope.launch { runCatching { dao.delete(userId) } } }
+    }
+
+    // ==================== 搜索历史 ====================
+
+    private const val MAX_SEARCH_HISTORY_SIZE = 50
+
+    fun recordSearch(tag: Tag) {
+        val dao = searchDao ?: return
+        val entity = SearchHistoryEntity.fromTag(tag) ?: return
+        scope.launch {
+            runCatching {
+                dao.insertOrUpdate(entity)
+                if (dao.count() > MAX_SEARCH_HISTORY_SIZE) {
+                    dao.keepRecent(MAX_SEARCH_HISTORY_SIZE)
+                }
+                Log.d(TAG, "Recorded search: ${tag.name}")
+            }.onFailure { Log.e(TAG, "Failed to record search: ${it.message}") }
+        }
+    }
+
+    fun getSearchHistoryFlow(): Flow<List<Tag>> {
+        val dao = searchDao ?: return emptyFlow()
+        return dao.getAllFlow().map { entities ->
+            entities.map { it.toTag() }
+        }
+    }
+
+    fun clearSearchHistory() {
+        searchDao?.let { dao -> scope.launch { runCatching { dao.deleteAll() } } }
+    }
+
+    fun deleteSearchTag(tagName: String) {
+        searchDao?.let { dao -> scope.launch { runCatching { dao.delete(tagName) } } }
     }
 
     // ==================== 内部工具 ====================

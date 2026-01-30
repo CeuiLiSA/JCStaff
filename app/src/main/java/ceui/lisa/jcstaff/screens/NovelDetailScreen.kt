@@ -257,6 +257,7 @@ fun NovelDetailScreen(
                 IllustTags(
                     tags = loadedNovel.tags,
                     onTagClick = { tag ->
+                        BrowseHistoryRepository.recordSearch(tag)
                         navViewModel.navigate(NavRoute.TagDetail(tag = tag))
                     }
                 )

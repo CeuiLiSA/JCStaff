@@ -26,6 +26,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -126,6 +127,7 @@ fun IllustFeed(
                                 }
                             },
                             onTagClick = { tag ->
+                                BrowseHistoryRepository.recordSearch(tag)
                                 navViewModel.navigate(NavRoute.TagDetail(tag = tag))
                             },
                             onBookmarkClick = {

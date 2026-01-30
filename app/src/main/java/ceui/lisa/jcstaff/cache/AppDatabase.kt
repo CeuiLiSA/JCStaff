@@ -13,9 +13,10 @@ import androidx.room.RoomDatabase
         ApiCacheEntity::class,
         BrowseHistoryEntity::class,
         NovelBrowseHistoryEntity::class,
-        UserBrowseHistoryEntity::class
+        UserBrowseHistoryEntity::class,
+        SearchHistoryEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -27,6 +28,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun novelBrowseHistoryDao(): NovelBrowseHistoryDao
 
     abstract fun userBrowseHistoryDao(): UserBrowseHistoryDao
+
+    abstract fun searchHistoryDao(): SearchHistoryDao
 
     companion object {
         @Volatile

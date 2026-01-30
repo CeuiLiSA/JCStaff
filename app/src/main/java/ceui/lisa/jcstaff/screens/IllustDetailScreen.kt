@@ -274,8 +274,9 @@ fun IllustDetailScreen(
                             IllustTags(
                                 tags = loadedIllust.tags,
                                 onTagClick = { tag ->
-                                navViewModel.navigate(NavRoute.TagDetail(tag = tag))
-                            }
+                                    BrowseHistoryRepository.recordSearch(tag)
+                                    navViewModel.navigate(NavRoute.TagDetail(tag = tag))
+                                }
                             )
                         }
                     }
