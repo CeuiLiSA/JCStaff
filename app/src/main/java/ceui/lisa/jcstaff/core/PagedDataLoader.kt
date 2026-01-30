@@ -3,9 +3,11 @@ package ceui.lisa.jcstaff.core
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import ceui.lisa.jcstaff.network.PagedResponse
 import ceui.lisa.jcstaff.network.PixivClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 /**
@@ -122,14 +124,14 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
      * 从缓存加载数据
      * @return Pair<响应数据, 缓存时间戳> 或 null
      */
-    private suspend fun loadFromCache(): Pair<R, Long>? {
-        if (cacheConfig == null) return null
+    private suspend fun loadFromCache(): Pair<R, Long>? = withContext(Dispatchers.Default) {
+        if (cacheConfig == null) return@withContext null
 
         val url = buildCacheUrl()
         val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
-        val cacheEntry = ApiCacheManager.getStale(cacheKey) ?: return null
+        val cacheEntry = ApiCacheManager.getStale(cacheKey) ?: return@withContext null
 
-        return try {
+        try {
             val json = String(cacheEntry.responseBody, Charsets.UTF_8)
             val response = com.google.gson.Gson().fromJson(json, responseClass)
             Pair(response, cacheEntry.timestamp)
