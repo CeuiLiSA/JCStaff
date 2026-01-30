@@ -136,6 +136,18 @@ class BrowseHistoryViewModel : ViewModel() {
         BrowseHistoryRepository.clearUserHistory()
     }
 
+    fun deleteIllust(illustId: Long) {
+        BrowseHistoryRepository.deleteIllust(illustId)
+    }
+
+    fun deleteNovel(novelId: Long) {
+        BrowseHistoryRepository.deleteNovel(novelId)
+    }
+
+    fun deleteUser(userId: Long) {
+        BrowseHistoryRepository.deleteUser(userId)
+    }
+
     fun clearAll() {
         BrowseHistoryRepository.clearIllustHistory()
         BrowseHistoryRepository.clearNovelHistory()

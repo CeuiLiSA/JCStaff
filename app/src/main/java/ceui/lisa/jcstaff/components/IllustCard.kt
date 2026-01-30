@@ -48,6 +48,7 @@ fun IllustCard(
     illust: Illust,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     // 设置参数（从父组件传入，避免每个卡片都收集 Flow）
     showIllustInfo: Boolean = true,
     cornerRadius: Int = 8
@@ -93,7 +94,11 @@ fun IllustCard(
                     }
                 },
                 onLongClick = {
-                    selectionManager.onLongPress(illust)
+                    if (onLongClick != null) {
+                        onLongClick()
+                    } else {
+                        selectionManager.onLongPress(illust)
+                    }
                 }
             )
     ) {

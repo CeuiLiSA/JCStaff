@@ -1,6 +1,8 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,8 +13,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -132,18 +137,23 @@ fun BrowseHistoryScreen(
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     when (page) {
-                        0 -> IllustHistoryPage(illustState = illustState)
+                        0 -> IllustHistoryPage(
+                            illustState = illustState,
+                            onDeleteIllust = { viewModel.deleteIllust(it) }
+                        )
                         1 -> NovelHistoryPage(
                             novelState = novelState,
                             onNovelClick = { novel ->
                                 navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
-                            }
+                            },
+                            onDeleteNovel = { viewModel.deleteNovel(it) }
                         )
                         2 -> UserHistoryPage(
                             userState = userState,
                             onUserClick = { user ->
                                 navViewModel.navigate(NavRoute.UserProfile(userId = user.id))
-                            }
+                            },
+                            onDeleteUser = { viewModel.deleteUser(it) }
                         )
                     }
                 }
@@ -185,9 +195,12 @@ fun BrowseHistoryScreen(
 
 @Composable
 private fun IllustHistoryPage(
-    illustState: ceui.lisa.jcstaff.history.IllustHistoryState
+    illustState: ceui.lisa.jcstaff.history.IllustHistoryState,
+    onDeleteIllust: (Long) -> Unit
 ) {
     val navViewModel = LocalNavigationViewModel.current
+    var menuIllustId by remember { mutableStateOf<Long?>(null) }
+
     if (illustState.isEmpty) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -212,18 +225,47 @@ private fun IllustHistoryPage(
                     )
                 )
             },
+            onIllustLongClick = { illust ->
+                menuIllustId = illust.id
+            },
             modifier = Modifier.fillMaxSize(),
             isLoading = illustState.isLoading,
-            error = illustState.error,
+            error = illustState.error
+        )
+    }
+
+    // Dropdown menu for delete
+    menuIllustId?.let { illustId ->
+        DropdownMenu(
+            expanded = true,
+            onDismissRequest = { menuIllustId = null }
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete)) },
+                onClick = {
+                    onDeleteIllust(illustId)
+                    menuIllustId = null
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null
                     )
+                }
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NovelHistoryPage(
     novelState: ceui.lisa.jcstaff.history.NovelHistoryState,
-    onNovelClick: (ceui.lisa.jcstaff.network.Novel) -> Unit
+    onNovelClick: (ceui.lisa.jcstaff.network.Novel) -> Unit,
+    onDeleteNovel: (Long) -> Unit
 ) {
+    var menuNovelId by remember { mutableStateOf<Long?>(null) }
+
     if (novelState.isEmpty) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -238,21 +280,56 @@ private fun NovelHistoryPage(
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(novelState.novels, key = { it.id }) { novel ->
-                NovelCard(
-                    novel = novel,
-                    onClick = { onNovelClick(novel) },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .combinedClickable(
+                            onClick = { onNovelClick(novel) },
+                            onLongClick = { menuNovelId = novel.id }
+                        )
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    NovelCard(
+                        novel = novel,
+                        onClick = { onNovelClick(novel) },
+                        modifier = Modifier
+                    )
+                }
             }
+        }
+    }
+
+    // Dropdown menu for delete
+    menuNovelId?.let { novelId ->
+        DropdownMenu(
+            expanded = true,
+            onDismissRequest = { menuNovelId = null }
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete)) },
+                onClick = {
+                    onDeleteNovel(novelId)
+                    menuNovelId = null
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null
+                    )
+                }
+            )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserHistoryPage(
     userState: ceui.lisa.jcstaff.history.UserHistoryState,
-    onUserClick: (ceui.lisa.jcstaff.network.User) -> Unit
+    onUserClick: (ceui.lisa.jcstaff.network.User) -> Unit,
+    onDeleteUser: (Long) -> Unit
 ) {
+    var menuUserId by remember { mutableStateOf<Long?>(null) }
+
     if (userState.isEmpty) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -267,11 +344,41 @@ private fun UserHistoryPage(
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(userState.users, key = { it.id }) { user ->
-                UserHistoryCard(
-                    user = user,
-                    onClick = { onUserClick(user) }
-                )
+                Box(
+                    modifier = Modifier.combinedClickable(
+                        onClick = { onUserClick(user) },
+                        onLongClick = { menuUserId = user.id }
+                    )
+                ) {
+                    UserHistoryCard(
+                        user = user,
+                        onClick = { onUserClick(user) },
+                        modifier = Modifier
+                    )
+                }
             }
+        }
+    }
+
+    // Dropdown menu for delete
+    menuUserId?.let { userId ->
+        DropdownMenu(
+            expanded = true,
+            onDismissRequest = { menuUserId = null }
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete)) },
+                onClick = {
+                    onDeleteUser(userId)
+                    menuUserId = null
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null
+                    )
+                }
+            )
         }
     }
 }

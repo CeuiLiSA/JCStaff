@@ -104,6 +104,7 @@ fun IllustGrid(
     // 回调
     onRefresh: (() -> Unit)? = null,
     onLoadMore: (() -> Unit)? = null,
+    onIllustLongClick: ((Illust) -> Unit)? = null,
     // Grid 配置
     columns: Int = 2,
     gridState: LazyStaggeredGridState? = null,
@@ -190,6 +191,7 @@ fun IllustGrid(
                         IllustCard(
                             illust = illust,
                             onClick = { onIllustClick(illust) },
+                            onLongClick = onIllustLongClick?.let { { it(illust) } },
                             showIllustInfo = showIllustInfo,
                             cornerRadius = illustCornerRadius
                         )
