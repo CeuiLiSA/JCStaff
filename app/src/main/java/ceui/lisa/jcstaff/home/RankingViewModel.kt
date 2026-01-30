@@ -66,7 +66,7 @@ class RankingViewModel(
         if (date == _selectedDate.value) return
         _selectedDate.value = date
         loader.reset()
-        viewModelScope.launch { loader.load(forceRefresh = false) }
+        viewModelScope.launch { loader.load(forceRefresh = true) }
     }
 
     fun refresh() {
