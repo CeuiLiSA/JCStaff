@@ -173,6 +173,71 @@ object ImageDownloader {
     }
 
     /**
+     * 直接保存文件到相册（支持任意格式，包括动态 WebP）
+     * @param context Context
+     * @param sourceFile 源文件
+     * @param fileName 文件名（含扩展名）
+     * @param mimeType MIME 类型
+     * @return 是否成功
+     */
+    suspend fun saveFileToGallery(
+        context: Context,
+        sourceFile: File,
+        fileName: String,
+        mimeType: String = "image/webp"
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!sourceFile.exists()) {
+                return@withContext Result.failure(Exception("Source file not found"))
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/JCStaff")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+
+                val resolver = context.contentResolver
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    ?: return@withContext Result.failure(Exception("Failed to create MediaStore entry"))
+
+                resolver.openOutputStream(uri)?.use { outputStream ->
+                    sourceFile.inputStream().use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+
+                contentValues.clear()
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, contentValues, null, null)
+            } else {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val appDir = File(picturesDir, "JCStaff")
+                if (!appDir.exists()) {
+                    appDir.mkdirs()
+                }
+
+                val destFile = File(appDir, fileName)
+                sourceFile.copyTo(destFile, overwrite = true)
+
+                android.media.MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(destFile.absolutePath),
+                    arrayOf(mimeType),
+                    null
+                )
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    /**
      * 批量下载图片到相册
      * @param context Context
      * @param illusts 要下载的 Illust 列表

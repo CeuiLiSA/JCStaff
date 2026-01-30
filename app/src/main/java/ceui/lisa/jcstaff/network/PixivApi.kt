@@ -249,4 +249,11 @@ interface PixivApi {
         @Query("category") category: String = "all",
         @Query("filter") filter: String = "for_android"
     ): SpotlightResponse
+
+    // ===== Ugoira Endpoints =====
+
+    @GET("/v1/ugoira/metadata")
+    suspend fun getUgoiraMetadata(
+        @Query("illust_id") illustId: Long
+    ): UgoiraResponse
 }

@@ -74,6 +74,9 @@ dependencies {
     // HTML parsing
     implementation(libs.jsoup)
 
+    // GIF support for Coil
+    implementation(libs.coil.gif)
+
     // Room database
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

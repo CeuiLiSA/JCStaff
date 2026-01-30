@@ -330,3 +330,25 @@ data class SpotlightResponse(
     override val displayList: List<SpotlightArticle> get() = spotlight_articles
     override val nextUrl: String? get() = next_url
 }
+
+// ===== Ugoira Models =====
+
+data class UgoiraResponse(
+    val ugoira_metadata: UgoiraMetadata? = null
+) : Serializable
+
+data class UgoiraMetadata(
+    val zip_urls: ZipUrls? = null,
+    val frames: List<UgoiraFrame> = listOf()
+) : Serializable {
+    fun getZipUrl(): String? = zip_urls?.medium
+}
+
+data class ZipUrls(
+    val medium: String? = null
+) : Serializable
+
+data class UgoiraFrame(
+    val file: String? = null,
+    val delay: Int = 60
+) : Serializable
