@@ -266,4 +266,37 @@
     <string name="tab_general">종합</string>
     <string name="tab_spotlight">스포트라이트</string>
     <string name="spotlight_empty">스포트라이트 기사가 없습니다</string>
+
+    <!-- Cache Browser -->
+    <string name="cache_browser">캐시 보기</string>
+    <string name="cache_browser_desc">앱 캐시 파일 및 디렉토리 탐색</string>
+    <string name="cache_browser_root">앱 데이터</string>
+    <string name="cache_browser_empty">이 디렉토리가 비어 있습니다</string>
+    <string name="cache_browser_delete_title">삭제 확인</string>
+    <string name="cache_browser_delete_file_message">「%1$s」 파일을 삭제하시겠습니까?</string>
+    <string name="cache_browser_delete_folder_message">「%1$s」 폴더와 모든 내용을 삭제하시겠습니까?</string>
+
+    <!-- Folder Descriptions -->
+    <string name="folder_desc_files">앱 파일 저장소</string>
+    <string name="folder_desc_cache">임시 캐시, 삭제 가능</string>
+    <string name="folder_desc_databases">데이터베이스 (기록, API 캐시)</string>
+    <string name="folder_desc_shared_prefs">앱 설정 및 환경설정</string>
+    <string name="folder_desc_code_cache">코드 캐시, 삭제 가능</string>
+    <string name="folder_desc_no_backup">클라우드 백업 제외 파일</string>
+    <string name="folder_desc_webview">WebView 브라우저 데이터</string>
+    <string name="folder_desc_ugoira">우고이라 GIF 캐시</string>
+    <string name="folder_desc_datastore">사용자 설정 및 로그인 정보</string>
+    <string name="folder_desc_lib">네이티브 라이브러리</string>
+    <string name="folder_desc_image_cache">원본 이미지 캐시</string>
+    <string name="folder_desc_user_db">사용자 DB (기록, 캐시)</string>
+    <string name="folder_desc_auth">계정 인증 정보</string>
+    <string name="folder_desc_settings">사용자 설정</string>
+    <string name="folder_desc_account">다중 계정 데이터</string>
+    <string name="folder_desc_app_data">앱 데이터 디렉토리</string>
+
+    <!-- Clean Cache -->
+    <string name="clean_cache">캐시 정리</string>
+    <string name="clean_cache_title">이미지 캐시 정리</string>
+    <string name="clean_cache_message">%1$s의 이미지 및 GIF 캐시를 정리합니다.\n\n삭제되지 않음: 탐색 기록, 검색 기록, 계정 정보, 설정.</string>
+    <string name="clean_cache_confirm">정리</string>
 </resources>

@@ -266,4 +266,37 @@
     <string name="tab_general">General</string>
     <string name="tab_spotlight">Spotlight</string>
     <string name="spotlight_empty">No spotlight articles</string>
+
+    <!-- Cache Browser -->
+    <string name="cache_browser">Cache Browser</string>
+    <string name="cache_browser_desc">Browse app cache files and directories</string>
+    <string name="cache_browser_root">App Data</string>
+    <string name="cache_browser_empty">This directory is empty</string>
+    <string name="cache_browser_delete_title">Confirm Delete</string>
+    <string name="cache_browser_delete_file_message">Delete file \"%1$s\"?</string>
+    <string name="cache_browser_delete_folder_message">Delete folder \"%1$s\" and all its contents?</string>
+
+    <!-- Folder Descriptions -->
+    <string name="folder_desc_files">App file storage</string>
+    <string name="folder_desc_cache">Temporary cache, safe to delete</string>
+    <string name="folder_desc_databases">Database files (history, API cache)</string>
+    <string name="folder_desc_shared_prefs">App settings and preferences</string>
+    <string name="folder_desc_code_cache">Code cache, safe to delete</string>
+    <string name="folder_desc_no_backup">Files excluded from cloud backup</string>
+    <string name="folder_desc_webview">WebView browser data</string>
+    <string name="folder_desc_ugoira">Ugoira GIF cache</string>
+    <string name="folder_desc_datastore">User settings and login info</string>
+    <string name="folder_desc_lib">Native library files</string>
+    <string name="folder_desc_image_cache">Original image cache</string>
+    <string name="folder_desc_user_db">User database (history, cache)</string>
+    <string name="folder_desc_auth">Account credentials</string>
+    <string name="folder_desc_settings">User preferences</string>
+    <string name="folder_desc_account">Multi-account data</string>
+    <string name="folder_desc_app_data">App data directory</string>
+
+    <!-- Clean Cache -->
+    <string name="clean_cache">Clean Cache</string>
+    <string name="clean_cache_title">Clean Image Cache</string>
+    <string name="clean_cache_message">This will clean %1$s of image and GIF cache.\n\nWill NOT delete: browse history, search history, account info, settings.</string>
+    <string name="clean_cache_confirm">Clean</string>
 </resources>

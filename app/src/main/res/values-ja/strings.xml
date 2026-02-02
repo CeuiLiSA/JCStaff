@@ -266,4 +266,37 @@
     <string name="tab_general">総合</string>
     <string name="tab_spotlight">スポットライト</string>
     <string name="spotlight_empty">スポットライト記事がありません</string>
+
+    <!-- Cache Browser -->
+    <string name="cache_browser">キャッシュを表示</string>
+    <string name="cache_browser_desc">アプリのキャッシュファイルを閲覧</string>
+    <string name="cache_browser_root">アプリデータ</string>
+    <string name="cache_browser_empty">このフォルダは空です</string>
+    <string name="cache_browser_delete_title">削除の確認</string>
+    <string name="cache_browser_delete_file_message">ファイル「%1$s」を削除しますか？</string>
+    <string name="cache_browser_delete_folder_message">フォルダ「%1$s」とその内容をすべて削除しますか？</string>
+
+    <!-- Folder Descriptions -->
+    <string name="folder_desc_files">アプリファイル保存先</string>
+    <string name="folder_desc_cache">一時キャッシュ、削除可能</string>
+    <string name="folder_desc_databases">データベース（履歴、APIキャッシュ）</string>
+    <string name="folder_desc_shared_prefs">アプリ設定</string>
+    <string name="folder_desc_code_cache">コードキャッシュ、削除可能</string>
+    <string name="folder_desc_no_backup">クラウドバックアップ対象外</string>
+    <string name="folder_desc_webview">WebView ブラウザデータ</string>
+    <string name="folder_desc_ugoira">うごイラ GIF キャッシュ</string>
+    <string name="folder_desc_datastore">ユーザー設定とログイン情報</string>
+    <string name="folder_desc_lib">ネイティブライブラリ</string>
+    <string name="folder_desc_image_cache">オリジナル画像キャッシュ</string>
+    <string name="folder_desc_user_db">ユーザーDB（履歴、キャッシュ）</string>
+    <string name="folder_desc_auth">アカウント認証情報</string>
+    <string name="folder_desc_settings">ユーザー設定</string>
+    <string name="folder_desc_account">マルチアカウントデータ</string>
+    <string name="folder_desc_app_data">アプリデータ</string>
+
+    <!-- Clean Cache -->
+    <string name="clean_cache">キャッシュ削除</string>
+    <string name="clean_cache_title">画像キャッシュを削除</string>
+    <string name="clean_cache_message">%1$s の画像・GIF キャッシュを削除します。\n\n削除されません：閲覧履歴、検索履歴、アカウント情報、設定。</string>
+    <string name="clean_cache_confirm">削除</string>
 </resources>

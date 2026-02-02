@@ -266,4 +266,37 @@
     <string name="tab_general">综合</string>
     <string name="tab_spotlight">精选</string>
     <string name="spotlight_empty">暂无精选文章</string>
+
+    <!-- Cache Browser -->
+    <string name="cache_browser">查看缓存</string>
+    <string name="cache_browser_desc">浏览 App 缓存文件和目录</string>
+    <string name="cache_browser_root">应用数据</string>
+    <string name="cache_browser_empty">此目录为空</string>
+    <string name="cache_browser_delete_title">删除确认</string>
+    <string name="cache_browser_delete_file_message">确定要删除文件「%1$s」吗？</string>
+    <string name="cache_browser_delete_folder_message">确定要删除文件夹「%1$s」及其所有内容吗？</string>
+
+    <!-- Folder Descriptions -->
+    <string name="folder_desc_files">应用文件存储目录</string>
+    <string name="folder_desc_cache">临时缓存，可安全删除</string>
+    <string name="folder_desc_databases">数据库文件（浏览历史、API缓存等）</string>
+    <string name="folder_desc_shared_prefs">应用设置和配置</string>
+    <string name="folder_desc_code_cache">代码缓存，可安全删除</string>
+    <string name="folder_desc_no_backup">不会被云备份的文件</string>
+    <string name="folder_desc_webview">WebView 浏览器数据</string>
+    <string name="folder_desc_ugoira">动图 GIF 缓存</string>
+    <string name="folder_desc_datastore">用户设置和登录信息</string>
+    <string name="folder_desc_lib">应用原生库文件</string>
+    <string name="folder_desc_image_cache">原图加载缓存</string>
+    <string name="folder_desc_user_db">用户数据库（历史、缓存）</string>
+    <string name="folder_desc_auth">账号登录凭证</string>
+    <string name="folder_desc_settings">用户个人设置</string>
+    <string name="folder_desc_account">多账号管理数据</string>
+    <string name="folder_desc_app_data">应用数据目录</string>
+
+    <!-- Clean Cache -->
+    <string name="clean_cache">一键清理</string>
+    <string name="clean_cache_title">清理图片缓存</string>
+    <string name="clean_cache_message">将清理 %1$s 的图片和动图缓存。\n\n不会删除：浏览历史、搜索记录、账号信息、个人设置。</string>
+    <string name="clean_cache_confirm">清理</string>
 </resources>

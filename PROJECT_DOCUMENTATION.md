@@ -647,6 +647,7 @@ ModalNavigationDrawer（侧滑抽屉）
 - 滑块：卡片圆角大小（0~24dp）
 - 开关：是否开启瀑布流间距
 - 账号管理入口（跳转至 AccountManagementScreen）
+- 查看缓存入口（跳转至 CacheBrowserScreen）
 - 退出登录按钮（底部红色按钮，带确认对话框）
 
 #### 实现原理
@@ -659,7 +660,39 @@ ModalNavigationDrawer（侧滑抽屉）
 - 每个设置项都是 `Flow`，UI 通过 `collectAsState()` 实时响应变化
 - per-user 设置和全局设置（语言）分开存储
 - 账号管理通过 `NavRoute.AccountManagement` 导航
+- 缓存浏览通过 `NavRoute.CacheBrowser` 导航
 - 退出登录通过 `authViewModel.logout()` 回调
+
+---
+
+### 15.1 缓存浏览器 (CacheBrowserScreen)
+
+#### 用户视角
+- 从设置页点击「查看缓存」进入
+- 文件管理器风格界面，展示 App 内所有目录和文件
+- 每个文件夹显示中文描述说明用途（如「临时缓存，可安全删除」）
+- 显示文件/文件夹大小、修改时间、子项数量
+- 图片文件显示缩略图预览
+- 支持进入子目录浏览，返回键回到上级目录
+- 支持删除单个文件或文件夹（带确认对话框）
+- **一键清理**功能：清理图片和动图缓存，保留浏览历史、账号信息等重要数据
+
+#### 一键清理范围
+
+| 清理 | 保留 |
+|------|------|
+| `cache/` — 图片库临时缓存 | `databases/` — 浏览历史、API 缓存 |
+| `code_cache/` — 代码缓存 | `datastore/` — 用户设置、登录信息 |
+| `files/ugoira/` — 动图 GIF 缓存 | `shared_prefs/` — 应用配置 |
+| `files/image_load_cache_*/` — 原图缓存 | 其他用户数据 |
+
+#### 实现原理
+
+- `CacheBrowserViewModel` 管理状态（MVVM 架构）
+- `LaunchedEffect` 加载目录内容，显示加载转圈
+- `calculateDirSize()` 递归计算目录大小
+- `getFolderDescriptionResId()` 返回文件夹描述的字符串资源 ID（支持多语言）
+- 一键清理使用 `deleteRecursively()` 删除目录，刷新后更新 UI
 
 ---
 

@@ -47,6 +47,7 @@ import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.screens.AccountManagementScreen
 import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
+import ceui.lisa.jcstaff.screens.CacheBrowserScreen
 import ceui.lisa.jcstaff.screens.CommentScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
@@ -369,6 +370,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
                         is NavRoute.WebTagDetail -> {
                             WebTagDetailScreen(tag = route.tag)
+                        }
+
+                        is NavRoute.CacheBrowser -> {
+                            CacheBrowserScreen(initialPath = route.initialPath)
                         }
                     }
                 }

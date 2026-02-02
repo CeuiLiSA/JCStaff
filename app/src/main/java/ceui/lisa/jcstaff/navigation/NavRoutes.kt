@@ -77,4 +77,7 @@ sealed interface NavRoute {
     data class WebTagDetail(val tag: Tag) : NavRoute {
         override val stableKey = "WebTagDetail_${tag.name}"
     }
+    data class CacheBrowser(val initialPath: String? = null) : NavRoute {
+        override val stableKey = "CacheBrowser_${initialPath ?: "root"}"
+    }
 }
