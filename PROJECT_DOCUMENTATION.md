@@ -43,8 +43,9 @@ ceui.lisa.jcstaff/
 │   ├── HeaderInterceptor.kt      # 请求头注入
 │   ├── ApiCacheInterceptor.kt    # API 响应缓存拦截器
 │   ├── PkceUtil.kt               # PKCE 工具
-│   ├── PixivWebScraper.kt        # 网页抓取服务（ugoira 排行榜等）
-│   └── WebRankingModels.kt       # 网页排行榜数据模型
+│   ├── PixivWebScraper.kt        # 网页抓取服务（ugoira 排行榜、标签搜索等）
+│   ├── WebRankingModels.kt       # 网页排行榜数据模型
+│   └── WebSearchModels.kt        # 网页标签搜索数据模型
 ├── cache/                        # 本地缓存
 │   ├── AppDatabase.kt            # Room 数据库
 │   ├── ApiCacheManager.kt        # API 缓存管理器
@@ -83,7 +84,8 @@ ceui.lisa.jcstaff/
 │   ├── FollowingNovelsViewModel.kt   # 关注的小说新作
 │   ├── LatestContentViewModel.kt # 全站最新插画/漫画/小说
 │   ├── RankingViewModel.kt       # 排行榜详情
-│   └── UgoiraRankingViewModel.kt # 动图排行榜（网页抓取）
+│   ├── UgoiraRankingViewModel.kt # 动图排行榜（网页抓取）
+│   └── WebTagDetailViewModel.kt  # 网页标签详情（Web AJAX API）
 ├── screens/                      # 各功能页面
 │   ├── LandingScreen.kt          # 登录引导页（3 页 ViewPager）
 │   ├── OnboardScreen.kt          # 引导页第 3 页（图片轮播+登录）
@@ -101,6 +103,7 @@ ceui.lisa.jcstaff/
 │   ├── CommentScreen.kt          # 评论页（完整评论列表+回复+发布）
 │   ├── RankingDetailScreen.kt    # 排行榜详情页（多模式 + 日期选择）
 │   ├── UgoiraRankingScreen.kt    # 动图排行榜页面（网页抓取）
+│   ├── WebTagDetailScreen.kt     # 网页标签详情页（MD3 设计）
 │   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（5 种效果）
 │   ├── ListScreen.kt             # 通用列表页
 │   └── DetailScreen.kt           # 通用详情页
@@ -706,25 +709,67 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
-### 18. 热门标签网格
+### 18. 网页标签详情页 (WebTagDetailScreen)
+
+#### 用户视角
+- 点击热门标签进入该页面（使用 Pixiv Web AJAX API 获取更丰富的数据）
+- 采用 Material Design 3 设计规范：
+  - **LargeTopAppBar**：展示标签名称和翻译名，支持滚动折叠
+  - **标签统计卡片**：显示插画/漫画/小说数量（带图标和数字）
+  - **Pixpedia 百科卡片**：展示标签的百科介绍、缩略图和摘要
+  - **多语言翻译卡片**：展示标签在不同语言中的翻译（FilterChip 样式）
+  - **相关标签区域**：展示父标签、子标签、同级标签和相关标签（FlowRow 布局）
+  - **热门作品区域**：横向滚动展示该标签下的热门作品
+  - **最新插画网格**：瀑布流展示最新插画作品
+
+#### 实现原理
+
+**Web AJAX API 端点：**
+- `GET /ajax/search/top/{tag}` — 获取标签综合信息（热门作品、最新插画/小说/漫画）
+- `GET /ajax/search/tags/{tag}` — 获取标签详情（Pixpedia、翻译、相关标签）
+
+**并行 API 请求：**
+```kotlin
+val searchDeferred = async { PixivWebScraper.searchTagTop(tagName) }
+val tagInfoDeferred = async { PixivWebScraper.getTagInfo(tagName) }
+// 两个请求并行执行，加快加载速度
+```
+
+**数据模型转换：**
+- `WebIllust.toIllust()` — 将网页插画数据转换为 App 通用的 Illust 模型
+- `WebNovel.toNovel()` — 将网页小说数据转换为 App 通用的 Novel 模型
+
+**缓存策略：**
+- 通过 `ApiCacheManager` 缓存 Web AJAX 响应
+- 缓存有效期 15 分钟，过期后后台刷新
+
+**关键组件：**
+- `TagStatsCard` — 使用 `Row` + `FilledTonalButton` 展示统计
+- `PixpediaCard` — 卡片内嵌图片和摘要文本
+- `TranslationCard` — 使用 `FlowRow` + `FilterChip` 展示翻译
+- `RelatedTagsSection` — 分类展示各类相关标签
+
+---
+
+### 19. 热门标签网格
 
 #### 用户视角
 - 在首页发现 Tab 中以网格形式展示热门标签
 - 首个标签全宽展示，其余 3 列排列
 - 每个标签卡片显示标签名称、翻译名和预览图
 - 采用 1dp 间距、直角边框的紧凑设计
-- 点击标签进入 TagDetail 页面查看该标签下的作品
+- 点击标签进入 WebTagDetail 页面查看该标签下的作品（使用 Web AJAX API）
 
 #### 实现原理
 
 - `TrendingTagsViewModel` 调用 API 获取热门标签列表（插画漫画 + 小说分开）
 - 使用 `LazyVerticalGrid` 3 列网格展示，首项 `GridItemSpan(3)` 全宽
 - `TrendingTagCard` 组件：正方形比例、底部渐变遮罩、直角边框
-- 点击导航至 `NavRoute.TagDetail(tag, initialTab)`
+- 点击导航至 `NavRoute.WebTagDetail(tag)`（使用更丰富的 Web API 数据）
 
 ---
 
-### 18.1 推荐作者列表 (RecommendedUsersList)
+### 19.1 推荐作者列表 (RecommendedUsersList)
 
 #### 用户视角
 - 在首页发现 Tab 的「推荐作者」子页面中以列表形式展示推荐用户
@@ -750,7 +795,7 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
-### 19. 社交信息流 (IllustFeed)
+### 20. 社交信息流 (IllustFeed)
 
 #### 用户视角
 - 在首页新作 Tab 的「关注插画漫画」子页面中，以类似 Twitter/微博的信息流形式展示
@@ -776,7 +821,7 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
-### 20. Spotlight/Pixivision 专题
+### 21. Spotlight/Pixivision 专题
 
 #### 用户视角
 - 在首页抽屉菜单或特定入口访问 Pixiv 官方精选专题
@@ -800,7 +845,7 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
-### 21. 评论系统
+### 22. 评论系统
 
 #### 用户视角
 - 在插画详情页和小说详情页底部显示评论预览（最多 3 条）
@@ -877,6 +922,7 @@ class NavigationViewModel : ViewModel() {
 | `ImageViewer` | imageUrl, originalUrl, sharedElementKey | 全屏看图 |
 | `NovelDetail` | novelId | 小说详情 |
 | `TagDetail` | tag (Tag 对象), initialTab | 标签详情（插画+小说双 Tab） |
+| `WebTagDetail` | tag (Tag 对象) | 网页标签详情（Web AJAX API） |
 | `UserProfile` | userId | 用户主页 |
 | `Bookmarks` | userId | 收藏列表 |
 | `BrowseHistory` | 无 | 浏览历史（插画+小说+用户三 Tab） |
@@ -1153,13 +1199,14 @@ onCreate()
 
 | 指标 | 数值 |
 |------|------|
-| Kotlin 源文件数 | 109 |
-| 页面数 | 18 |
-| ViewModel 数 | 17+ |
+| Kotlin 源文件数 | 111 |
+| 页面数 | 19 |
+| ViewModel 数 | 18+ |
 | API 接口数 | 30+ |
+| Web AJAX 接口数 | 2 (标签搜索、标签详情) |
 | 支持语言 | 5 (中/繁中/英/日/韩) |
 | Room Entity | 3 (ApiCache, BrowseHistory, SearchHistory) |
 | OkHttp Interceptor | 4 |
 | AGSL 着色器效果 | 5 (Neon Plasma, Fire Storm, Traced Tunnel, Tunnel Image, Magic Circle) |
-| 导航路由数 | 16 |
+| 导航路由数 | 17 |
 | 首页子页面数 | 10 (3 Tab × 内嵌 ViewPager) |
