@@ -1,6 +1,7 @@
 package ceui.lisa.jcstaff.network
 
 import android.util.Log
+import ceui.lisa.jcstaff.cache.ApiCacheManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.Strictness
@@ -14,6 +15,7 @@ import java.util.regex.Pattern
 /**
  * Pixiv 网页抓取服务
  * 用于获取移动 API 不支持的功能（如 ugoira 排行榜）
+ * 支持通过 ApiCacheManager 进行缓存
  */
 object PixivWebScraper {
 
@@ -35,8 +37,14 @@ object PixivWebScraper {
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                    .addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+                    .addHeader(
+                        "User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    )
+                    .addHeader(
+                        "Accept",
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+                    )
                     .addHeader("Accept-Language", "ja,en-US;q=0.9,en;q=0.8")
                     .addHeader("Referer", "https://www.pixiv.net/")
                     .build()
@@ -59,40 +67,21 @@ object PixivWebScraper {
      * @param mode 排行榜模式：daily, weekly, monthly 等
      * @param date 日期，格式 yyyyMMdd，null 表示最新
      * @param page 页码，从 1 开始
+     * @param forceRefresh 是否强制刷新（忽略缓存）
      */
     suspend fun getUgoiraRanking(
         mode: String = "daily",
         date: String? = null,
-        page: Int = 1
+        page: Int = 1,
+        forceRefresh: Boolean = false
     ): Result<List<WebRankingItem>> = withContext(Dispatchers.IO) {
-        try {
-            val url = buildRankingUrl(mode, "ugoira", date, page)
-            Log.d(TAG, "Fetching ugoira ranking: $url")
-
-            val request = Request.Builder()
-                .url(url)
-                .get()
-                .build()
-
-            val response = webClient.newCall(request).execute()
-
-            if (!response.isSuccessful) {
-                Log.e(TAG, "Request failed: ${response.code}")
-                return@withContext Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
-            }
-
-            val html = response.body?.string()
-            if (html.isNullOrEmpty()) {
-                return@withContext Result.failure(Exception("Empty response"))
-            }
-
-            val items = parseRankingHtml(html)
-            Log.d(TAG, "Parsed ${items.size} items")
-            Result.success(items)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to fetch ugoira ranking", e)
-            Result.failure(e)
-        }
+        getRanking(
+            mode = mode,
+            content = ContentType.UGOIRA,
+            date = date,
+            page = page,
+            forceRefresh = forceRefresh
+        )
     }
 
     /**
@@ -101,15 +90,35 @@ object PixivWebScraper {
      * @param content 内容类型：illust, manga, ugoira
      * @param date 日期，格式 yyyyMMdd
      * @param page 页码
+     * @param forceRefresh 是否强制刷新（忽略缓存）
      */
     suspend fun getRanking(
         mode: String = "daily",
         content: String? = null,
         date: String? = null,
-        page: Int = 1
+        page: Int = 1,
+        forceRefresh: Boolean = false
     ): Result<List<WebRankingItem>> = withContext(Dispatchers.IO) {
+        val url = buildRankingUrl(mode, content, date, page)
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
+
+        // 1. 检查缓存（非强制刷新时）
+        if (!forceRefresh) {
+            val cached = ApiCacheManager.get(cacheKey)
+            if (cached != null) {
+                Log.d(TAG, "✅ Cache hit for: $url")
+                val html = String(cached.responseBody, Charsets.UTF_8)
+                val items = parseRankingHtml(html)
+                if (items.isNotEmpty()) {
+                    return@withContext Result.success(items)
+                }
+                // 缓存解析失败，继续网络请求
+                Log.w(TAG, "Cache parse failed, fetching from network")
+            }
+        }
+
+        // 2. 网络请求
         try {
-            val url = buildRankingUrl(mode, content, date, page)
             Log.d(TAG, "Fetching ranking: $url")
 
             val request = Request.Builder()
@@ -120,6 +129,17 @@ object PixivWebScraper {
             val response = webClient.newCall(request).execute()
 
             if (!response.isSuccessful) {
+                Log.e(TAG, "Request failed: ${response.code}")
+                // 请求失败时尝试返回过期缓存
+                val staleCache = ApiCacheManager.getStale(cacheKey)
+                if (staleCache != null) {
+                    Log.d(TAG, "📦 Using stale cache due to network error")
+                    val html = String(staleCache.responseBody, Charsets.UTF_8)
+                    val items = parseRankingHtml(html)
+                    if (items.isNotEmpty()) {
+                        return@withContext Result.success(items)
+                    }
+                }
                 return@withContext Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
             }
 
@@ -128,10 +148,34 @@ object PixivWebScraper {
                 return@withContext Result.failure(Exception("Empty response"))
             }
 
+            // 3. 解析数据
             val items = parseRankingHtml(html)
+            Log.d(TAG, "Parsed ${items.size} items")
+
+            // 4. 缓存响应（仅当解析成功时）
+            if (items.isNotEmpty()) {
+                ApiCacheManager.put(
+                    key = cacheKey,
+                    responseBody = html.toByteArray(Charsets.UTF_8),
+                    contentType = "text/html",
+                    httpCode = response.code,
+                    httpMessage = response.message
+                )
+            }
+
             Result.success(items)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to fetch ranking", e)
+            // 网络异常时尝试返回过期缓存
+            val staleCache = ApiCacheManager.getStale(cacheKey)
+            if (staleCache != null) {
+                Log.d(TAG, "📦 Using stale cache due to exception: ${e.message}")
+                val html = String(staleCache.responseBody, Charsets.UTF_8)
+                val items = parseRankingHtml(html)
+                if (items.isNotEmpty()) {
+                    return@withContext Result.success(items)
+                }
+            }
             Result.failure(e)
         }
     }
@@ -195,15 +239,6 @@ object PixivWebScraper {
     object RankingMode {
         const val DAILY = "daily"
         const val WEEKLY = "weekly"
-        const val MONTHLY = "monthly"
-        const val ROOKIE = "rookie"
-        const val ORIGINAL = "original"
-        const val MALE = "male"
-        const val FEMALE = "female"
-        const val DAILY_R18 = "daily_r18"
-        const val WEEKLY_R18 = "weekly_r18"
-        const val MALE_R18 = "male_r18"
-        const val FEMALE_R18 = "female_r18"
     }
 
     /**

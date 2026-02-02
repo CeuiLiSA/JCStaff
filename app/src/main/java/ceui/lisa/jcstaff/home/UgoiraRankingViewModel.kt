@@ -46,7 +46,8 @@ class UgoiraRankingViewModel(
             val result = PixivWebScraper.getUgoiraRanking(
                 mode = mode,
                 date = _state.value.selectedDate,
-                page = 1
+                page = 1,
+                forceRefresh = forceRefresh
             )
 
             result.fold(
