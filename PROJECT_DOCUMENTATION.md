@@ -715,10 +715,11 @@ ModalNavigationDrawer（侧滑抽屉）
 - 点击热门标签进入该页面（使用 Pixiv Web AJAX API 获取更丰富的数据）
 - 采用 Material Design 3 设计规范：
   - **可折叠 Hero Header**：280dp 展开高度，背景图来自 Pixpedia 或热门作品，支持滚动折叠
-  - **Styled ScrollableTabRow**：统一的 Tab 样式，已应用至全项目
-    - 32dp 宽度指示器，顶部 3dp 圆角
-    - 选中 Tab 文字加粗
-    - 16dp 边缘内边距，无分割线
+  - **Styled TabRow**：统一的 Tab 样式，已应用至全项目
+    - 使用 `TabRow` 实现全宽度均匀分布
+    - 32dp 宽度 `PrimaryIndicator`，顶部 3dp 圆角
+    - 选中 Tab 文字加粗（`FontWeight.Bold`）
+    - 底部分割线保留
   - **ViewPager 三页**：
     - **百科页**：Pixpedia 简介、多语言翻译、父/同级/子/相关标签
     - **插画页**：顶部热门作品横滑 + 下方最新插画瀑布流
