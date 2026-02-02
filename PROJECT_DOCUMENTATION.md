@@ -55,7 +55,8 @@ ceui.lisa.jcstaff/
 │   ├── BrowseHistoryEntity.kt    # 浏览历史实体
 │   ├── BrowseHistoryDao.kt       # 浏览历史 DAO
 │   ├── SearchHistoryEntity.kt    # 搜索历史实体
-│   └── SearchHistoryDao.kt       # 搜索历史 DAO
+│   ├── SearchHistoryDao.kt       # 搜索历史 DAO
+│   └── DownloadHistoryEntity.kt  # 下载任务实体与 DAO
 ├── core/                         # 核心工具
 │   ├── ObjectStore.kt            # 全局响应式对象池
 │   ├── PagedDataLoader.kt        # 通用分页数据加载器
@@ -64,6 +65,7 @@ ceui.lisa.jcstaff/
 │   ├── AppLanguage.kt            # 语言定义
 │   ├── IllustListViewModel.kt    # 通用插画列表 ViewModel
 │   ├── ImageDownloader.kt        # 图片下载器
+│   ├── DownloadTaskManager.kt    # 下载任务队列管理器
 │   ├── LoadTaskManager.kt        # 原图加载任务管理
 │   ├── ProgressImageLoader.kt    # 带进度的图片加载
 │   ├── SelectionManager.kt       # 多选管理器（CompositionLocal）
@@ -98,6 +100,7 @@ ceui.lisa.jcstaff/
 │   ├── UserProfileScreen.kt      # 用户主页
 │   ├── BookmarksScreen.kt        # 收藏列表
 │   ├── BrowseHistoryScreen.kt    # 浏览历史（插画+小说+用户三 Tab）
+│   ├── DownloadHistoryScreen.kt  # 下载历史（任务队列管理）
 │   ├── SettingsScreen.kt         # 设置页（含退出登录+账号管理入口）
 │   ├── AccountManagementScreen.kt# 账号管理页
 │   ├── CommentScreen.kt          # 评论页（完整评论列表+回复+发布）
@@ -155,8 +158,9 @@ ceui.lisa.jcstaff/
 │   ├── TagDetailViewModel.kt     # 搜索排序/匹配选项枚举定义
 │   ├── TagIllustSearchViewModel.kt   # 标签插画搜索 ViewModel
 │   └── TagNovelSearchViewModel.kt    # 标签小说搜索 ViewModel
-├── history/                      # 浏览历史模块
-│   └── BrowseHistoryViewModel.kt # 浏览历史逻辑
+├── history/                      # 历史记录模块
+│   ├── BrowseHistoryViewModel.kt # 浏览历史逻辑
+│   └── DownloadHistoryViewModel.kt # 下载历史逻辑
 ├── ugoira/                       # Ugoira (动图) 模块
 │   ├── UgoiraPlayer.kt           # Ugoira 播放器组件
 │   ├── UgoiraViewModel.kt        # Ugoira 状态管理
@@ -574,24 +578,48 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
-### 12. 图片下载
+### 12. 图片下载与下载任务管理
 
 #### 用户视角
 - 在插画详情页点击下载按钮保存原图
-- 在多选模式下可批量下载
-- 如果原图已缓存，下载瞬间完成
+- 在多选模式下可批量添加下载任务
+- 侧边栏「下载历史」查看所有下载任务
+- 支持查看下载状态：等待中、下载中、已完成、失败
+- 失败任务可点击重试
+- App 重启后自动恢复未完成的下载任务
 
 #### 实现原理
 
-**`ImageDownloader` 下载流程：**
+**`DownloadTaskManager` — 下载任务队列管理器：**
+```
+用户多选下载
+    → addTasks(illusts)         // 批量添加任务
+    → 写入 Room 数据库          // 状态: PENDING
+    → processQueue()            // 开始处理队列
+        → 更新状态: DOWNLOADING
+        → 下载每一页图片
+        → 更新进度: downloadedPages / totalPages
+        → 下载完成: COMPLETED
+        → 下载失败: FAILED + errorMessage
+```
+
+**下载状态枚举：**
+| 状态 | 说明 |
+|------|------|
+| `PENDING` | 等待中，在队列中等待下载 |
+| `DOWNLOADING` | 下载中，显示进度 |
+| `COMPLETED` | 已完成 |
+| `FAILED` | 失败，可重试 |
+
+**断点续传支持：**
+- 多图作品记录 `downloadedPages`，重试时从断点继续
+- App 重启时，`DOWNLOADING` 状态的任务自动重置为 `PENDING`
+
+**`ImageDownloader` 立即下载：**
 1. 使用独立的 OkHttpClient 下载原图（添加 Referer 头）
 2. 解码为 Bitmap
 3. 通过 `MediaStore` API（Android 10+）或直接文件写入保存到相册
 4. 保存路径：`Pictures/JCStaff/pixiv_{illustId}.jpg`
-
-**批量下载：**
-- `batchDownloadToGallery()` 接受 `List<Illust>` 逐一下载
-- 通过 `onProgress` 回调报告进度
 
 **缓存优先：**
 - `LoadTaskManager` 管理原图缓存
@@ -1023,6 +1051,7 @@ class NavigationViewModel : ViewModel() {
 | `UserProfile` | userId | 用户主页 |
 | `Bookmarks` | userId | 收藏列表 |
 | `BrowseHistory` | 无 | 浏览历史（插画+小说+用户三 Tab） |
+| `DownloadHistory` | 无 | 下载历史（任务队列管理） |
 | `Settings` | 无 | 设置页 |
 | `ShaderDemo` | 无 | AGSL 着色器演示 |
 | `AccountManagement` | 无 | 账号管理 |
@@ -1302,8 +1331,8 @@ onCreate()
 | API 接口数 | 30+ |
 | Web AJAX 接口数 | 2 (标签搜索、标签详情) |
 | 支持语言 | 5 (中/繁中/英/日/韩) |
-| Room Entity | 3 (ApiCache, BrowseHistory, SearchHistory) |
+| Room Entity | 6 (ApiCache, BrowseHistory, NovelBrowseHistory, UserBrowseHistory, SearchHistory, DownloadTask) |
 | OkHttp Interceptor | 4 |
 | AGSL 着色器效果 | 5 (Neon Plasma, Fire Storm, Traced Tunnel, Tunnel Image, Magic Circle) |
-| 导航路由数 | 17 |
+| 导航路由数 | 18 |
 | 首页子页面数 | 10 (3 Tab × 内嵌 ViewPager) |

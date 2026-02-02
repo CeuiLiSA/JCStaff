@@ -226,7 +226,7 @@ object ImageDownloader {
     }
 
     /**
-     * 批量下载图片到相册
+     * 批量下载图片到相册（立即执行，不进入队列）
      * @param context Context
      * @param illusts 要下载的 Illust 列表
      * @param onProgress 进度回调
@@ -266,5 +266,19 @@ object ImageDownloader {
         }
 
         successCount
+    }
+
+    /**
+     * 添加下载任务到队列（后台执行，支持断点续传）
+     */
+    fun addToDownloadQueue(illust: Illust) {
+        DownloadTaskManager.addTask(illust)
+    }
+
+    /**
+     * 批量添加下载任务到队列
+     */
+    fun addToDownloadQueue(illusts: List<Illust>) {
+        DownloadTaskManager.addTasks(illusts)
     }
 }

@@ -125,6 +125,23 @@
     <string name="clear_history_message">确定要清空所有浏览历史吗？此操作无法撤销。</string>
     <string name="tab_user">用户</string>
 
+    <!-- Download History Screen -->
+    <string name="download_history">下载历史</string>
+    <string name="no_download_history">暂无下载任务</string>
+    <string name="clear_download_history_title">清空下载任务</string>
+    <string name="clear_download_history_message">确定要清空所有下载任务吗？此操作无法撤销。</string>
+    <string name="downloading_status">下载中 %1$d · 等待 %2$d</string>
+    <string name="retry_all_failed">重试全部失败</string>
+    <string name="clear_completed">清除已完成</string>
+    <string name="clear_all_tasks">清除全部任务</string>
+    <string name="status_pending">等待中</string>
+    <string name="status_downloading">下载中</string>
+    <string name="status_completed">已完成</string>
+    <string name="status_failed">下载失败</string>
+
+    <!-- Drawer Section -->
+    <string name="drawer_section_history">历史记录</string>
+
     <!-- Illust Detail -->
     <string name="expand_images">展开全部</string>
     <string name="collapse_images">收起</string>
@@ -191,6 +208,7 @@
     <string name="select_all">全选</string>
     <string name="download_selected">下载选中项</string>
     <string name="download_complete">下载完成：%1$d/%2$d</string>
+    <string name="added_to_download_queue">已添加 %1$d 项到下载队列</string>
 
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">已保存到相册</string>
@@ -321,4 +339,8 @@
     <string name="clean_cache_title">清理图片缓存</string>
     <string name="clean_cache_message">将清理 %1$s 的图片和动图缓存。\n\n不会删除：浏览历史、搜索记录、账号信息、个人设置。</string>
     <string name="clean_cache_confirm">清理</string>
+
+    <!-- SauceNao -->
+    <string name="sauce_nao">以图搜源</string>
+    <string name="sauce_nao_open_in_app">在应用内打开</string>
 </resources>

@@ -40,6 +40,9 @@ sealed interface NavRoute {
     data object BrowseHistory : NavRoute {
         override val stableKey = "BrowseHistory"
     }
+    data object DownloadHistory : NavRoute {
+        override val stableKey = "DownloadHistory"
+    }
     data class UserProfile(val userId: Long) : NavRoute {
         override val stableKey = "UserProfile_$userId"
     }
@@ -82,5 +85,8 @@ sealed interface NavRoute {
     }
     data class CacheBrowser(val initialPath: String? = null) : NavRoute {
         override val stableKey = "CacheBrowser_${initialPath ?: "root"}"
+    }
+    data object SauceNao : NavRoute {
+        override val stableKey = "SauceNao"
     }
 }

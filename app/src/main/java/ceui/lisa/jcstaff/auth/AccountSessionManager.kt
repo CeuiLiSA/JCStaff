@@ -5,6 +5,7 @@ import android.util.Log
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import ceui.lisa.jcstaff.cache.AppDatabase
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.core.DownloadTaskManager
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.SettingsStore
@@ -61,13 +62,17 @@ object AccountSessionManager {
         BrowseHistoryRepository.reset()
         BrowseHistoryRepository.initialize(context, userId)
 
-        // 4. 初始化 per-user 设置
+        // 4. 初始化 per-user 下载任务管理器
+        DownloadTaskManager.reset()
+        DownloadTaskManager.initialize(context, userId)
+
+        // 6. 初始化 per-user 设置
         SettingsStore.initialize(context, userId)
 
-        // 5. 初始化 per-user 加载任务管理器
+        // 7. 初始化 per-user 加载任务管理器
         LoadTaskManager.init(context, userId)
 
-        // 6. 清除内存缓存
+        // 8. 清除内存缓存
         ObjectStore.clear()
 
         Log.d(TAG, "Services initialized for user $userId")
@@ -93,6 +98,7 @@ object AccountSessionManager {
         // 重置各管理器
         ApiCacheManager.reset()
         BrowseHistoryRepository.reset()
+        DownloadTaskManager.reset()
         SettingsStore.reset()
         LoadTaskManager.resetInMemoryState()
 

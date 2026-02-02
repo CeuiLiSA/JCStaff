@@ -50,11 +50,13 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
@@ -196,6 +198,12 @@ fun HomeScreen(
                         navViewModel.navigate(NavRoute.BrowseHistory)
                     }
                 },
+                onDownloadHistoryClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.navigate(NavRoute.DownloadHistory)
+                    }
+                },
                 onUgoiraRankingClick = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -206,6 +214,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         navViewModel.navigate(NavRoute.LatestWorks)
+                    }
+                },
+                onSauceNaoClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.navigate(NavRoute.SauceNao)
                     }
                 },
                 onSettingsClick = {
@@ -775,8 +789,10 @@ private fun DrawerContent(
     onUserProfileClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
+    onDownloadHistoryClick: () -> Unit,
     onUgoiraRankingClick: () -> Unit,
     onLatestWorksClick: () -> Unit,
+    onSauceNaoClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onShaderDemoClick: () -> Unit
 ) {
@@ -1050,11 +1066,24 @@ private fun DrawerContent(
                 label = stringResource(R.string.my_bookmarks),
                 onClick = onBookmarksClick
             )
+
+            // ── 历史记录分区 ──────────────────────────────────────────
+            DrawerSectionHeader(title = stringResource(R.string.drawer_section_history))
+
             DrawerMenuItem(
                 icon = Icons.Default.History,
                 label = stringResource(R.string.browse_history),
                 onClick = onBrowseHistoryClick
             )
+            DrawerMenuItem(
+                icon = Icons.Default.Download,
+                label = stringResource(R.string.download_history),
+                onClick = onDownloadHistoryClick
+            )
+
+            // ── 更多功能 ────────────────────────────────────────────
+            Spacer(modifier = Modifier.height(8.dp))
+
             DrawerMenuItem(
                 icon = Icons.Default.PlayCircle,
                 label = stringResource(R.string.ugoira_ranking),
@@ -1064,6 +1093,11 @@ private fun DrawerContent(
                 icon = Icons.Default.FiberNew,
                 label = stringResource(R.string.latest_works),
                 onClick = onLatestWorksClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.ImageSearch,
+                label = stringResource(R.string.sauce_nao),
+                onClick = onSauceNaoClick
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -1128,6 +1162,21 @@ private fun DrawerMenuItem(
             color = labelColor
         )
     }
+}
+
+@Composable
+private fun DrawerSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 28.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)
+    )
 }
 
 // ==================== Ranking Carousel ====================

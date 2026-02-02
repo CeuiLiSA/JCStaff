@@ -4,6 +4,19 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
+
+/**
+ * Room 类型转换器
+ */
+class Converters {
+    @TypeConverter
+    fun fromDownloadStatus(status: DownloadStatus): String = status.name
+
+    @TypeConverter
+    fun toDownloadStatus(value: String): DownloadStatus = DownloadStatus.valueOf(value)
+}
 
 /**
  * 应用数据库
@@ -14,11 +27,13 @@ import androidx.room.RoomDatabase
         BrowseHistoryEntity::class,
         NovelBrowseHistoryEntity::class,
         UserBrowseHistoryEntity::class,
-        SearchHistoryEntity::class
+        SearchHistoryEntity::class,
+        DownloadTaskEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun apiCacheDao(): ApiCacheDao
@@ -30,6 +45,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userBrowseHistoryDao(): UserBrowseHistoryDao
 
     abstract fun searchHistoryDao(): SearchHistoryDao
+
+    abstract fun downloadTaskDao(): DownloadTaskDao
 
     companion object {
         @Volatile

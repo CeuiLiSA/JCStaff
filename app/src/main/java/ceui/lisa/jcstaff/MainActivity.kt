@@ -49,11 +49,13 @@ import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.screens.CacheBrowserScreen
 import ceui.lisa.jcstaff.screens.CommentScreen
+import ceui.lisa.jcstaff.screens.DownloadHistoryScreen
 import ceui.lisa.jcstaff.screens.IllustDetailScreen
 import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.NovelDetailScreen
 import ceui.lisa.jcstaff.screens.RankingDetailScreen
+import ceui.lisa.jcstaff.screens.SauceNaoScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
 import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ShaderDemoScreen
@@ -381,6 +383,14 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
                         is NavRoute.CacheBrowser -> {
                             CacheBrowserScreen(initialPath = route.initialPath)
+                        }
+
+                        is NavRoute.SauceNao -> {
+                            SauceNaoScreen()
+                        }
+
+                        is NavRoute.DownloadHistory -> {
+                            DownloadHistoryScreen()
                         }
                     }
                 }
