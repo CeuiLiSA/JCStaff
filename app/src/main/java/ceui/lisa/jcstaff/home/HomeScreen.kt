@@ -78,7 +78,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -326,27 +328,41 @@ private fun RecommendedTabPage() {
     val innerPagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
 
+    val tabs = listOf(
+        stringResource(R.string.tab_illust),
+        stringResource(R.string.manga),
+        stringResource(R.string.tab_novel)
+    )
+
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            edgePadding = 16.dp,
+            indicator = { tabPositions ->
+                if (innerPagerState.currentPage < tabPositions.size) {
+                    TabRowDefaults.PrimaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
+                        width = 32.dp,
+                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                    )
+                }
+            },
+            divider = {}
         ) {
-            Tab(
-                selected = innerPagerState.currentPage == 0,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
-                text = { Text(stringResource(R.string.tab_illust)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 1,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
-                text = { Text(stringResource(R.string.manga)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 2,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(2) } },
-                text = { Text(stringResource(R.string.tab_novel)) }
-            )
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = innerPagerState.currentPage == index,
+                    onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(index) } },
+                    text = {
+                        Text(
+                            text = title,
+                            fontWeight = if (innerPagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+            }
         }
 
         HorizontalPager(
@@ -501,27 +517,41 @@ private fun DiscoverTabPage() {
     val innerPagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
 
+    val tabs = listOf(
+        stringResource(R.string.tab_illust_manga),
+        stringResource(R.string.tab_novel),
+        stringResource(R.string.tab_recommended_users)
+    )
+
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            edgePadding = 16.dp,
+            indicator = { tabPositions ->
+                if (innerPagerState.currentPage < tabPositions.size) {
+                    TabRowDefaults.PrimaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
+                        width = 32.dp,
+                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                    )
+                }
+            },
+            divider = {}
         ) {
-            Tab(
-                selected = innerPagerState.currentPage == 0,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
-                text = { Text(stringResource(R.string.tab_illust_manga)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 1,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
-                text = { Text(stringResource(R.string.tab_novel)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 2,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(2) } },
-                text = { Text(stringResource(R.string.tab_recommended_users)) }
-            )
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = innerPagerState.currentPage == index,
+                    onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(index) } },
+                    text = {
+                        Text(
+                            text = title,
+                            fontWeight = if (innerPagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+            }
         }
 
         HorizontalPager(
@@ -584,32 +614,42 @@ private fun NewWorksTabPage() {
     val innerPagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
 
+    val tabs = listOf(
+        stringResource(R.string.tab_following_illust_manga),
+        stringResource(R.string.tab_following_novel),
+        stringResource(R.string.tab_latest_illust_manga),
+        stringResource(R.string.tab_latest_novel)
+    )
+
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            edgePadding = 16.dp,
+            indicator = { tabPositions ->
+                if (innerPagerState.currentPage < tabPositions.size) {
+                    TabRowDefaults.PrimaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
+                        width = 32.dp,
+                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                    )
+                }
+            },
+            divider = {}
         ) {
-            Tab(
-                selected = innerPagerState.currentPage == 0,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
-                text = { Text(stringResource(R.string.tab_following_illust_manga)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 1,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
-                text = { Text(stringResource(R.string.tab_following_novel)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 2,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(2) } },
-                text = { Text(stringResource(R.string.tab_latest_illust_manga)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 3,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(3) } },
-                text = { Text(stringResource(R.string.tab_latest_novel)) }
-            )
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = innerPagerState.currentPage == index,
+                    onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(index) } },
+                    text = {
+                        Text(
+                            text = title,
+                            fontWeight = if (innerPagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+            }
         }
 
         HorizontalPager(
@@ -2055,22 +2095,40 @@ private fun GeneralTabPage() {
     val innerPagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
 
+    val tabs = listOf(
+        stringResource(R.string.tab_spotlight),
+        stringResource(R.string.coming_soon)
+    )
+
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            edgePadding = 16.dp,
+            indicator = { tabPositions ->
+                if (innerPagerState.currentPage < tabPositions.size) {
+                    TabRowDefaults.PrimaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
+                        width = 32.dp,
+                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                    )
+                }
+            },
+            divider = {}
         ) {
-            Tab(
-                selected = innerPagerState.currentPage == 0,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(0) } },
-                text = { Text(stringResource(R.string.tab_spotlight)) }
-            )
-            Tab(
-                selected = innerPagerState.currentPage == 1,
-                onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(1) } },
-                text = { Text(stringResource(R.string.coming_soon)) }
-            )
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = innerPagerState.currentPage == index,
+                    onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(index) } },
+                    text = {
+                        Text(
+                            text = title,
+                            fontWeight = if (innerPagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+            }
         }
 
         HorizontalPager(
