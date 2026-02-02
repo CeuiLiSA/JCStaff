@@ -67,6 +67,9 @@ data class DownloadTaskEntity(
     @ColumnInfo(name = "downloaded_pages")
     val downloadedPages: Int = 0,
 
+    @ColumnInfo(name = "current_page_progress")
+    val currentPageProgress: Int = 0,  // 当前页下载进度 0-100
+
     @ColumnInfo(name = "error_message")
     val errorMessage: String? = null,
 
@@ -76,8 +79,15 @@ data class DownloadTaskEntity(
     @ColumnInfo(name = "completed_at")
     val completedAt: Long? = null
 ) {
+    /**
+     * 总体进度 (0.0 - 1.0)
+     * 对于多图：(已完成页数 + 当前页进度/100) / 总页数
+     * 对于单图：当前页进度 / 100
+     */
     val progress: Float
-        get() = if (totalPages > 0) downloadedPages.toFloat() / totalPages else 0f
+        get() = if (totalPages > 0) {
+            (downloadedPages + currentPageProgress / 100f) / totalPages
+        } else 0f
 
     val isCompleted: Boolean
         get() = status == DownloadStatus.COMPLETED
@@ -119,10 +129,13 @@ interface DownloadTaskDao {
     @Query("UPDATE download_tasks SET status = :status, error_message = :errorMessage WHERE illust_id = :illustId")
     suspend fun updateStatus(illustId: Long, status: DownloadStatus, errorMessage: String? = null)
 
-    @Query("UPDATE download_tasks SET status = :status, downloaded_pages = :downloadedPages WHERE illust_id = :illustId")
+    @Query("UPDATE download_tasks SET status = :status, downloaded_pages = :downloadedPages, current_page_progress = 0 WHERE illust_id = :illustId")
     suspend fun updateProgress(illustId: Long, status: DownloadStatus, downloadedPages: Int)
 
-    @Query("UPDATE download_tasks SET status = :status, downloaded_pages = :downloadedPages, completed_at = :completedAt WHERE illust_id = :illustId")
+    @Query("UPDATE download_tasks SET current_page_progress = :progress WHERE illust_id = :illustId")
+    suspend fun updateCurrentPageProgress(illustId: Long, progress: Int)
+
+    @Query("UPDATE download_tasks SET status = :status, downloaded_pages = :downloadedPages, current_page_progress = 100, completed_at = :completedAt WHERE illust_id = :illustId")
     suspend fun markCompleted(illustId: Long, status: DownloadStatus = DownloadStatus.COMPLETED, downloadedPages: Int, completedAt: Long = System.currentTimeMillis())
 
     @Query("DELETE FROM download_tasks WHERE illust_id = :illustId")

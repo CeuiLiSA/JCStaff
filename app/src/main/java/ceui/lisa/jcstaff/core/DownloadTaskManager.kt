@@ -291,7 +291,20 @@ object DownloadTaskManager {
                     "pixiv_${illust.id}"
                 }
 
-                val result = downloadImage(context, url, fileName)
+                // 重置当前页进度
+                dao.updateCurrentPageProgress(task.illustId, 0)
+
+                val result = downloadImageWithProgress(
+                    context = context,
+                    imageUrl = url,
+                    fileName = fileName,
+                    onProgress = { progress ->
+                        // 更新当前页的下载进度
+                        scope.launch {
+                            dao.updateCurrentPageProgress(task.illustId, progress)
+                        }
+                    }
+                )
                 if (result.isSuccess) {
                     downloadedPages++
                     dao.updateProgress(task.illustId, DownloadStatus.DOWNLOADING, downloadedPages)
@@ -326,10 +339,11 @@ object DownloadTaskManager {
         }
     }
 
-    private suspend fun downloadImage(
+    private suspend fun downloadImageWithProgress(
         context: Context,
         imageUrl: String,
-        fileName: String
+        fileName: String,
+        onProgress: (Int) -> Unit
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder()
@@ -343,12 +357,42 @@ object DownloadTaskManager {
                 return@withContext Result.failure(Exception("HTTP ${response.code}"))
             }
 
-            val inputStream = response.body?.byteStream()
+            val body = response.body
                 ?: return@withContext Result.failure(Exception("Empty response body"))
 
-            val bitmap = BitmapFactory.decodeStream(inputStream)
+            val contentLength = body.contentLength()
+            val inputStream = body.byteStream()
+
+            // 读取到临时文件并跟踪进度
+            val tempFile = File.createTempFile("download_", ".tmp", context.cacheDir)
+            var totalBytesRead = 0L
+            var lastProgress = 0
+
+            tempFile.outputStream().use { outputStream ->
+                val buffer = ByteArray(8192)
+                var bytesRead: Int
+
+                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                    outputStream.write(buffer, 0, bytesRead)
+                    totalBytesRead += bytesRead
+
+                    // 计算并报告进度
+                    if (contentLength > 0) {
+                        val progress = ((totalBytesRead * 100) / contentLength).toInt()
+                        if (progress != lastProgress) {
+                            lastProgress = progress
+                            onProgress(progress)
+                        }
+                    }
+                }
+            }
+
             inputStream.close()
             response.close()
+
+            // 解码图片
+            val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
+            tempFile.delete()
 
             if (bitmap == null) {
                 return@withContext Result.failure(Exception("Failed to decode image"))
@@ -357,6 +401,7 @@ object DownloadTaskManager {
             saveToGallery(context, bitmap, fileName)
             bitmap.recycle()
 
+            onProgress(100)
             Result.success(Unit)
         } catch (e: Exception) {
             e.printStackTrace()

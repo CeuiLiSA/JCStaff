@@ -597,8 +597,8 @@ ModalNavigationDrawer（侧滑抽屉）
     → 写入 Room 数据库          // 状态: PENDING
     → processQueue()            // 开始处理队列
         → 更新状态: DOWNLOADING
-        → 下载每一页图片
-        → 更新进度: downloadedPages / totalPages
+        → 下载每一页图片（实时更新字节级进度）
+        → 更新进度: downloadedPages / totalPages + currentPageProgress
         → 下载完成: COMPLETED
         → 下载失败: FAILED + errorMessage
 ```
@@ -607,9 +607,15 @@ ModalNavigationDrawer（侧滑抽屉）
 | 状态 | 说明 |
 |------|------|
 | `PENDING` | 等待中，在队列中等待下载 |
-| `DOWNLOADING` | 下载中，显示进度 |
+| `DOWNLOADING` | 下载中，显示进度（单图显示百分比，多图显示页数+进度条） |
 | `COMPLETED` | 已完成 |
 | `FAILED` | 失败，可重试 |
+
+**下载进度追踪：**
+- 单图作品：显示字节级下载进度百分比（0-100%）+ 水平进度条
+- 多图作品：显示 `downloadedPages/totalPages` + 整体进度条
+- `currentPageProgress` 字段追踪当前页的下载进度
+- 进度计算公式：`(downloadedPages + currentPageProgress/100) / totalPages`
 
 **断点续传支持：**
 - 多图作品记录 `downloadedPages`，重试时从断点继续

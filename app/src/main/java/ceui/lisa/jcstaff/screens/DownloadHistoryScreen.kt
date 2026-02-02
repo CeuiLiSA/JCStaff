@@ -357,15 +357,18 @@ private fun DownloadTaskCard(
                                     strokeCap = StrokeCap.Round
                                 )
                             } else {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = stringResource(R.string.status_downloading),
+                                    text = "${task.currentPageProgress}%",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                LinearProgressIndicator(
+                                    progress = { task.currentPageProgress / 100f },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(4.dp),
+                                    strokeCap = StrokeCap.Round
                                 )
                             }
                         }
