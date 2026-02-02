@@ -78,7 +78,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -335,12 +335,10 @@ private fun RecommendedTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ScrollableTabRow(
+        TabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            edgePadding = 16.dp,
-            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
@@ -349,7 +347,7 @@ private fun RecommendedTabPage() {
                         shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                     )
                 }
-            },
+            }
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -524,12 +522,10 @@ private fun DiscoverTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ScrollableTabRow(
+        TabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            edgePadding = 16.dp,
-            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
@@ -538,7 +534,7 @@ private fun DiscoverTabPage() {
                         shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                     )
                 }
-            },
+            }
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -622,12 +618,10 @@ private fun NewWorksTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ScrollableTabRow(
+        TabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            edgePadding = 16.dp,
-            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
@@ -636,7 +630,7 @@ private fun NewWorksTabPage() {
                         shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                     )
                 }
-            },
+            }
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -2101,12 +2095,10 @@ private fun GeneralTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ScrollableTabRow(
+        TabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            edgePadding = 16.dp,
-            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
@@ -2115,7 +2107,7 @@ private fun GeneralTabPage() {
                         shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                     )
                 }
-            },
+            }
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(

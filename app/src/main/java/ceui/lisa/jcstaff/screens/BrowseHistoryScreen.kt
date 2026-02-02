@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -122,12 +123,10 @@ fun BrowseHistoryScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                ScrollableTabRow(
+                TabRow(
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
-                    edgePadding = 16.dp,
-                    modifier = Modifier.fillMaxWidth(),
                     indicator = { tabPositions ->
                         if (pagerState.currentPage < tabPositions.size) {
                             TabRowDefaults.PrimaryIndicator(
@@ -136,7 +135,7 @@ fun BrowseHistoryScreen(
                                 shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                             )
                         }
-                    },
+                    }
                 ) {
                     tabTitles.forEachIndexed { index, title ->
                         Tab(
