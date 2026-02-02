@@ -74,6 +74,9 @@ sealed interface NavRoute {
     data object UgoiraRanking : NavRoute {
         override val stableKey = "UgoiraRanking"
     }
+    data object LatestWorks : NavRoute {
+        override val stableKey = "LatestWorks"
+    }
     data class WebTagDetail(val tag: Tag) : NavRoute {
         override val stableKey = "WebTagDetail_${tag.name}"
     }

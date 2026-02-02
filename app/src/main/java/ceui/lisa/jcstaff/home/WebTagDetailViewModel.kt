@@ -106,6 +106,10 @@ class WebTagDetailViewModel(
                         ObjectStore.put(illust)
                         illust.user?.let { ObjectStore.put(it) }
                     }
+                    novels.forEach { novel ->
+                        ObjectStore.put(novel)
+                        novel.user?.let { ObjectStore.put(it) }
+                    }
 
                     _state.update { current ->
                         current.copy(

@@ -46,7 +46,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -108,6 +108,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
@@ -119,6 +120,7 @@ import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.LocalSelectionManager
+import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
@@ -198,6 +200,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         navViewModel.navigate(NavRoute.UgoiraRanking)
+                    }
+                },
+                onLatestWorksClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.navigate(NavRoute.LatestWorks)
                     }
                 },
                 onSettingsClick = {
@@ -286,7 +294,7 @@ fun HomeScreen(
                                 coroutineScope.launch { pagerState.animateScrollToPage(2) }
                             },
                             icon = { Icon(Icons.Default.FiberNew, contentDescription = null) },
-                            label = { Text(stringResource(R.string.tab_new_works)) }
+                            label = { Text(stringResource(R.string.tab_general)) }
                         )
                         NavigationBarItem(
                             selected = pagerState.currentPage == 3,
@@ -294,7 +302,7 @@ fun HomeScreen(
                                 coroutineScope.launch { pagerState.animateScrollToPage(3) }
                             },
                             icon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
-                            label = { Text(stringResource(R.string.tab_general)) }
+                            label = { Text(stringResource(R.string.tab_new_works)) }
                         )
                     }
                 }
@@ -309,8 +317,8 @@ fun HomeScreen(
                     when (page) {
                         0 -> RecommendedTabPage()
                         1 -> DiscoverTabPage()
-                        2 -> NewWorksTabPage()
-                        3 -> GeneralTabPage()
+                        2 -> GeneralTabPage()
+                        3 -> NewWorksTabPage()
                     }
                 }
             }
@@ -392,9 +400,6 @@ private fun RecommendedTabPage() {
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            start = 8.dp, end = 8.dp, bottom = 8.dp, top = 0.dp
-                        ),
                         headerContent = {
                             if (state.rankingIllusts.isNotEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
@@ -419,8 +424,7 @@ private fun RecommendedTabPage() {
                             item(span = StaggeredGridItemSpan.FullLine) {
                                 SectionHeader(
                                     title = stringResource(R.string.recommended_for_you),
-                                    subtitle = stringResource(R.string.recommended_illust_subtitle),
-                                    icon = Icons.Default.Favorite
+                                    subtitle = stringResource(R.string.recommended_illust_subtitle)
                                 )
                             }
                         }
@@ -451,9 +455,6 @@ private fun RecommendedTabPage() {
                         error = state.error,
                         onRefresh = { vm.refresh() },
                         onLoadMore = { vm.loadMore() },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            start = 8.dp, end = 8.dp, bottom = 8.dp, top = 0.dp
-                        ),
                         headerContent = {
                             if (state.rankingIllusts.isNotEmpty()) {
                                 item(span = StaggeredGridItemSpan.FullLine) {
@@ -478,8 +479,7 @@ private fun RecommendedTabPage() {
                             item(span = StaggeredGridItemSpan.FullLine) {
                                 SectionHeader(
                                     title = stringResource(R.string.recommended_for_you),
-                                    subtitle = stringResource(R.string.recommended_manga_subtitle),
-                                    icon = Icons.Default.Favorite
+                                    subtitle = stringResource(R.string.recommended_manga_subtitle)
                                 )
                             }
                         }
@@ -606,15 +606,12 @@ private fun DiscoverTabPage() {
 
 @Composable
 private fun NewWorksTabPage() {
-    val navViewModel = LocalNavigationViewModel.current
-    val innerPagerState = rememberPagerState(pageCount = { 4 })
+    val innerPagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
 
     val tabs = listOf(
         stringResource(R.string.tab_following_illust_manga),
-        stringResource(R.string.tab_following_novel),
-        stringResource(R.string.tab_latest_illust_manga),
-        stringResource(R.string.tab_latest_novel)
+        stringResource(R.string.tab_following_novel)
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -663,29 +660,6 @@ private fun NewWorksTabPage() {
 
                 1 -> {
                     val vm: FollowingNovelsViewModel = viewModel()
-                    val state by vm.state.collectAsState()
-                    NovelList(
-                        state = state,
-                        onRefresh = { vm.refresh() },
-                        onLoadMore = { vm.loadMore() },
-                    )
-                }
-
-                2 -> {
-                    val vm: LatestIllustsViewModel = viewModel(
-                        key = "latest_illust",
-                        factory = LatestIllustsViewModel.factory("illust")
-                    )
-                    val state by vm.state.collectAsState()
-                    IllustGrid(
-                        state = state,
-                        onRefresh = { vm.refresh() },
-                        onLoadMore = { vm.loadMore() },
-                    )
-                }
-
-                3 -> {
-                    val vm: LatestNovelsViewModel = viewModel()
                     val state by vm.state.collectAsState()
                     NovelList(
                         state = state,
@@ -802,6 +776,7 @@ private fun DrawerContent(
     onBookmarksClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
     onUgoiraRankingClick: () -> Unit,
+    onLatestWorksClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onShaderDemoClick: () -> Unit
 ) {
@@ -1085,6 +1060,11 @@ private fun DrawerContent(
                 label = stringResource(R.string.ugoira_ranking),
                 onClick = onUgoiraRankingClick
             )
+            DrawerMenuItem(
+                icon = Icons.Default.FiberNew,
+                label = stringResource(R.string.latest_works),
+                onClick = onLatestWorksClick
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -1163,102 +1143,71 @@ private fun RankingCarousel(
     onViewAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Use layout modifier to extend beyond parent's horizontal padding
+    // Check if grid spacing is enabled to determine layout behavior
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+
+    // Calculate header padding to align with LazyRow cards
+    // When grid spacing enabled: Grid has 8dp padding, so header needs 8dp more = 16dp total
+    // When disabled: Grid has 0dp padding, so header needs 10dp
+    val headerHorizontalPadding = if (gridSpacingEnabled) 8.dp else 10.dp
+
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .layout { measurable, constraints ->
-                // Measure with extra width to fill screen edge-to-edge
-                val horizontalPadding = 8.dp.roundToPx()
-                val expandedConstraints = constraints.copy(
-                    maxWidth = constraints.maxWidth + horizontalPadding * 2
-                )
-                val placeable = measurable.measure(expandedConstraints)
-                layout(placeable.width, placeable.height) {
-                    placeable.place(-horizontalPadding, 0)
-                }
-            }
+        modifier = modifier.fillMaxWidth()
     ) {
-        // Header with gradient background
-        Box(
+        // App Store style header - padding aligns with cards
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.15f),
-                            Color.Transparent
-                        )
-                    )
+                .padding(
+                    start = headerHorizontalPadding,
+                    end = headerHorizontalPadding,
+                    top = 20.dp,
+                    bottom = 12.dp
                 )
-                .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 12.dp)
         ) {
+            // Subtitle (uppercase, small)
+            Text(
+                text = stringResource(R.string.ranking_subtitle).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Trophy icon with gradient background
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    RankGold.copy(alpha = 0.2f),
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                )
-                            ),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.TrendingUp,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                // Large bold title
+                Text(
+                    text = stringResource(R.string.daily_ranking),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
 
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.daily_ranking),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = stringResource(R.string.ranking_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // View All button
+                // See All button
                 Surface(
                     onClick = onViewAllClick,
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.padding(end = 8.dp)
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.view_all),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -1266,12 +1215,30 @@ private fun RankingCarousel(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-        // Cards carousel
+        // Cards carousel - extend to screen edges when grid spacing is enabled
+        // contentPadding should align first card with grid content
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+            horizontalArrangement = Arrangement.spacedBy(if (gridSpacingEnabled) 8.dp else 1.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                horizontal = if (gridSpacingEnabled) 16.dp else 10.dp
+            ),
+            modifier = if (gridSpacingEnabled) {
+                Modifier.layout { measurable, constraints ->
+                    // Extend LazyRow to fill screen edge-to-edge
+                    val horizontalPadding = 8.dp.roundToPx()
+                    val expandedConstraints = constraints.copy(
+                        maxWidth = constraints.maxWidth + horizontalPadding * 2
+                    )
+                    val placeable = measurable.measure(expandedConstraints)
+                    layout(placeable.width, placeable.height) {
+                        placeable.place(-horizontalPadding, 0)
+                    }
+                }
+            } else {
+                Modifier
+            }
         ) {
             itemsIndexed(illusts, key = { _, illust -> "ranking_${illust.id}" }) { index, illust ->
                 RankingCard(
@@ -1465,61 +1432,61 @@ private fun formatCount(count: Int): String {
     }
 }
 
-// ==================== Section Header ====================
+// ==================== Section Header (App Store Style) ====================
 
 @Composable
 private fun SectionHeader(
     title: String,
     subtitle: String? = null,
-    icon: ImageVector? = null,
+    onSeeAllClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+    // When grid spacing enabled: Grid has 8dp padding, so need 8dp more = 16dp total (align with RankingCarousel)
+    // When disabled: Grid has 0dp padding, so need 10dp
+    val horizontalPadding = if (gridSpacingEnabled) 8.dp else 10.dp
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = horizontalPadding, vertical = 0.dp)
+            .padding(top = 20.dp, bottom = 12.dp)
     ) {
-        // Fancy icon with animated gradient background
-        if (icon != null) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFFFF6B6B),  // Coral red
-                                Color(0xFFFF8E53),  // Orange
-                                Color(0xFFFFE66D)   // Yellow
-                            )
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
+        // Subtitle (appears above title in App Store style)
+        if (subtitle != null) {
+            Text(
+                text = subtitle.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
         }
 
-        Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Large bold title
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
             )
-            if (subtitle != null) {
-                Spacer(modifier = Modifier.height(2.dp))
+
+            // See All link
+            if (onSeeAllClick != null) {
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.view_all),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable(onClick = onSeeAllClick)
+                        .padding(vertical = 4.dp, horizontal = 4.dp)
                 )
             }
         }

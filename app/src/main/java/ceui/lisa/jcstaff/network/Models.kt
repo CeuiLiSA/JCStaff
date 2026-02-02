@@ -356,3 +356,15 @@ data class UgoiraFrame(
     val file: String? = null,
     val delay: Int = 60
 ) : Serializable
+
+// ===== Bookmark Tags Models =====
+
+data class BookmarkTagsResponse(
+    val bookmark_tags: List<BookmarkTag> = emptyList(),
+    val next_url: String? = null
+) : Serializable
+
+data class BookmarkTag(
+    val name: String? = null,
+    val count: Int = 0
+) : Serializable

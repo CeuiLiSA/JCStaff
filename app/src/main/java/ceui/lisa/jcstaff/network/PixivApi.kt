@@ -89,7 +89,8 @@ interface PixivApi {
         @Query("user_id") userId: Long,
         @Query("restrict") restrict: String = "public",
         @Query("filter") filter: String = "for_ios",
-        @Query("max_bookmark_id") maxBookmarkId: Long? = null
+        @Query("max_bookmark_id") maxBookmarkId: Long? = null,
+        @Query("tag") tag: String? = null
     ): IllustResponse
 
     @GET("/v1/user/detail")
@@ -110,6 +111,20 @@ interface PixivApi {
         @Field("illust_id") illustId: Long,
         @Field("restrict") restrict: String = "public"
     ): Unit
+
+    @FormUrlEncoded
+    @POST("/v2/illust/bookmark/add")
+    suspend fun addBookmarkWithTags(
+        @Field("illust_id") illustId: Long,
+        @Field("restrict") restrict: String,
+        @Field("tags[]") tags: List<String>
+    )
+
+    @GET("/v1/user/bookmark-tags/illust")
+    suspend fun getUserBookmarkTags(
+        @Query("user_id") userId: Long,
+        @Query("restrict") restrict: String = "public"
+    ): BookmarkTagsResponse
 
     @FormUrlEncoded
     @POST("/v1/illust/bookmark/delete")

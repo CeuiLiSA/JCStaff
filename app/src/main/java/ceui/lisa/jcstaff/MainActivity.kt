@@ -59,6 +59,7 @@ import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ShaderDemoScreen
 import ceui.lisa.jcstaff.screens.SpotlightDetailScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
+import ceui.lisa.jcstaff.screens.LatestWorksScreen
 import ceui.lisa.jcstaff.screens.UgoiraRankingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.screens.WebTagDetailScreen
@@ -297,7 +298,9 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                         }
 
                         is NavRoute.Settings -> {
+                            val currentUser = (authState as? AuthState.Authenticated)?.user
                             SettingsScreen(
+                                currentUser = currentUser,
                                 onLogoutClick = {
                                     authViewModel.logout()
                                 }
@@ -366,6 +369,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
                         is NavRoute.UgoiraRanking -> {
                             UgoiraRankingScreen()
+                        }
+
+                        is NavRoute.LatestWorks -> {
+                            LatestWorksScreen()
                         }
 
                         is NavRoute.WebTagDetail -> {

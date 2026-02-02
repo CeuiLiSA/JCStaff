@@ -105,9 +105,11 @@ ceui.lisa.jcstaff/
 │   ├── UgoiraRankingScreen.kt    # 动图排行榜页面（网页抓取）
 │   ├── WebTagDetailScreen.kt     # 网页标签详情页（MD3 设计）
 │   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（5 种效果）
+│   ├── LatestWorksScreen.kt      # 最新作品页（插画/漫画/小说三 Tab）
 │   ├── ListScreen.kt             # 通用列表页
 │   └── DetailScreen.kt           # 通用详情页
 ├── components/                   # 可复用 UI 组件
+│   ├── BookmarkTagDialog.kt      # 收藏标签选择底部弹窗
 │   ├── IllustCard.kt             # 插画卡片
 │   ├── IllustGrid.kt             # 插画瀑布流网格
 │   ├── IllustFeedCard.kt         # 社交信息流风格插画卡片

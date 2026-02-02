@@ -241,7 +241,7 @@ fun WebTagDetailScreen(tag: Tag) {
             ) { page ->
                 when {
                     state.isLoading && state.illusts.isEmpty() -> {
-                        LoadingIndicator()
+                        LoadingIndicator(modifier = Modifier.fillMaxSize())
                     }
 
                     state.error != null && state.illusts.isEmpty() -> {

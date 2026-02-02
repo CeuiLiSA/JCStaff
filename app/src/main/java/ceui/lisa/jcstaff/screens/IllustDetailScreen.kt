@@ -58,6 +58,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridS
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.auth.AccountRegistry
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
@@ -71,6 +72,8 @@ fun IllustDetailScreen(
     relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
     val navViewModel = LocalNavigationViewModel.current
+    val currentUserId by AccountRegistry.activeUserId.collectAsState(initial = null)
+
     // 从 ObjectStore 获取缓存数据
     val cachedIllust = remember(illustId) {
         ObjectStore.peek<Illust>(StoreKey(illustId, StoreType.ILLUST))
@@ -264,7 +267,8 @@ fun IllustDetailScreen(
                             onBookmarkStateChanged = { newState, updatedIllust ->
                                 isBookmarked = newState
                                 illust = updatedIllust
-                            }
+                            },
+                            currentUserId = currentUserId ?: 0L
                         )
                     }
 

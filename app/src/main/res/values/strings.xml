@@ -45,6 +45,9 @@
     <string name="tab_following_novel">关注小说</string>
     <string name="tab_latest_illust_manga">最新插画漫画</string>
     <string name="tab_latest_novel">最新小说</string>
+    <string name="latest_works">最新作品</string>
+    <string name="tab_latest_illust">最新插画</string>
+    <string name="tab_latest_manga">最新漫画</string>
     <string name="view_full_ranking">查看完整排行榜</string>
     <string name="recommended_for_you">为你推荐</string>
     <string name="recommended_illust_subtitle">基于你的喜好精选</string>
@@ -100,6 +103,12 @@
     <string name="login_success">登录成功</string>
 
     <!-- Settings Screen -->
+    <string name="settings_appearance">外观</string>
+    <string name="settings_general">通用</string>
+    <string name="settings_storage">存储</string>
+    <string name="settings_account">账号</string>
+    <string name="view_profile">查看个人主页</string>
+    <string name="logout_desc">退出当前账号</string>
     <string name="show_illust_info_title">显示作品信息</string>
     <string name="show_illust_info_desc">在瀑布流卡片上显示标题和作者名</string>
     <string name="card_corner_radius_title">卡片圆角</string>
@@ -187,6 +196,19 @@
     <string name="saved_to_gallery">已保存到相册</string>
     <string name="save_failed">保存失败</string>
     <string name="save_gif">保存 GIF</string>
+    <string name="bookmark_options">收藏选项</string>
+    <string name="bookmark_public">公开收藏</string>
+    <string name="bookmark_private">私密收藏</string>
+    <string name="bookmark_with_tags">按标签收藏</string>
+    <string name="bookmark_visibility">收藏可见性</string>
+    <string name="add_new_tag">新建标签</string>
+    <string name="selected_tags">已选择的标签</string>
+    <string name="existing_tags">已有的收藏标签</string>
+    <string name="bookmark_success">收藏成功</string>
+    <string name="bookmark_failed">收藏失败</string>
+    <string name="all_bookmarks">全部</string>
+    <string name="filter_by_tag">按标签筛选</string>
+    <string name="no_bookmark_tags">暂无收藏标签</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">获取元数据...</string>

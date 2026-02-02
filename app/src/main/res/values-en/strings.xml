@@ -50,6 +50,9 @@
     <string name="tab_following_novel">Following Novels</string>
     <string name="tab_latest_illust_manga">Latest Illust &amp; Manga</string>
     <string name="tab_latest_novel">Latest Novels</string>
+    <string name="latest_works">Latest Works</string>
+    <string name="tab_latest_illust">Latest Illustrations</string>
+    <string name="tab_latest_manga">Latest Manga</string>
     <string name="view_full_ranking">View Full Ranking</string>
     <string name="recommended_for_you">Recommended for You</string>
     <string name="recommended_illust_subtitle">Curated based on your preferences</string>
@@ -100,6 +103,12 @@
     <string name="latest_illusts">Latest Illustrations</string>
 
     <!-- Settings Screen -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_general">General</string>
+    <string name="settings_storage">Storage</string>
+    <string name="settings_account">Account</string>
+    <string name="view_profile">View Profile</string>
+    <string name="logout_desc">Sign out of current account</string>
     <string name="show_illust_info_title">Show Illustration Info</string>
     <string name="show_illust_info_desc">Show title and author on waterfall cards</string>
     <string name="card_corner_radius_title">Card Corner Radius</string>
