@@ -231,7 +231,7 @@ data class WebPixpedia(
 
 data class WebBreadcrumbs(
     val successor: List<WebBreadcrumbItem>? = null,
-    val current: WebBreadcrumbItem? = null
+    val current: List<WebBreadcrumbItem>? = null  // API 返回数组
 ) : Serializable
 
 data class WebBreadcrumbItem(

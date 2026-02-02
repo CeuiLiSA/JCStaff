@@ -55,10 +55,10 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
@@ -537,7 +537,7 @@ private fun DiscoverTabPage() {
                     onTagClick = { tag ->
                         val navTag = Tag(name = tag.tag, translated_name = tag.translated_name)
                         BrowseHistoryRepository.recordSearch(navTag)
-                        navViewModel.navigate(NavRoute.TagDetail(tag = navTag, initialTab = 0))
+                        navViewModel.navigate(NavRoute.WebTagDetail(tag = navTag))
                     }
                 )
 

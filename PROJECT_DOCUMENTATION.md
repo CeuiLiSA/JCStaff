@@ -714,15 +714,32 @@ ModalNavigationDrawer（侧滑抽屉）
 #### 用户视角
 - 点击热门标签进入该页面（使用 Pixiv Web AJAX API 获取更丰富的数据）
 - 采用 Material Design 3 设计规范：
-  - **LargeTopAppBar**：展示标签名称和翻译名，支持滚动折叠
-  - **标签统计卡片**：显示插画/漫画/小说数量（带图标和数字）
-  - **Pixpedia 百科卡片**：展示标签的百科介绍、缩略图和摘要
-  - **多语言翻译卡片**：展示标签在不同语言中的翻译（FilterChip 样式）
-  - **相关标签区域**：展示父标签、子标签、同级标签和相关标签（FlowRow 布局）
-  - **热门作品区域**：横向滚动展示该标签下的热门作品
-  - **最新插画网格**：瀑布流展示最新插画作品
+  - **可折叠 Hero Header**：280dp 展开高度，背景图来自 Pixpedia 或热门作品，支持滚动折叠
+  - **Shoulder TabRow**：20dp 左上右上圆角，三个 Tab 切换
+  - **ViewPager 三页**：
+    - **百科页**：Pixpedia 简介、多语言翻译、父/同级/子/相关标签
+    - **插画页**：顶部热门作品横滑 + 下方最新插画瀑布流
+    - **小说页**：小说卡片列表
+
+**折叠效果：**
+- 展开高度：280dp
+- 折叠高度：状态栏 + 60dp Toolbar
+- 折叠时标签名移至顶部栏，底部信息淡出
 
 #### 实现原理
+
+**可折叠头部架构：**
+```kotlin
+// NestedScrollConnection 处理滚动事件
+val nestedScrollConnection = object : NestedScrollConnection {
+    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+        // 向上滚动折叠，向下滚动展开
+        headerOffsetY = (headerOffsetY + delta).coerceIn(-headerHeightRange, 0f)
+    }
+}
+// 折叠进度驱动动画
+val collapseProgress = -headerOffsetY / headerHeightRange  // 0=展开, 1=折叠
+```
 
 **Web AJAX API 端点：**
 - `GET /ajax/search/top/{tag}` — 获取标签综合信息（热门作品、最新插画/小说/漫画）
@@ -744,10 +761,10 @@ val tagInfoDeferred = async { PixivWebScraper.getTagInfo(tagName) }
 - 缓存有效期 15 分钟，过期后后台刷新
 
 **关键组件：**
-- `TagStatsCard` — 使用 `Row` + `FilledTonalButton` 展示统计
-- `PixpediaCard` — 卡片内嵌图片和摘要文本
-- `TranslationCard` — 使用 `FlowRow` + `FilterChip` 展示翻译
-- `RelatedTagsSection` — 分类展示各类相关标签
+- `CollapsibleHeroHeader` — 可折叠背景图头部，带渐变遮罩和统计徽章
+- `PixpediaPage` — 百科信息页，展示简介和相关标签
+- `IllustMangaPage` — 插画页，热门作品横滑 + 瀑布流
+- `NovelPage` — 小说页，卡片式列表
 
 ---
 
