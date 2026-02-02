@@ -89,6 +89,16 @@
     <string name="delete_search_history_message">确定要删除「%1$s」吗？</string>
     <string name="trending_searches">热门搜索</string>
 
+    <!-- Web Tag Detail -->
+    <string name="pixpedia">Pixiv 百科</string>
+    <string name="translations">多语言</string>
+    <string name="related_tags">相关标签</string>
+    <string name="siblings_tags">同级标签</string>
+    <string name="children_tags">子标签</string>
+    <string name="parent_tag">父标签</string>
+    <string name="popular_works">热门作品</string>
+    <string name="latest_illusts">最新插画</string>
+
     <!-- Settings Screen -->
     <string name="show_illust_info_title">显示作品信息</string>
     <string name="show_illust_info_desc">在瀑布流卡片上显示标题和作者名</string>

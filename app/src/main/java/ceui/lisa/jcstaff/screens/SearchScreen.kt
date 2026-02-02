@@ -287,8 +287,9 @@ fun SearchScreen() {
                         name = trendingTag.tag,
                         translated_name = trendingTag.translated_name
                     )
-                    updateQuery(trendingTag.tag ?: "")
-                    performSearch(tag)
+                    // 记录搜索历史并跳转到网页版标签详情
+                    BrowseHistoryRepository.recordSearch(tag)
+                    navViewModel.navigate(NavRoute.WebTagDetail(tag))
                 },
                 onDeleteClick = { tag ->
                     tagToDelete = tag

@@ -89,6 +89,16 @@
     <string name="delete_search_history_message">「%1$s」을(를) 검색 기록에서 삭제하시겠습니까?</string>
     <string name="trending_searches">인기 검색어</string>
 
+    <!-- Web Tag Detail -->
+    <string name="pixpedia">픽시브 백과사전</string>
+    <string name="translations">번역</string>
+    <string name="related_tags">관련 태그</string>
+    <string name="siblings_tags">유사 태그</string>
+    <string name="children_tags">하위 태그</string>
+    <string name="parent_tag">상위 태그</string>
+    <string name="popular_works">인기 작품</string>
+    <string name="latest_illusts">최신 일러스트</string>
+
     <!-- Settings Screen -->
     <string name="show_illust_info_title">작품 정보 표시</string>
     <string name="show_illust_info_desc">카드에 제목과 작가 이름 표시</string>

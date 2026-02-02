@@ -60,6 +60,7 @@ import ceui.lisa.jcstaff.screens.SpotlightDetailScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UgoiraRankingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
+import ceui.lisa.jcstaff.screens.WebTagDetailScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 import coil.Coil
 import coil.ImageLoader
@@ -364,6 +365,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
                         is NavRoute.UgoiraRanking -> {
                             UgoiraRankingScreen()
+                        }
+
+                        is NavRoute.WebTagDetail -> {
+                            WebTagDetailScreen(tag = route.tag)
                         }
                     }
                 }

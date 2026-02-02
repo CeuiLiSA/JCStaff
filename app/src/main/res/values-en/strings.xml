@@ -89,6 +89,16 @@
     <string name="delete_search_history_message">Remove \"%1$s\" from search history?</string>
     <string name="trending_searches">Trending</string>
 
+    <!-- Web Tag Detail -->
+    <string name="pixpedia">Pixpedia</string>
+    <string name="translations">Translations</string>
+    <string name="related_tags">Related Tags</string>
+    <string name="siblings_tags">Similar Tags</string>
+    <string name="children_tags">Sub Tags</string>
+    <string name="parent_tag">Parent Tag</string>
+    <string name="popular_works">Popular Works</string>
+    <string name="latest_illusts">Latest Illustrations</string>
+
     <!-- Settings Screen -->
     <string name="show_illust_info_title">Show Illustration Info</string>
     <string name="show_illust_info_desc">Show title and author on waterfall cards</string>

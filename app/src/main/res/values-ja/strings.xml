@@ -89,6 +89,16 @@
     <string name="delete_search_history_message">「%1$s」を検索履歴から削除しますか？</string>
     <string name="trending_searches">人気のキーワード</string>
 
+    <!-- Web Tag Detail -->
+    <string name="pixpedia">ピクシブ百科事典</string>
+    <string name="translations">他の言語</string>
+    <string name="related_tags">関連タグ</string>
+    <string name="siblings_tags">兄弟タグ</string>
+    <string name="children_tags">子タグ</string>
+    <string name="parent_tag">親タグ</string>
+    <string name="popular_works">人気作品</string>
+    <string name="latest_illusts">最新イラスト</string>
+
     <!-- Settings Screen -->
     <string name="show_illust_info_title">作品情報を表示</string>
     <string name="show_illust_info_desc">カードにタイトルと作者名を表示</string>

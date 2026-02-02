@@ -84,6 +84,16 @@
     <string name="delete_search_history_message">确定要删除「%1$s」吗？</string>
     <string name="trending_searches">热门搜索</string>
 
+    <!-- Web Tag Detail -->
+    <string name="pixpedia">Pixiv 百科</string>
+    <string name="translations">多语言</string>
+    <string name="related_tags">相关标签</string>
+    <string name="siblings_tags">同级标签</string>
+    <string name="children_tags">子标签</string>
+    <string name="parent_tag">父标签</string>
+    <string name="popular_works">热门作品</string>
+    <string name="latest_illusts">最新插画</string>
+
     <!-- Language -->
     <string name="language_title">语言</string>
     <string name="language_desc">选择应用显示语言</string>
