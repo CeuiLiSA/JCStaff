@@ -3,6 +3,7 @@ package ceui.lisa.jcstaff.screens
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -120,7 +121,8 @@ fun RankingDetailScreen(
             selectedTabIndex = pagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary,
-            edgePadding = 12.dp
+            edgePadding = 12.dp,
+            modifier = Modifier.fillMaxWidth()
         ) {
             modes.forEachIndexed { index, rankingMode ->
                 Tab(

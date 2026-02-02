@@ -183,6 +183,7 @@ fun TagDetailScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     edgePadding = 16.dp,
+                    modifier = Modifier.fillMaxWidth(),
                     indicator = { tabPositions ->
                         if (pagerState.currentPage < tabPositions.size) {
                             TabRowDefaults.PrimaryIndicator(

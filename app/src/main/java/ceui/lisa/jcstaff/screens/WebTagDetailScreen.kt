@@ -204,6 +204,7 @@ fun WebTagDetailScreen(tag: Tag) {
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 edgePadding = 16.dp,
                 modifier = Modifier
+                    .fillMaxWidth()
                     .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
                 indicator = { tabPositions ->
                     if (pagerState.currentPage < tabPositions.size) {

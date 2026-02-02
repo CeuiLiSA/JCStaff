@@ -340,6 +340,7 @@ private fun RecommendedTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             edgePadding = 16.dp,
+            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
@@ -528,6 +529,7 @@ private fun DiscoverTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             edgePadding = 16.dp,
+            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
@@ -625,6 +627,7 @@ private fun NewWorksTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             edgePadding = 16.dp,
+            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
@@ -2103,6 +2106,7 @@ private fun GeneralTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             edgePadding = 16.dp,
+            modifier = Modifier.fillMaxWidth(),
             indicator = { tabPositions ->
                 if (innerPagerState.currentPage < tabPositions.size) {
                     TabRowDefaults.PrimaryIndicator(
