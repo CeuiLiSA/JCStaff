@@ -213,8 +213,7 @@ fun WebTagDetailScreen(tag: Tag) {
                             shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
                         )
                     }
-                },
-                divider = {}
+                }
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(

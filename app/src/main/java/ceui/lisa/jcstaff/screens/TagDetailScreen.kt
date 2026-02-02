@@ -192,7 +192,6 @@ fun TagDetailScreen(
                             )
                         }
                     },
-                    divider = {}
                 ) {
                     tabTitles.forEachIndexed { index, title ->
                         Tab(

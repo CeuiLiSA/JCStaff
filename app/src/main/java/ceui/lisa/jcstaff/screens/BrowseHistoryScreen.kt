@@ -136,7 +136,6 @@ fun BrowseHistoryScreen(
                             )
                         }
                     },
-                    divider = {}
                 ) {
                     tabTitles.forEachIndexed { index, title ->
                         Tab(

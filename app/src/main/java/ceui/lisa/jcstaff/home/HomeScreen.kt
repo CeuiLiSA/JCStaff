@@ -349,7 +349,6 @@ private fun RecommendedTabPage() {
                     )
                 }
             },
-            divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -538,7 +537,6 @@ private fun DiscoverTabPage() {
                     )
                 }
             },
-            divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -636,7 +634,6 @@ private fun NewWorksTabPage() {
                     )
                 }
             },
-            divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -2115,7 +2112,6 @@ private fun GeneralTabPage() {
                     )
                 }
             },
-            divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
