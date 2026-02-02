@@ -159,7 +159,7 @@ ceui.lisa.jcstaff/
 │   ├── UgoiraPlayer.kt           # Ugoira 播放器组件
 │   ├── UgoiraViewModel.kt        # Ugoira 状态管理
 │   ├── UgoiraRepository.kt       # Ugoira 下载/编码仓库
-│   └── AnimatedGifEncoder.kt     # 纯 Java GIF 编码器
+│   └── AnimatedGifEncoder.kt     # GIF 编码器（NeuQuant 神经网络颜色量化）
 ├── ui/theme/                     # 主题
 │   ├── Color.kt                  # 颜色定义
 │   ├── Theme.kt                  # 主题配置
@@ -842,7 +842,48 @@ val tagInfoDeferred = async { PixivWebScraper.getTagInfo(tagName) }
 
 ---
 
-### 21. Spotlight/Pixivision 专题
+### 21. Ugoira (动图) 播放器
+
+#### 用户视角
+- 在插画详情页中，如果作品是 Ugoira (动图) 类型，会自动显示动图播放器
+- 播放器按顺序执行以下步骤，并显示实时进度：
+  - **获取元数据**：从 Pixiv API 获取动图信息
+  - **下载资源**：下载 ZIP 压缩包，显示下载进度 (0-100%)
+  - **解压帧**：解压 ZIP 获取所有帧图片
+  - **压制 GIF**：将帧图片编码为 GIF，显示压制进度 (0-100%)
+- 压制完成后自动播放 GIF 动画（无限循环）
+- GIF 文件会缓存到本地，再次查看时瞬间播放
+
+#### 实现原理
+
+**处理流程：**
+```
+UgoiraState.FetchingMetadata  → 获取 ugoira_metadata API
+UgoiraState.Downloading(progress)  → OkHttp 下载 ZIP，实时更新进度
+UgoiraState.Extracting  → 解压 ZIP 到临时目录
+UgoiraState.Encoding(progress)  → 逐帧编码 GIF，实时更新进度
+UgoiraState.Done(gifFile)  → 使用 Coil GifDecoder 播放
+```
+
+**AnimatedGifEncoder — NeuQuant 神经网络颜色量化：**
+- 使用 NeuQuant 算法将 24 位真彩色图像量化为 256 色调色板
+- 像素数据按 BGR 顺序存储（符合 NeuQuant 期望格式）
+- 支持设置量化质量 (1-20)，数值越小质量越高
+- LZW 编码压缩输出 GIF 数据流
+
+**进度显示：**
+- `UgoiraState.Downloading(progress)` — 按已下载字节数计算百分比
+- `UgoiraState.Encoding(progress)` — 按已处理帧数计算百分比
+- UI 层使用 `animateFloatAsState` 实现 300ms 平滑过渡动画
+
+**缓存策略：**
+- 内存缓存：`gifCache: MutableMap<Long, UgoiraData>`
+- 磁盘缓存：`filesDir/ugoira/{illustId}.gif`
+- 优先使用缓存，避免重复下载和编码
+
+---
+
+### 22. Spotlight/Pixivision 专题
 
 #### 用户视角
 - 在首页抽屉菜单或特定入口访问 Pixiv 官方精选专题
@@ -866,7 +907,7 @@ val tagInfoDeferred = async { PixivWebScraper.getTagInfo(tagName) }
 
 ---
 
-### 22. 评论系统
+### 23. 评论系统
 
 #### 用户视角
 - 在插画详情页和小说详情页底部显示评论预览（最多 3 条）

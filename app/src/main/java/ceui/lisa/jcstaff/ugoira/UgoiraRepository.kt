@@ -22,7 +22,7 @@ sealed class UgoiraState {
     object FetchingMetadata : UgoiraState()
     data class Downloading(val progress: Int) : UgoiraState()
     object Extracting : UgoiraState()
-    object Encoding : UgoiraState()
+    data class Encoding(val progress: Int) : UgoiraState()
     data class Done(val data: UgoiraData) : UgoiraState()
     data class Error(val errorResId: Int, val errorCode: Int? = null) : UgoiraState()
 }
@@ -106,8 +106,10 @@ object UgoiraRepository {
             zipFile.delete()
 
             // Step 4: Encode to GIF
-            stateFlow?.value = UgoiraState.Encoding
-            encodeGif(framesDir, metadata, gifFile)
+            stateFlow?.value = UgoiraState.Encoding(0)
+            encodeGif(framesDir, metadata, gifFile) { progress ->
+                stateFlow?.value = UgoiraState.Encoding(progress)
+            }
 
             // Delete frame files
             framesDir.deleteRecursively()
@@ -128,11 +130,19 @@ object UgoiraRepository {
         }
     }
 
-    private fun encodeGif(framesDir: File, metadata: UgoiraMetadata, outputFile: File) {
+    private fun encodeGif(
+        framesDir: File,
+        metadata: UgoiraMetadata,
+        outputFile: File,
+        onProgress: (Int) -> Unit = {}
+    ) {
         val encoder = AnimatedGifEncoder()
         encoder.setRepeat(0) // Loop forever
         encoder.setQuality(10) // Quality (1-20, 1 is best but slowest)
         encoder.start(outputFile.absolutePath)
+
+        val totalFrames = metadata.frames.size
+        var processedFrames = 0
 
         for (frame in metadata.frames) {
             val fileName = frame.file ?: continue
@@ -143,6 +153,10 @@ object UgoiraRepository {
             encoder.setDelay(frame.delay)
             encoder.addFrame(bitmap)
             bitmap.recycle()
+
+            processedFrames++
+            val progress = (processedFrames * 100 / totalFrames)
+            onProgress(progress)
         }
 
         encoder.finish()

@@ -250,9 +250,10 @@ class AnimatedGifEncoder {
         for (i in data.indices) {
             val px = data[i]
             val j = i * 3
-            pixels!![j] = ((px shr 16) and 0xff).toByte()
-            pixels!![j + 1] = ((px shr 8) and 0xff).toByte()
-            pixels!![j + 2] = (px and 0xff).toByte()
+            // Store as BGR order (NeuQuant expects BGR)
+            pixels!![j] = (px and 0xff).toByte()           // B
+            pixels!![j + 1] = ((px shr 8) and 0xff).toByte()  // G
+            pixels!![j + 2] = ((px shr 16) and 0xff).toByte() // R
         }
     }
 
@@ -336,7 +337,11 @@ class AnimatedGifEncoder {
 /**
  * NeuQuant Neural-Net Quantization Algorithm
  */
-private class NeuQuant(private val thepicture: ByteArray, private val lengthcount: Int, private val samplefac: Int) {
+private class NeuQuant(
+    private val thepicture: ByteArray,
+    private val lengthcount: Int,
+    private val samplefac: Int
+) {
 
     companion object {
         private const val netsize = 256
@@ -636,7 +641,12 @@ private class NeuQuant(private val thepicture: ByteArray, private val lengthcoun
 /**
  * LZW encoder for GIF
  */
-private class LZWEncoder(private val imgW: Int, private val imgH: Int, private val pixAry: ByteArray, private val initCodeSize: Int) {
+private class LZWEncoder(
+    private val imgW: Int,
+    private val imgH: Int,
+    private val pixAry: ByteArray,
+    private val initCodeSize: Int
+) {
 
     companion object {
         private const val EOF = -1

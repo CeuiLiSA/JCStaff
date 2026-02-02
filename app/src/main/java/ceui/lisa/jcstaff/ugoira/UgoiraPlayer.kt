@@ -17,6 +17,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -88,7 +90,8 @@ fun UgoiraPlayer(
             }
 
             is UgoiraState.Encoding -> {
-                PreviewWithOverlay(previewUrl, stringResource(R.string.ugoira_encoding))
+                val text = "${stringResource(R.string.ugoira_encoding)} ${currentState.progress}%"
+                PreviewWithProgress(previewUrl, text, currentState.progress)
             }
 
             is UgoiraState.Done -> {
@@ -177,6 +180,12 @@ private fun LoadingOverlay(
     modifier: Modifier = Modifier,
     progress: Float? = null
 ) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress ?: 0f,
+        animationSpec = tween(durationMillis = 300),
+        label = "progress"
+    )
+
     Box(
         modifier = modifier
             .fillMaxWidth(0.6f)
@@ -192,7 +201,7 @@ private fun LoadingOverlay(
         ) {
             if (progress != null) {
                 LinearProgressIndicator(
-                    progress = { progress },
+                    progress = { animatedProgress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp)
