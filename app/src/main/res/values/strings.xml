@@ -79,6 +79,9 @@
     <string name="recent_searches">最近搜索</string>
     <string name="search_error">搜索失败</string>
     <string name="no_results">没有找到相关结果</string>
+    <string name="delete_search_history_title">删除搜索记录</string>
+    <string name="delete_search_history_message">确定要删除「%1$s」吗？</string>
+    <string name="trending_searches">热门搜索</string>
 
     <!-- Language -->
     <string name="language_title">语言</string>

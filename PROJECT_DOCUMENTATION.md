@@ -48,9 +48,11 @@ ceui.lisa.jcstaff/
 │   ├── ApiCacheManager.kt        # API 缓存管理器
 │   ├── ApiCacheEntity.kt         # 缓存实体
 │   ├── ApiCacheDao.kt            # 缓存 DAO
-│   ├── BrowseHistoryManager.kt   # 浏览历史管理器
+│   ├── BrowseHistoryRepository.kt# 浏览历史与搜索历史管理器
 │   ├── BrowseHistoryEntity.kt    # 浏览历史实体
-│   └── BrowseHistoryDao.kt       # 浏览历史 DAO
+│   ├── BrowseHistoryDao.kt       # 浏览历史 DAO
+│   ├── SearchHistoryEntity.kt    # 搜索历史实体
+│   └── SearchHistoryDao.kt       # 搜索历史 DAO
 ├── core/                         # 核心工具
 │   ├── ObjectStore.kt            # 全局响应式对象池
 │   ├── PagedDataLoader.kt        # 通用分页数据加载器
@@ -438,18 +440,27 @@ ModalNavigationDrawer（侧滑抽屉）
 
 #### 用户视角
 - 点击首页搜索图标进入搜索页
-- 搜索框自动聚焦，展示搜索历史
-- 输入关键词后展示瀑布流搜索结果
-- 支持无限滚动加载更多
+- 顶部 TopAppBar 显示「搜索」标题和返回按钮
+- MD3 风格搜索框（药丸形状、填充背景）自动聚焦
+- 展示两个 Section：
+  - **最近搜索**：搜索历史，点击 × 可删除（带二次确认弹窗）
+  - **热门搜索**：从 Trending Tags API 获取的热门标签
+- 输入关键词时展示实时联想（500ms debounce）
+- 联想列表高亮匹配的关键词
+- 点击联想或热门标签进入 TagDetail 页面
+- 从 TagDetail 返回时光标自动定位到文字末尾
+- 返回手势：有文字时清空，无文字时返回上一页
 
 #### 实现原理
 
-- 使用 Material 3 `SearchBar` 组件，支持展开/收起动画
-- `SearchViewModel` 管理搜索状态：
-  - 调用 `PixivApi.searchIllusts()` 进行搜索
-  - 搜索历史存储在内存中
-  - 支持分页加载（通过 `next_url`）
-- 搜索结果使用 `LazyVerticalStaggeredGrid` 瀑布流展示
+- 使用普通 `Column` + `TextField` 布局，避免 SearchBar 的预测性返回动画
+- `TextFieldValue` 控制光标位置，`DisposableEffect` + `LifecycleEventObserver` 监听 `ON_RESUME` 事件
+- 搜索历史使用 Room 数据库持久化存储（`SearchHistoryEntity`）
+- `BrowseHistoryRepository.recordSearch(tag)` 统一记录搜索历史（手动搜索、标签点击、热门标签均会记录）
+- 关键词联想使用 `snapshotFlow` + `debounce(500)` + `collectLatest` 实现
+- `HighlightedText` 使用 `AnnotatedString` + `SpanStyle` 实现关键词高亮
+- 热门标签通过 `getTrendingTags()` API 获取
+- 删除历史时弹出 `AlertDialog` 确认
 
 ---
 
@@ -1143,7 +1154,7 @@ onCreate()
 | ViewModel 数 | 17+ |
 | API 接口数 | 30+ |
 | 支持语言 | 5 (中/繁中/英/日/韩) |
-| Room Entity | 2 (ApiCache, BrowseHistory) |
+| Room Entity | 3 (ApiCache, BrowseHistory, SearchHistory) |
 | OkHttp Interceptor | 4 |
 | AGSL 着色器效果 | 5 (Neon Plasma, Fire Storm, Traced Tunnel, Tunnel Image, Magic Circle) |
 | 导航路由数 | 15 |

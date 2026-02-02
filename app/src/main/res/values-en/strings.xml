@@ -5,6 +5,7 @@
     <string name="back">Back</string>
     <string name="cancel">Cancel</string>
     <string name="clear">Clear</string>
+    <string name="delete">Delete</string>
     <string name="close">Close</string>
     <string name="share">Share</string>
     <string name="more">More</string>
@@ -83,6 +84,9 @@
     <string name="recent_searches">Recent Searches</string>
     <string name="search_error">Search failed</string>
     <string name="no_results">No results found</string>
+    <string name="delete_search_history_title">Delete Search History</string>
+    <string name="delete_search_history_message">Remove \"%1$s\" from search history?</string>
+    <string name="trending_searches">Trending</string>
 
     <!-- Settings Screen -->
     <string name="show_illust_info_title">Show Illustration Info</string>
