@@ -42,11 +42,6 @@ data class UgoiraRankingMode(
 private val ugoiraRankingModes = listOf(
     UgoiraRankingMode(PixivWebScraper.RankingMode.DAILY, R.string.rank_day),
     UgoiraRankingMode(PixivWebScraper.RankingMode.WEEKLY, R.string.rank_week),
-    UgoiraRankingMode(PixivWebScraper.RankingMode.MONTHLY, R.string.rank_month),
-    UgoiraRankingMode(PixivWebScraper.RankingMode.ROOKIE, R.string.rank_week_rookie),
-    UgoiraRankingMode(PixivWebScraper.RankingMode.ORIGINAL, R.string.rank_week_original),
-    UgoiraRankingMode(PixivWebScraper.RankingMode.MALE, R.string.rank_day_male),
-    UgoiraRankingMode(PixivWebScraper.RankingMode.FEMALE, R.string.rank_day_female),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

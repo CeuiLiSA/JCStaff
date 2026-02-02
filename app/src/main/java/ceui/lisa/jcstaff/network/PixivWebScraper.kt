@@ -27,19 +27,19 @@ object PixivWebScraper {
         .setStrictness(Strictness.LENIENT)
         .create()
 
-    // Web Cookie 存储（需要从 WebView 登录或手动设置）
+    // Web Cookie 存储（可选，用于 R18 内容和个人收藏状态）
     private var webCookie: String? = null
     private var webUserId: String? = null
 
     /**
-     * 设置 Web Cookie（从 WebView 登录获取）
+     * 设置 Web Cookie（可选，用于访问 R18 内容）
      * @param cookie 完整的 Cookie 字符串（包含 PHPSESSID）
      * @param userId 用户 ID
      */
     fun setWebCredentials(cookie: String, userId: String) {
         webCookie = cookie
         webUserId = userId
-        Log.d(TAG, "Web credentials set for user: $userId")
+        Log.d(TAG, "✅ Web credentials set for user: $userId")
     }
 
     /**
@@ -52,7 +52,7 @@ object PixivWebScraper {
     }
 
     /**
-     * 检查是否有 Web 认证
+     * 检查是否有 Web 认证（可选，大部分功能不需要）
      */
     fun hasWebCredentials(): Boolean = webCookie != null && webUserId != null
 
