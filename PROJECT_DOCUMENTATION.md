@@ -42,7 +42,9 @@ ceui.lisa.jcstaff/
 │   ├── TokenRefreshInterceptor.kt# 401 自动刷新拦截器
 │   ├── HeaderInterceptor.kt      # 请求头注入
 │   ├── ApiCacheInterceptor.kt    # API 响应缓存拦截器
-│   └── PkceUtil.kt               # PKCE 工具
+│   ├── PkceUtil.kt               # PKCE 工具
+│   ├── PixivWebScraper.kt        # 网页抓取服务（ugoira 排行榜等）
+│   └── WebRankingModels.kt       # 网页排行榜数据模型
 ├── cache/                        # 本地缓存
 │   ├── AppDatabase.kt            # Room 数据库
 │   ├── ApiCacheManager.kt        # API 缓存管理器
@@ -80,7 +82,8 @@ ceui.lisa.jcstaff/
 │   ├── FollowingViewModel.kt     # 关注的插画/漫画新作
 │   ├── FollowingNovelsViewModel.kt   # 关注的小说新作
 │   ├── LatestContentViewModel.kt # 全站最新插画/漫画/小说
-│   └── RankingViewModel.kt       # 排行榜详情
+│   ├── RankingViewModel.kt       # 排行榜详情
+│   └── UgoiraRankingViewModel.kt # 动图排行榜（网页抓取）
 ├── screens/                      # 各功能页面
 │   ├── LandingScreen.kt          # 登录引导页（3 页 ViewPager）
 │   ├── OnboardScreen.kt          # 引导页第 3 页（图片轮播+登录）
@@ -97,6 +100,7 @@ ceui.lisa.jcstaff/
 │   ├── AccountManagementScreen.kt# 账号管理页
 │   ├── CommentScreen.kt          # 评论页（完整评论列表+回复+发布）
 │   ├── RankingDetailScreen.kt    # 排行榜详情页（多模式 + 日期选择）
+│   ├── UgoiraRankingScreen.kt    # 动图排行榜页面（网页抓取）
 │   ├── ShaderDemoScreen.kt       # AGSL 着色器演示页（5 种效果）
 │   ├── ListScreen.kt             # 通用列表页
 │   └── DetailScreen.kt           # 通用详情页
@@ -1157,5 +1161,5 @@ onCreate()
 | Room Entity | 3 (ApiCache, BrowseHistory, SearchHistory) |
 | OkHttp Interceptor | 4 |
 | AGSL 着色器效果 | 5 (Neon Plasma, Fire Storm, Traced Tunnel, Tunnel Image, Magic Circle) |
-| 导航路由数 | 15 |
+| 导航路由数 | 16 |
 | 首页子页面数 | 10 (3 Tab × 内嵌 ViewPager) |

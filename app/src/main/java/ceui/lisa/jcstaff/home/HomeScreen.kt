@@ -55,6 +55,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
@@ -189,6 +190,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         navViewModel.navigate(NavRoute.BrowseHistory)
+                    }
+                },
+                onUgoiraRankingClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.navigate(NavRoute.UgoiraRanking)
                     }
                 },
                 onSettingsClick = {
@@ -760,6 +767,7 @@ private fun DrawerContent(
     onUserProfileClick: () -> Unit,
     onBookmarksClick: () -> Unit,
     onBrowseHistoryClick: () -> Unit,
+    onUgoiraRankingClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onShaderDemoClick: () -> Unit
 ) {
@@ -1037,6 +1045,11 @@ private fun DrawerContent(
                 icon = Icons.Default.History,
                 label = stringResource(R.string.browse_history),
                 onClick = onBrowseHistoryClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.PlayCircle,
+                label = stringResource(R.string.ugoira_ranking),
+                onClick = onUgoiraRankingClick
             )
 
             Spacer(modifier = Modifier.weight(1f))

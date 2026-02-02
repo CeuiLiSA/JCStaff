@@ -71,4 +71,7 @@ sealed interface NavRoute {
     ) : NavRoute {
         override val stableKey = "SpotlightDetail_${article.id}"
     }
+    data object UgoiraRanking : NavRoute {
+        override val stableKey = "UgoiraRanking"
+    }
 }

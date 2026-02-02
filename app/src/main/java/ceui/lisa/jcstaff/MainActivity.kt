@@ -58,6 +58,7 @@ import ceui.lisa.jcstaff.screens.SettingsScreen
 import ceui.lisa.jcstaff.screens.ShaderDemoScreen
 import ceui.lisa.jcstaff.screens.SpotlightDetailScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
+import ceui.lisa.jcstaff.screens.UgoiraRankingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 import coil.Coil
@@ -359,6 +360,10 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                             SpotlightDetailScreen(
                                 article = route.article
                             )
+                        }
+
+                        is NavRoute.UgoiraRanking -> {
+                            UgoiraRankingScreen()
                         }
                     }
                 }

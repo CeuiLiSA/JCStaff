@@ -76,6 +76,7 @@
     <string name="rank_week_manga">만화 주간</string>
     <string name="rank_month_manga">만화 월간</string>
     <string name="rank_week_rookie_manga">만화 루키</string>
+    <string name="ugoira_ranking">우고이라 랭킹</string>
     <string name="select_date">날짜 선택</string>
 
     <!-- Search Screen -->
