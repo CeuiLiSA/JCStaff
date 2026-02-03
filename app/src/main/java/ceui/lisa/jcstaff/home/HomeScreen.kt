@@ -156,6 +156,11 @@ fun HomeScreen(
         selectionManager.clearSelection()
     }
 
+    // 侧边栏展开时，返回手势优先收起侧边栏
+    BackHandler(enabled = drawerState.isOpen) {
+        coroutineScope.launch { drawerState.close() }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = !selectionManager.isSelectionMode,
