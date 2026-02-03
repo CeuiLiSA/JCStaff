@@ -31,9 +31,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import android.os.Build
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -294,8 +295,15 @@ fun AppSwitcherOverlay(
                     modifier = Modifier
                         .width(cardWidthDp)
                         .padding(bottom = 8.dp)
-                        .graphicsLayer { alpha = titleAlpha }
-                    .blur(titleBlurRadius)
+                        .graphicsLayer {
+                            alpha = titleAlpha
+                            if (Build.VERSION.SDK_INT >= 31 && titleBlurRadius > 0.dp) {
+                                val blurPx = titleBlurRadius.toPx()
+                                renderEffect = android.graphics.RenderEffect.createBlurEffect(
+                                    blurPx, blurPx, android.graphics.Shader.TileMode.DECAL
+                                ).asComposeRenderEffect()
+                            }
+                        }
                 )
                 AppSwitcherCard(
                     screenshot = screenshotStore.getScreenshot(route.stableKey),
