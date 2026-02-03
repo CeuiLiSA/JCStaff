@@ -64,7 +64,6 @@ fun AppSwitcherOverlay(
     screenshotStore: ScreenshotStore,
     state: AppSwitcherState,
     onCardClick: (Int) -> Unit,
-    onDeleteCard: (Int) -> Unit,
     onSelectedIndexChange: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -79,8 +78,6 @@ fun AppSwitcherOverlay(
     val animScrollPos = remember { Animatable(0f) }
 
     var flingJob by remember { mutableStateOf<Job?>(null) }
-    var deleteCardIndex by remember { mutableStateOf<Int?>(null) }
-    var deleteOffset by remember { mutableFloatStateOf(0f) }
 
     // Card-to-fullscreen expansion animation state
     var expandingIndex by remember { mutableStateOf<Int?>(null) }
@@ -100,8 +97,6 @@ fun AppSwitcherOverlay(
             val target = state.selectedIndex.toFloat()
             dragScrollPos = target
             animScrollPos.snapTo(target)
-            deleteCardIndex = null
-            deleteOffset = 0f
             isDragging = false
             expandingIndex = null
             expandProgress.snapTo(0f)
@@ -194,6 +189,7 @@ fun AppSwitcherOverlay(
             .fillMaxSize()
             .background(Color.Black.copy(alpha = bgAlpha))
     ) {
+
         val screenWidthPx = constraints.maxWidth.toFloat()
         val screenHeightPx = constraints.maxHeight.toFloat()
 
@@ -248,9 +244,6 @@ fun AppSwitcherOverlay(
             // iOS-style: right card always on top of left card
             val zIndex = index.toFloat()
 
-            val cardDeleteOffset = if (deleteCardIndex == index) deleteOffset else 0f
-            val dismissProgress = (cardDeleteOffset / -300f).coerceIn(0f, 1f)
-            val dismissScale = 1f - dismissProgress * 0.2f
             val totalHeight = cardHeightPx + titleHeightPx
 
             // iOS-style depth scale: left cards shrink with exponential decay,
@@ -264,8 +257,6 @@ fun AppSwitcherOverlay(
                 val decay = 0.6f
                 minScale + (1f - minScale) * decay.pow(-relPos)
             }
-            val combinedScale = depthScale * dismissScale
-
             // Fade cards out during expand, fade in during shrink
             val expandFade = if (isAnimatingOverlay) 1f - overlayVisualProgress else 1f
 
@@ -280,13 +271,13 @@ fun AppSwitcherOverlay(
                     .offset {
                         IntOffset(
                             x = (baseX - cardWidthPx / 2f).roundToInt(),
-                            y = (centerY - totalHeight / 2f + cardDeleteOffset).roundToInt()
+                            y = (centerY - totalHeight / 2f).roundToInt()
                         )
                     }
                     .graphicsLayer {
-                        scaleX = combinedScale
-                        scaleY = combinedScale
-                        this.alpha = (1f - dismissProgress) * expandFade
+                        scaleX = depthScale
+                        scaleY = depthScale
+                        this.alpha = expandFade
                     }
             ) {
                 Text(
@@ -429,15 +420,6 @@ fun AppSwitcherOverlay(
                                     }
                                 }
 
-                                1 -> {
-                                    if (deleteOffset < -150f && backStack.size > 1 && deleteCardIndex != null) {
-                                        onDeleteCard(deleteCardIndex!!)
-                                    }
-                                    deleteCardIndex = null
-                                    deleteOffset = 0f
-                                    isDragging = false
-                                }
-
                                 else -> {
                                     isDragging = false
                                 }
@@ -458,8 +440,6 @@ fun AppSwitcherOverlay(
                                     )
                                 )
                             }
-                            deleteCardIndex = null
-                            deleteOffset = 0f
                         },
                         onDrag = { change, dragAmount ->
                             change.consume()
@@ -485,14 +465,6 @@ fun AppSwitcherOverlay(
                                     dragScrollPos += delta * baseFriction * edgeFriction
                                 }
 
-                                1 -> {
-                                    if (dragAmount.y < 0 || deleteOffset < 0) {
-                                        deleteOffset =
-                                            (deleteOffset + dragAmount.y).coerceAtMost(0f)
-                                        deleteCardIndex = dragScrollPos.roundToInt()
-                                            .coerceIn(0, backStack.size - 1)
-                                    }
-                                }
                             }
                         }
                     )
