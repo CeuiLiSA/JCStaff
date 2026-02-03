@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotStore
 import kotlinx.coroutines.launch
 
+enum class NavigationDirection { FORWARD, BACKWARD }
+
 data class AppSwitcherState(
     val isVisible: Boolean = false,
     val selectedIndex: Int = -1
@@ -25,6 +27,13 @@ class NavigationViewModel : ViewModel() {
     val canGoBack: Boolean
         get() = backStack.size > 1
 
+    // Navigation direction for transition animations
+    private val _navigationDirection = mutableStateOf(NavigationDirection.FORWARD)
+    val navigationDirection: State<NavigationDirection> = _navigationDirection
+
+    val previousRouteKey: String?
+        get() = if (backStack.size >= 2) backStack[backStack.size - 2].stableKey else null
+
     // App switcher state
     val screenshotStore = ScreenshotStore()
     private val _appSwitcherState = mutableStateOf(AppSwitcherState())
@@ -35,6 +44,7 @@ class NavigationViewModel : ViewModel() {
         get() = (backStack.size - 1).coerceAtLeast(0)
 
     fun navigate(route: NavRoute) {
+        _navigationDirection.value = NavigationDirection.FORWARD
         // Capture current page screenshot before navigating away
         currentRoute?.let { current ->
             viewModelScope.launch {
@@ -45,6 +55,7 @@ class NavigationViewModel : ViewModel() {
     }
 
     fun goBack() {
+        _navigationDirection.value = NavigationDirection.BACKWARD
         if (backStack.size > 1) {
             val removed = backStack.removeLast()
             screenshotStore.remove(removed.stableKey)
@@ -52,6 +63,7 @@ class NavigationViewModel : ViewModel() {
     }
 
     fun clearAndNavigate(route: NavRoute) {
+        _navigationDirection.value = NavigationDirection.FORWARD
         // Clear all screenshots when resetting navigation
         backStack.forEach { screenshotStore.remove(it.stableKey) }
         backStack.clear()
@@ -83,6 +95,7 @@ class NavigationViewModel : ViewModel() {
      *  Does NOT hide the app switcher — the caller controls overlay dismissal. */
     fun navigateToIndex(index: Int) {
         if (index < 0 || index >= backStack.size) return
+        _navigationDirection.value = NavigationDirection.BACKWARD
         // Remove all routes after the target index
         while (backStack.size > index + 1) {
             val removed = backStack.removeLast()

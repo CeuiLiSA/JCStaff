@@ -2,22 +2,31 @@ package ceui.lisa.jcstaff
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -25,12 +34,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
@@ -49,6 +65,7 @@ import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.home.HomeScreen
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.navigation.NavigationDirection
 import ceui.lisa.jcstaff.navigation.NavigationViewModel
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.screens.AccountManagementScreen
@@ -75,6 +92,7 @@ import ceui.lisa.jcstaff.screens.WebTagDetailScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 import coil.Coil
 import coil.ImageLoader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -200,8 +218,30 @@ fun AppNavigation(authViewModel: AuthViewModel) {
         else -> null
     }
 
-    BackHandler(enabled = navViewModel.canGoBack) {
-        navViewModel.goBack()
+    // Predictive back gesture state
+    var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
+    var predictiveBackSwipeEdge by remember { mutableIntStateOf(0) } // BackEventCompat.EDGE_LEFT
+    var isPredictiveBack by remember { mutableStateOf(false) }
+    var skipNextTransition by remember { mutableStateOf(false) }
+
+    PredictiveBackHandler(enabled = navViewModel.canGoBack) { backEvents ->
+        try {
+            isPredictiveBack = true
+            predictiveBackProgress = 0f
+            backEvents.collect { event ->
+                predictiveBackProgress = event.progress
+                predictiveBackSwipeEdge = event.swipeEdge
+            }
+            // Gesture completed — navigate back
+            skipNextTransition = true
+            isPredictiveBack = false
+            predictiveBackProgress = 0f
+            navViewModel.goBack()
+        } catch (_: CancellationException) {
+            // Gesture cancelled — reset state
+            isPredictiveBack = false
+            predictiveBackProgress = 0f
+        }
     }
 
     // Loading 状态显示加载指示器
@@ -236,29 +276,93 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     val saveableStateHolder = rememberSaveableStateHolder()
     val selectionManager = remember { SelectionManager() }
     val appSwitcherState by navViewModel.appSwitcherState
+    val navigationDirection by navViewModel.navigationDirection
+    val density = LocalDensity.current
+
+    // Material 3 emphasized easing curves
+    val emphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
+    val emphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
 
     CompositionLocalProvider(
         LocalNavigationViewModel provides navViewModel,
         LocalSelectionManager provides selectionManager
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            // Previous page preview during predictive back gesture
+            if (isPredictiveBack && Build.VERSION.SDK_INT >= 34) {
+                val prevKey = navViewModel.previousRouteKey
+                val prevScreenshot = prevKey?.let { navViewModel.screenshotStore.getScreenshot(it) }
+                if (prevScreenshot != null) {
+                    Image(
+                        bitmap = prevScreenshot,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.FillBounds
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    )
+                }
+            }
+
             // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
             key(activeUserId) {
                 AnimatedContent(
                     targetState = currentRoute,
                     transitionSpec = {
-                        fadeIn() togetherWith fadeOut() using SizeTransform(clip = false)
+                        if (skipNextTransition) {
+                            skipNextTransition = false
+                            EnterTransition.None togetherWith ExitTransition.None using SizeTransform(clip = false)
+                        } else {
+                            val isForward = navigationDirection == NavigationDirection.FORWARD
+                            val enterSlide = slideInHorizontally(
+                                animationSpec = tween(400, easing = emphasizedDecelerate),
+                                initialOffsetX = { fullWidth -> if (isForward) (fullWidth * 0.30f).toInt() else -(fullWidth * 0.30f).toInt() }
+                            ) + fadeIn(
+                                animationSpec = tween(150, delayMillis = 50, easing = emphasizedDecelerate)
+                            )
+                            val exitSlide = slideOutHorizontally(
+                                animationSpec = tween(400, easing = emphasizedAccelerate),
+                                targetOffsetX = { fullWidth -> if (isForward) -(fullWidth * 0.30f).toInt() else (fullWidth * 0.30f).toInt() }
+                            ) + fadeOut(
+                                animationSpec = tween(100, easing = emphasizedAccelerate)
+                            )
+                            enterSlide togetherWith exitSlide using SizeTransform(clip = false)
+                        }
                     },
                     label = "navigation",
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
-                        .graphicsLayer {
-                            // Hide page content while app switcher is open.
-                            // The overlay's screenshot covers everything; this prevents
-                            // the AnimatedContent crossfade from flashing the old page.
-                            alpha = if (appSwitcherState.isVisible) 0f else 1f
-                        }
+                        .then(
+                            if (isPredictiveBack && Build.VERSION.SDK_INT >= 34) {
+                                val cornerRadius = with(density) { (16.dp * predictiveBackProgress).toPx() }
+                                Modifier
+                                    .graphicsLayer {
+                                        val scale = 1f - (0.1f * predictiveBackProgress)
+                                        scaleX = scale
+                                        scaleY = scale
+                                        // Slight shift toward the swipe edge
+                                        val shiftFraction = 0.05f * predictiveBackProgress
+                                        translationX = if (predictiveBackSwipeEdge == 0) { // EDGE_LEFT
+                                            size.width * shiftFraction
+                                        } else {
+                                            -size.width * shiftFraction
+                                        }
+                                        clip = true
+                                        shape = RoundedCornerShape(cornerRadius)
+                                        alpha = if (appSwitcherState.isVisible) 0f else 1f
+                                    }
+                            } else {
+                                Modifier.graphicsLayer {
+                                    // Hide page content while app switcher is open.
+                                    alpha = if (appSwitcherState.isVisible) 0f else 1f
+                                }
+                            }
+                        )
                 ) { route ->
                     saveableStateHolder.SaveableStateProvider(route.stableKey) {
                         // Wrap content with ScreenshotCapture for app switcher.
