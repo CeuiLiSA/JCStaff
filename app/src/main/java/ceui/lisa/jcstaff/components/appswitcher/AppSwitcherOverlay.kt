@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -264,6 +265,9 @@ fun AppSwitcherOverlay(
             // focused card and right-side cards show it.
             // Smooth 0→1 transition as a card slides from left to center.
             val titleAlpha = (1f + relPos).coerceIn(0f, 1f)
+            // Blur text during the 0.5→1 fade-in / 1→0.5 fade-out range.
+            // At titleAlpha=1 → 0dp blur; at titleAlpha≤0.5 → max 10dp blur.
+            val titleBlurRadius = ((1f - titleAlpha).coerceAtMost(0.5f) * 2f * 10f).dp
 
             Column(
                 modifier = Modifier
@@ -291,6 +295,7 @@ fun AppSwitcherOverlay(
                         .width(cardWidthDp)
                         .padding(bottom = 8.dp)
                         .graphicsLayer { alpha = titleAlpha }
+                    .blur(titleBlurRadius)
                 )
                 AppSwitcherCard(
                     screenshot = screenshotStore.getScreenshot(route.stableKey),
