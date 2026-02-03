@@ -633,6 +633,90 @@ ModalNavigationDrawer（侧滑抽屉）
 
 ---
 
+### 12.1 下载管理器架构详解
+
+#### 架构设计
+
+```
+DownloadTaskManager (单例)
+├── 队列管理 (Task Queue)
+├── 并发控制 (Mutex + Coroutines)
+├── 数据持久化 (Room Database)
+├── 进度追踪 (StateFlow)
+└── 生命周期管理 (重启恢复)
+```
+
+#### 关键文件
+
+| 功能模块 | 文件路径 |
+|---------|--------|
+| 下载任务管理器 | `core/DownloadTaskManager.kt` |
+| 图片下载器 | `core/ImageDownloader.kt` |
+| 下载任务实体 | `cache/DownloadHistoryEntity.kt` |
+| 数据库 | `cache/AppDatabase.kt` |
+| 下载历史 ViewModel | `history/DownloadHistoryViewModel.kt` |
+| 下载历史 UI | `screens/DownloadHistoryScreen.kt` |
+| 加载任务管理器 | `core/LoadTaskManager.kt` |
+| 进度追踪管理器 | `core/ProgressImageLoader.kt` |
+| 渐进式图片组件 | `components/ProgressiveImage.kt` |
+
+#### 进度追踪机制（三层级）
+
+| 层级 | 字段 | 精度 | 说明 |
+|------|------|------|------|
+| 字节级 | `currentPageProgress: Int` | 0-100 | 当前页正在下载的字节进度 |
+| 页级 | `downloadedPages / totalPages` | 页数 | 已完成的页数统计 |
+| 综合 | `progress: Float` | 0.0-1.0 | `(downloadedPages + currentPageProgress/100f) / totalPages` |
+
+#### 核心技术栈
+
+| 技术 | 用途 |
+|-----|-----|
+| Kotlin Coroutines | 异步任务、后台线程管理 |
+| Mutex | 并发控制、互斥访问 |
+| StateFlow | 实时数据流、UI 订阅 |
+| Room Database | 本地数据持久化 |
+| Flow | 流式查询、变更监听 |
+| OkHttp3 | HTTP 网络请求、字节流 |
+| Jetpack Compose | 声明式 UI |
+
+#### UI 性能优化
+
+**潜在问题：**
+
+| 问题 | 位置 | 影响 |
+|------|------|------|
+| 频繁数据库更新 | `updateCurrentPageProgress()` | 磁盘 I/O 压力 |
+| StateFlow 频繁发射 | `getAllTasksFlow()` | Compose 重组 |
+| 整个列表重组 | LazyColumn 无稳定 key | 列表闪烁 |
+
+**已实施的优化：**
+
+1. **LazyColumn 稳定 key** — 使用 `key = { it.illustId }` 避免不必要重组
+2. **derivedStateOf 缓存** — 计算属性使用 `derivedStateOf` 减少重组：
+   ```kotlin
+   val failedCount by remember { derivedStateOf { state.failedCount } }
+   val completedCount by remember { derivedStateOf { state.completedCount } }
+   val tasks by remember { derivedStateOf { state.tasks } }
+   val isEmpty by remember { derivedStateOf { state.isEmpty } }
+   ```
+3. **并发下载数限制** — `MAX_CONCURRENT_DOWNLOADS = 1`，顺序下载避免资源竞争
+
+**现代手机实际影响：**
+
+对于 2020 年后的中高端设备，当前实现方案性能可接受：
+- Room 的 Flow 在 IO 线程执行
+- Compose 的 `collectAsState` 自动切换到主线程
+- `LinearProgressIndicator` 是轻量组件
+- 真正的并发下载数限制为 1 个
+
+**大批量下载（50+ 任务）的额外优化建议：**
+- 进度更新节流（每 5% 更新一次）
+- 分离"活跃任务"和"历史任务"的数据流
+- 使用虚拟列表仅渲染可见项
+
+---
+
 ### 13. 多选模式
 
 #### 用户视角
