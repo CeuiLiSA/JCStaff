@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -77,6 +78,9 @@ class MainActivity : AppCompatActivity() {
     private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 安装 SplashScreen，必须在 super.onCreate() 之前调用
+        val splashScreen = installSplashScreen()
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -92,6 +96,12 @@ class MainActivity : AppCompatActivity() {
 
         // 提前触发 AuthViewModel 创建，使 auth 初始化与语言加载并行执行
         authViewModel
+
+        // 让 SplashScreen 持续显示，直到认证状态加载完成
+        // 这样可以避免 Compose 首次组合时的 Loading 动画卡顿
+        splashScreen.setKeepOnScreenCondition {
+            authViewModel.authState.value is AuthState.Loading
+        }
 
         // 异步初始化语言管理器（不再阻塞主线程）
         lifecycleScope.launch(Dispatchers.IO) {

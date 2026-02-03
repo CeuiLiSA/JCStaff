@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.JCStaff" parent="Theme.AppCompat.Light.NoActionBar" />
-
-    <!-- SplashScreen theme for pre-Android 12 -->
+    <!-- SplashScreen theme for Android 12+ -->
     <style name="Theme.JCStaff.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenAnimationDuration">300</item>
         <item name="postSplashScreenTheme">@style/Theme.JCStaff</item>
     </style>
 

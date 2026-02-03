@@ -1360,6 +1360,9 @@ if (!cacheResult.shouldFetch(forceRefresh)) return@launch
 
 ```
 onCreate()
+    ├── installSplashScreen()       // 安装系统级 SplashScreen（必须在 super.onCreate() 之前）
+    │   └── setKeepOnScreenCondition { authState == Loading }  // 持续显示直到认证完成
+    │
     ├── enableEdgeToEdge()          // 沉浸式状态栏
     ├── Coil.setImageLoader(...)    // 全局图片加载器（添加 Referer 头）
     ├── SettingsStore.initialize()  // 创建 DataStore 实例（不读盘）
@@ -1393,6 +1396,12 @@ onCreate()
         }
     }
 ```
+
+**冷启动优化：** 使用 Android SplashScreen API (`androidx.core:core-splashscreen`) 解决 Compose 首次组合时 Loading 动画卡顿问题：
+- 系统级 SplashScreen 在独立窗口渲染，不受主线程阻塞影响
+- `setKeepOnScreenCondition` 控制 SplashScreen 持续显示到认证状态加载完成
+- 支持亮色/暗色模式自动切换背景色（白色 `#FFFFFF` / 深灰 `#121212`）
+- 兼容 Android 12 以下设备（通过 compat 库降级处理）
 
 **并行优化：** 语言初始化和认证初始化同时进行，总启动时间 = max(语言加载, 认证加载)。
 
