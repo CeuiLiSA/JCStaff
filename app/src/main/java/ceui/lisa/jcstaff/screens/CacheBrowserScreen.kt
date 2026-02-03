@@ -32,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,6 +71,11 @@ fun CacheBrowserScreen(
     val state by viewModel.state.collectAsState()
     var showDeleteDialog by remember { mutableStateOf<FileItem?>(null) }
     var showCleanDialog by remember { mutableStateOf(false) }
+
+    // 处理系统返回键：如果不在根目录，返回上级目录而非关闭页面
+    BackHandler(enabled = !state.isRoot) {
+        viewModel.navigateUp()
+    }
 
     // 初始化
     LaunchedEffect(Unit) {
