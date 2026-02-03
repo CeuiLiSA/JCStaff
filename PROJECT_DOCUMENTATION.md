@@ -71,8 +71,8 @@ ceui.lisa.jcstaff/
 │   ├── SelectionManager.kt       # 多选管理器（CompositionLocal）
 │   └── ScrollPositionStore.kt    # 滚动位置持久化
 ├── navigation/                   # 导航系统
-│   ├── NavRoutes.kt              # 路由定义
-│   └── NavigationViewModel.kt    # 导航栈管理
+│   ├── NavRoutes.kt              # 路由定义（含 getTitle() 中文标题扩展）
+│   └── NavigationViewModel.kt    # 导航栈管理（含 App Switcher 状态）
 ├── home/                         # 首页
 │   ├── HomeScreen.kt             # 首页界面（三 Tab + 抽屉 + 嵌套 ViewPager）
 │   ├── RecommendedViewModel.kt   # 推荐插画（旧版，保留兼容）
@@ -140,6 +140,11 @@ ceui.lisa.jcstaff/
 │   │   └── CommentPreview.kt     # 评论预览区（详情页嵌入）
 │   ├── novel/                    # 小说组件
 │   │   └── NovelActionBar.kt     # 小说操作栏
+│   ├── appswitcher/              # App Switcher 多任务切换器
+│   │   ├── AppSwitcherOverlay.kt # 全屏覆盖层（连续滚动、非对称间距、橡皮筋回弹）
+│   │   ├── AppSwitcherCard.kt    # 单个截图卡片（圆角 + 阴影）
+│   │   ├── AppSwitcherFab.kt     # 浮动触发按钮（导航深度 ≥ 3 时显示）
+│   │   └── ScreenshotCapture.kt  # 页面截图捕获工具
 │   └── user/                     # 用户组件
 │       ├── UserProfileHeader.kt  # 用户主页头部
 │       ├── UserInfoCard.kt       # 用户信息卡片
@@ -1104,6 +1109,67 @@ UgoiraState.Done(gifFile)  → 使用 Coil GifDecoder 播放
 
 ---
 
+### 24. App Switcher 多任务切换器
+
+#### 用户视角
+- 当导航深度 ≥ 3 时，右下角出现浮动按钮（App Switcher FAB）
+- 点击按钮进入 iOS 风格的多任务切换器
+- 以层叠卡片形式展示导航栈中的所有页面截图
+- 当前页面居中显示，左侧页面紧密堆叠露出薄边，右侧页面间距较大
+- 支持左右滑动浏览，带惯性滚动和自然减速
+- 到达首尾边界时有 iOS 风格橡皮筋回弹效果
+- 每张卡片顶部显示中文页面标题
+- 点击卡片跳转到对应页面（移除其后所有页面）
+- 向上滑动可删除卡片（移除对应页面）
+- 点击空白区域关闭切换器
+
+#### 实现原理
+
+**iOS 风格层叠布局：**
+- 卡片宽度 = 屏幕宽度 × 70%，高度按屏幕比例缩放
+- 非对称间距：左侧 `leftSpacing = cardWidth × 0.28`（紧密堆叠），右侧 `rightSpacing = cardWidth × 0.95`（间距大，当前卡片几乎完全可见）
+- Z-index 按卡片索引递增（右侧卡片始终叠在左侧之上）
+- 每张卡片通过 `Surface(shadowElevation = 12.dp)` 投射阴影，层次分明
+
+**连续滚动模型：**
+```
+scrollPos = 3.0 → 第 3 张卡片居中
+scrollPos = 3.5 → 在第 3 和第 4 张之间
+```
+- 使用连续浮点数 `scrollPos` 替代离散的 `selectedIndex + pixelOffset`
+- 卡片位置 = `centerX + (index - scrollPos) × spacing`
+- 消除了离散索引切换时非对称间距重新计算导致的瞬间跳变
+- 拖拽时直接修改 `dragScrollPos`，松手后 `Animatable` 带惯性动画到目标整数
+
+**惯性滚动：**
+- 使用 `VelocityTracker` 追踪手指速度
+- 松手后将像素速度转换为索引空间速度：`velocityInIndex = -velocityX / dragSpacing`
+- 投射最终位置：`projected = scrollPos + velocityInIndex × 0.25`
+- Spring 动画（NoBouncy + StiffnessLow）驱动减速停止
+
+**橡皮筋回弹：**
+- 滑过边界时施加 30% 摩擦力（仅 30% 的拖拽距离转化为实际滚动）
+- 视觉偏移统一使用 `rightSpacingPx`，确保两端回弹幅度一致
+- 松手后 Spring 动画（NoBouncy + StiffnessLow）将 scrollPos 弹回有效范围
+
+**截图系统：**
+- `ScreenshotCapture` 使用 Compose `graphicsLayer` 捕获每个页面的位图
+- `ScreenshotStore` 管理截图的存储和生命周期
+- 导航时自动捕获当前页截图，返回时清理
+
+**关键文件：**
+
+| 文件 | 职责 |
+|------|------|
+| `AppSwitcherOverlay.kt` | 全屏覆盖层：卡片布局、手势处理、动画 |
+| `AppSwitcherCard.kt` | 单张卡片：截图展示、圆角、阴影 |
+| `AppSwitcherFab.kt` | 浮动按钮：导航深度判断、显示/隐藏 |
+| `ScreenshotCapture.kt` | 截图捕获：Compose graphicsLayer 位图捕获 |
+| `NavigationViewModel.kt` | 状态管理：AppSwitcherState、截图生命周期 |
+| `NavRoutes.kt` | `getTitle()` 扩展函数：每个路由的中文标题 |
+
+---
+
 ## 架构深入解析
 
 ### 导航系统
@@ -1151,6 +1217,11 @@ class NavigationViewModel : ViewModel() {
 | `AccountManagement` | 无 | 账号管理 |
 | `CommentDetail` | objectId, objectType | 评论页面（插画/小说共用） |
 | `RankingDetail` | objectType | 排行榜详情（插画/漫画） |
+| `SpotlightDetail` | article | Pixivision 专题详情 |
+| `UgoiraRanking` | 无 | 动图排行榜 |
+| `LatestWorks` | 无 | 最新作品（三 Tab） |
+| `CacheBrowser` | initialPath | 缓存浏览器 |
+| `SauceNao` | 无 | 以图搜图 |
 
 ---
 

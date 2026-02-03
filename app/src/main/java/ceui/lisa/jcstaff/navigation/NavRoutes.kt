@@ -90,3 +90,29 @@ sealed interface NavRoute {
         override val stableKey = "SauceNao"
     }
 }
+
+/** Get a human-readable title for the route (used in app switcher) */
+fun NavRoute.getTitle(): String = when (this) {
+    is NavRoute.Landing -> "登录"
+    is NavRoute.Home -> "首页"
+    is NavRoute.Search -> "搜索"
+    is NavRoute.IllustDetail -> title.ifEmpty { "作品详情" }
+    is NavRoute.Bookmarks -> "收藏"
+    is NavRoute.Settings -> "设置"
+    is NavRoute.ImageViewer -> "图片查看"
+    is NavRoute.BrowseHistory -> "浏览历史"
+    is NavRoute.DownloadHistory -> "下载历史"
+    is NavRoute.UserProfile -> "用户主页"
+    is NavRoute.TagDetail -> tag.name ?: "标签"
+    is NavRoute.NovelDetail -> "小说详情"
+    is NavRoute.ShaderDemo -> "着色器演示"
+    is NavRoute.AccountManagement -> "账号管理"
+    is NavRoute.CommentDetail -> "评论"
+    is NavRoute.RankingDetail -> "排行榜"
+    is NavRoute.SpotlightDetail -> article.title ?: "特辑"
+    is NavRoute.UgoiraRanking -> "动图排行"
+    is NavRoute.LatestWorks -> "最新作品"
+    is NavRoute.WebTagDetail -> tag.name ?: "标签详情"
+    is NavRoute.CacheBrowser -> "缓存浏览"
+    is NavRoute.SauceNao -> "以图搜图"
+}
