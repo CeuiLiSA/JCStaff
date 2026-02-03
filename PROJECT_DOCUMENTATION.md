@@ -1160,6 +1160,7 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 - **Expand-out（选择卡片）：** 被点击卡片截图从卡片位置扩大到全屏，背景渐隐，其他卡片渐隐
 - 统一使用 `overlayVisualProgress`（0=卡片位置，1=全屏）驱动两个方向的动画
 - 位置、尺寸、圆角半径（16dp↔0dp）均在卡片和全屏之间线性插值
+- 使用 iOS 风格自定义插值曲线 `CubicBezierEasing(0.17, 0.84, 0.44, 1.0)`：温和加速 + 长尾平滑减速，无 overshoot
 - `navigateToIndex` 仅修改导航栈，切换器在 expand 动画完成 + 400ms 延迟后自行关闭
 
 **截图系统：**

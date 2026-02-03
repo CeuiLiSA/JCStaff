@@ -2,7 +2,7 @@ package ceui.lisa.jcstaff.components.appswitcher
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -30,7 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -49,10 +48,15 @@ import ceui.lisa.jcstaff.navigation.AppSwitcherState
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.navigation.getTitle
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
+
+// iOS-style easing: gentle acceleration, long smooth deceleration.
+// Approximates UIKit's default spring-like curve without overshoot.
+private val iOSEasing = CubicBezierEasing(0.17f, 0.84f, 0.44f, 1.0f)
 
 @Composable
 fun AppSwitcherOverlay(
@@ -105,7 +109,7 @@ fun AppSwitcherOverlay(
             overlayReady = true
             // Shrink-in animation: fullscreen → card position
             isShrinking = true
-            shrinkProgress.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+            shrinkProgress.animateTo(1f, tween(400, easing = iOSEasing))
             isShrinking = false
         } else {
             overlayReady = false
@@ -135,7 +139,7 @@ fun AppSwitcherOverlay(
             // Now expand the target card to fullscreen
             expandingIndex = targetIndex
             expandProgress.snapTo(0f)
-            expandProgress.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+            expandProgress.animateTo(1f, tween(400, easing = iOSEasing))
             onDismiss()
         }
     }
@@ -154,7 +158,9 @@ fun AppSwitcherOverlay(
     if (!overlayReady) {
         val selectedRoute = backStack.getOrNull(state.selectedIndex)
         val screenshot = selectedRoute?.let { screenshotStore.getScreenshot(it.stableKey) }
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)) {
             if (screenshot != null) {
                 Image(
                     bitmap = screenshot,
@@ -525,7 +531,7 @@ fun AppSwitcherOverlay(
                                     expandProgress.snapTo(0f)
                                     expandProgress.animateTo(
                                         1f,
-                                        tween(400, easing = FastOutSlowInEasing)
+                                        tween(400, easing = iOSEasing)
                                     )
                                     // Navigate first (backStack change only, overlay stays visible).
                                     // The fullscreen screenshot keeps covering everything.
