@@ -24,7 +24,7 @@ fun AppSwitcherFab(
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
-        visible = navigationDepth >= 3,
+        visible = navigationDepth > 0,
         enter = scaleIn(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,

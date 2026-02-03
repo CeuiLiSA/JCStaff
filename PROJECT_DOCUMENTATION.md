@@ -143,7 +143,7 @@ ceui.lisa.jcstaff/
 │   ├── appswitcher/              # App Switcher 多任务切换器
 │   │   ├── AppSwitcherOverlay.kt # 全屏覆盖层（连续滚动、非对称间距、橡皮筋回弹）
 │   │   ├── AppSwitcherCard.kt    # 单个截图卡片（圆角 + 阴影）
-│   │   ├── AppSwitcherFab.kt     # 浮动触发按钮（导航深度 ≥ 3 时显示）
+│   │   ├── AppSwitcherFab.kt     # 浮动触发按钮（导航深度 > 0 时显示）
 │   │   └── ScreenshotCapture.kt  # 页面截图捕获工具
 │   └── user/                     # 用户组件
 │       ├── UserProfileHeader.kt  # 用户主页头部
@@ -1112,16 +1112,16 @@ UgoiraState.Done(gifFile)  → 使用 Coil GifDecoder 播放
 ### 24. App Switcher 多任务切换器
 
 #### 用户视角
-- 当导航深度 ≥ 3 时，右下角出现浮动按钮（App Switcher FAB）
-- 点击按钮进入 iOS 风格的多任务切换器
+- 当导航深度 > 0 时，右下角出现浮动按钮（App Switcher FAB）
+- 点击按钮进入 iOS 风格的多任务切换器，当前页面缩小为卡片（shrink-in 动画）
 - 以层叠卡片形式展示导航栈中的所有页面截图
 - 当前页面居中显示，左侧页面紧密堆叠露出薄边，右侧页面间距较大
-- 支持左右滑动浏览，带惯性滚动和自然减速
+- 支持左右滑动浏览，带阻尼感的惯性滚动和自然减速
 - 到达首尾边界时有 iOS 风格橡皮筋回弹效果
 - 每张卡片顶部显示中文页面标题
-- 点击卡片跳转到对应页面（移除其后所有页面）
+- 点击卡片触发 expand-to-fullscreen 动画后跳转到对应页面（移除其后所有页面）
 - 向上滑动可删除卡片（移除对应页面）
-- 点击空白区域关闭切换器
+- 点击空白区域或手势返回：自动滚动回原始页面卡片，执行 expand 动画后关闭切换器
 
 #### 实现原理
 
@@ -1141,16 +1141,25 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 - 消除了离散索引切换时非对称间距重新计算导致的瞬间跳变
 - 拖拽时直接修改 `dragScrollPos`，松手后 `Animatable` 带惯性动画到目标整数
 
-**惯性滚动：**
+**惯性滚动与阻尼：**
 - 使用 `VelocityTracker` 追踪手指速度
+- 拖拽时施加 70% 基础摩擦力（`baseFriction = 0.70`），增加阻尼感
 - 松手后将像素速度转换为索引空间速度：`velocityInIndex = -velocityX / dragSpacing`
 - 投射最终位置：`projected = scrollPos + velocityInIndex × 0.25`
-- Spring 动画（NoBouncy + StiffnessLow）驱动减速停止
+- Spring 动画（dampingRatio=0.85 + StiffnessMediumLow）驱动减速停止
 
 **橡皮筋回弹：**
-- 滑过边界时施加 30% 摩擦力（仅 30% 的拖拽距离转化为实际滚动）
+- 滑过边界时额外施加 30% 摩擦力（与基础摩擦叠加，仅 21% 的拖拽距离转化为实际滚动）
 - 视觉偏移统一使用 `rightSpacingPx`，确保两端回弹幅度一致
-- 松手后 Spring 动画（NoBouncy + StiffnessLow）将 scrollPos 弹回有效范围
+- 松手后 Spring 动画将 scrollPos 弹回有效范围
+
+**卡片-全屏过渡动画：**
+- **Shrink-in（打开切换器）：** 当前页面截图从全屏缩小到卡片位置，背景渐显，其他卡片渐显
+- **Expand-out（选择卡片）：** 被点击卡片截图从卡片位置扩大到全屏，背景渐隐，其他卡片渐隐
+- 统一使用 `overlayVisualProgress`（0=卡片位置，1=全屏）驱动两个方向的动画
+- 位置、尺寸、圆角半径（16dp↔0dp）均在卡片和全屏之间线性插值
+- 页面内容在切换器可见时设为 `alpha=0`，防止 AnimatedContent 跨页转场闪烁
+- `navigateToIndex` 仅修改导航栈，切换器在 expand 动画完成 + 400ms 延迟后自行关闭
 
 **截图系统：**
 - `ScreenshotCapture` 使用 Compose `graphicsLayer` 捕获每个页面的位图
@@ -1163,7 +1172,7 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 |------|------|
 | `AppSwitcherOverlay.kt` | 全屏覆盖层：卡片布局、手势处理、动画 |
 | `AppSwitcherCard.kt` | 单张卡片：截图展示、圆角、阴影 |
-| `AppSwitcherFab.kt` | 浮动按钮：导航深度判断、显示/隐藏 |
+| `AppSwitcherFab.kt` | 浮动按钮：导航深度 > 0 时显示 |
 | `ScreenshotCapture.kt` | 截图捕获：Compose graphicsLayer 位图捕获 |
 | `NavigationViewModel.kt` | 状态管理：AppSwitcherState、截图生命周期 |
 | `NavRoutes.kt` | `getTitle()` 扩展函数：每个路由的中文标题 |

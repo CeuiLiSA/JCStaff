@@ -79,7 +79,8 @@ class NavigationViewModel : ViewModel() {
         )
     }
 
-    /** Navigate to the page at the given index, removing all pages after it */
+    /** Navigate to the page at the given index, removing all pages after it.
+     *  Does NOT hide the app switcher — the caller controls overlay dismissal. */
     fun navigateToIndex(index: Int) {
         if (index < 0 || index >= backStack.size) return
         // Remove all routes after the target index
@@ -87,7 +88,6 @@ class NavigationViewModel : ViewModel() {
             val removed = backStack.removeLast()
             screenshotStore.remove(removed.stableKey)
         }
-        hideAppSwitcher()
     }
 
     /** Remove the page at the given index (swipe-up delete) */

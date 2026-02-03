@@ -1,8 +1,12 @@
 package ceui.lisa.jcstaff.components.appswitcher
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -13,7 +17,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,11 +30,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,8 +48,10 @@ import androidx.compose.ui.zIndex
 import ceui.lisa.jcstaff.navigation.AppSwitcherState
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.navigation.getTitle
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 @Composable
@@ -62,10 +74,19 @@ fun AppSwitcherOverlay(
     var dragScrollPos by remember { mutableFloatStateOf(0f) }
     val animScrollPos = remember { Animatable(0f) }
 
+    var flingJob by remember { mutableStateOf<Job?>(null) }
     var deleteCardIndex by remember { mutableStateOf<Int?>(null) }
     var deleteOffset by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(state.selectedIndex, state.isVisible) {
+    // Card-to-fullscreen expansion animation state
+    var expandingIndex by remember { mutableStateOf<Int?>(null) }
+    val expandProgress = remember { Animatable(0f) }
+
+    // Fullscreen-to-card shrink animation state (reverse of expand, plays on open)
+    var isShrinking by remember { mutableStateOf(false) }
+    val shrinkProgress = remember { Animatable(0f) }
+
+    LaunchedEffect(state.isVisible) {
         if (state.isVisible) {
             val target = state.selectedIndex.toFloat()
             dragScrollPos = target
@@ -73,15 +94,64 @@ fun AppSwitcherOverlay(
             deleteCardIndex = null
             deleteOffset = 0f
             isDragging = false
+            expandingIndex = null
+            expandProgress.snapTo(0f)
+            // Shrink-in animation: fullscreen → card position
+            isShrinking = true
+            shrinkProgress.snapTo(0f)
+            shrinkProgress.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+            isShrinking = false
         }
+    }
+
+    // Animated dismiss: scroll back to the page that opened the switcher, then expand it.
+    fun animatedDismiss() {
+        if (isShrinking || expandingIndex != null) return
+        val targetIndex = (backStack.size - 1).coerceAtLeast(0)
+        flingJob?.cancel()
+        flingJob = null
+        coroutineScope.launch {
+            // Scroll back to the original page if we're not already there
+            val currentPos = if (isDragging) dragScrollPos else animScrollPos.value
+            if (currentPos.roundToInt() != targetIndex) {
+                isDragging = false
+                animScrollPos.snapTo(currentPos)
+                animScrollPos.animateTo(
+                    targetValue = targetIndex.toFloat(),
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+            }
+            // Now expand the target card to fullscreen
+            expandingIndex = targetIndex
+            expandProgress.snapTo(0f)
+            expandProgress.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+            onDismiss()
+        }
+    }
+
+    BackHandler(enabled = state.isVisible) {
+        animatedDismiss()
     }
 
     if (!state.isVisible) return
 
+    // Unified overlay progress: 0 = card position, 1 = fullscreen.
+    // Shrink (open): goes 1→0.  Expand (close): goes 0→1.
+    val isAnimatingOverlay = isShrinking || expandingIndex != null
+    val overlayVisualProgress = when {
+        isShrinking -> 1f - shrinkProgress.value
+        expandingIndex != null -> expandProgress.value
+        else -> 0f
+    }
+    val bgAlpha = if (isAnimatingOverlay) 0.92f * (1f - overlayVisualProgress) else 0.92f
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.92f))
+            .background(Color.Black.copy(alpha = bgAlpha))
     ) {
         val screenWidthPx = constraints.maxWidth.toFloat()
         val screenHeightPx = constraints.maxHeight.toFloat()
@@ -92,9 +162,11 @@ fun AppSwitcherOverlay(
         val cardWidthDp = with(density) { cardWidthPx.toDp() }
         val cardHeightDp = with(density) { cardHeightPx.toDp() }
         // iOS-style asymmetric spacing:
-        // Left cards are tightly stacked (small peek), right cards are far apart
-        // so the selected card is nearly fully visible.
-        val leftSpacingPx = cardWidthPx * 0.28f
+        // Left cards use geometric-series peek (each card exposes decay× less
+        // than the previous), converging like an infinite series.
+        // Right cards are far apart so the selected card is nearly fully visible.
+        val leftBasePeek = cardWidthPx * 0.20f   // visible strip of first left card
+        val leftDecay = 0.45f                     // each subsequent peek = 45% of previous
         val rightSpacingPx = cardWidthPx * 0.95f
         // Drag sensitivity: how many pixels of drag = 1 card scroll.
         // Larger value = need to drag further to switch one card.
@@ -108,18 +180,26 @@ fun AppSwitcherOverlay(
             .coerceIn(0, (backStack.size - 1).coerceAtLeast(0))
 
         // Position card based on continuous scrollPos — no discrete jumps.
-        // Overscroll region uses rightSpacingPx uniformly so the rubber-band
-        // visual displacement is equally strong on both edges.
+        // Left side uses geometric series: offset(d) = basePeek*(1-decay^d)/(1-decay)
+        // so the visible strips converge like 1, 0.45, 0.2, 0.09, …
+        // Right side stays uniform. Overscroll uses rightSpacingPx for rubber-band.
         val maxScrollIndex = (backStack.size - 1).coerceAtLeast(0).toFloat()
         fun cardCenterX(index: Int, sp: Float = scrollPos): Float {
             val clampedSp = sp.coerceIn(0f, maxScrollIndex)
             val overscroll = sp - clampedSp // <0 past left, >0 past right
             val relPos = index.toFloat() - clampedSp
-            val baseX = centerX + relPos * (if (relPos <= 0f) leftSpacingPx else rightSpacingPx)
+            val baseX = if (relPos <= 0f) {
+                // Geometric series: total offset converges to basePeek/(1-decay)
+                val d = -relPos
+                val totalOffset = leftBasePeek * (1f - leftDecay.pow(d)) / (1f - leftDecay)
+                centerX - totalOffset
+            } else {
+                centerX + relPos * rightSpacingPx
+            }
             return baseX - overscroll * rightSpacingPx
         }
 
-        // 1) Cards — iOS style: all same size, opaque, with shadow, right stacks on top of left
+        // 1) Cards — iOS style with depth scaling on left cards
         backStack.forEachIndexed { index, route ->
             val baseX = cardCenterX(index)
 
@@ -131,6 +211,22 @@ fun AppSwitcherOverlay(
             val dismissScale = 1f - dismissProgress * 0.2f
             val totalHeight = cardHeightPx + titleHeightPx
 
+            // iOS-style depth scale: left cards shrink with exponential decay,
+            // converging to minScale like a geometric series.
+            val clampedSp = scrollPos.coerceIn(0f, maxScrollIndex)
+            val relPos = index.toFloat() - clampedSp
+            val depthScale = if (relPos >= 0f) {
+                1f
+            } else {
+                val minScale = 0.88f
+                val decay = 0.6f
+                minScale + (1f - minScale) * decay.pow(-relPos)
+            }
+            val combinedScale = depthScale * dismissScale
+
+            // Fade cards out during expand, fade in during shrink
+            val expandFade = if (isAnimatingOverlay) 1f - overlayVisualProgress else 1f
+
             Column(
                 modifier = Modifier
                     .zIndex(zIndex)
@@ -141,9 +237,9 @@ fun AppSwitcherOverlay(
                         )
                     }
                     .graphicsLayer {
-                        scaleX = dismissScale
-                        scaleY = dismissScale
-                        this.alpha = 1f - dismissProgress
+                        scaleX = combinedScale
+                        scaleY = combinedScale
+                        this.alpha = (1f - dismissProgress) * expandFade
                     }
             ) {
                 Text(
@@ -167,7 +263,72 @@ fun AppSwitcherOverlay(
             }
         }
 
-        // 2) Transparent gesture layer (rendered last = on top, intercepts all touch)
+        // 2) Animated card overlay — shared by shrink-in (open) and expand-out (close).
+        //    overlayVisualProgress: 0 = card bounds, 1 = fullscreen.
+        val overlayIdx = when {
+            isShrinking -> state.selectedIndex
+            expandingIndex != null -> expandingIndex
+            else -> null
+        }
+        if (overlayIdx != null && overlayIdx in backStack.indices) {
+            val route = backStack[overlayIdx]
+            val screenshot = screenshotStore.getScreenshot(route.stableKey)
+
+            // Start geometry: card's current position and size
+            val startCenterX = cardCenterX(overlayIdx)
+            val startCenterY = centerY + titleHeightPx / 2f // card center (title is above)
+            val clampedSp = scrollPos.coerceIn(0f, maxScrollIndex)
+            val relPos = overlayIdx.toFloat() - clampedSp
+            val startScale = if (relPos >= 0f) {
+                1f
+            } else {
+                val minScale = 0.88f
+                val decay = 0.6f
+                minScale + (1f - minScale) * decay.pow(-relPos)
+            }
+            val startW = cardWidthPx * startScale
+            val startH = cardHeightPx * startScale
+
+            // End geometry: fullscreen
+            val endCenterX = screenWidthPx / 2f
+            val endCenterY = screenHeightPx / 2f
+            val endW = screenWidthPx
+            val endH = screenHeightPx
+
+            // Interpolate using overlayVisualProgress (0=card, 1=fullscreen)
+            val p = overlayVisualProgress
+            val currentW = startW + (endW - startW) * p
+            val currentH = startH + (endH - startH) * p
+            val currentCX = startCenterX + (endCenterX - startCenterX) * p
+            val currentCY = startCenterY + (endCenterY - startCenterY) * p
+            val cornerRadius = with(density) { (16.dp.toPx() * (1f - p)).toDp() }
+
+            Box(
+                modifier = Modifier
+                    .zIndex(backStack.size.toFloat() + 1f)
+                    .offset {
+                        IntOffset(
+                            x = (currentCX - currentW / 2f).roundToInt(),
+                            y = (currentCY - currentH / 2f).roundToInt()
+                        )
+                    }
+                    .requiredWidth(with(density) { currentW.toDp() })
+                    .requiredHeight(with(density) { currentH.toDp() })
+                    .clip(RoundedCornerShape(cornerRadius))
+                    .background(Color.Black)
+            ) {
+                if (screenshot != null) {
+                    Image(
+                        bitmap = screenshot,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+
+        // 3) Transparent gesture layer (rendered last = on top, intercepts all touch)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -180,6 +341,9 @@ fun AppSwitcherOverlay(
 
                     detectDragGestures(
                         onDragStart = {
+                            if (isShrinking || expandingIndex != null) return@detectDragGestures
+                            flingJob?.cancel()
+                            flingJob = null
                             isDragging = true
                             totalDragX = 0f
                             totalDragY = 0f
@@ -201,15 +365,16 @@ fun AppSwitcherOverlay(
                                     val isOverscrolled =
                                         dragScrollPos < 0f || dragScrollPos > maxIndex.toFloat()
 
-                                    coroutineScope.launch {
-                                        isDragging = false
+                                    flingJob = coroutineScope.launch {
                                         animScrollPos.snapTo(dragScrollPos)
+                                        isDragging = false
                                         animScrollPos.animateTo(
                                             targetValue = targetIndex.toFloat(),
                                             initialVelocity = if (isOverscrolled) 0f else velocityInIndex,
                                             animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                                stiffness = Spring.StiffnessLow
+                                                dampingRatio = 0.85f,
+                                                stiffness = Spring.StiffnessMediumLow,
+                                                visibilityThreshold = 0.0005f
                                             )
                                         )
                                         onSelectedIndexChange(targetIndex)
@@ -233,10 +398,17 @@ fun AppSwitcherOverlay(
                         onDragCancel = {
                             val target = dragScrollPos.roundToInt()
                                 .coerceIn(0, (backStack.size - 1).coerceAtLeast(0))
-                            coroutineScope.launch {
-                                isDragging = false
+                            flingJob = coroutineScope.launch {
                                 animScrollPos.snapTo(dragScrollPos)
-                                animScrollPos.animateTo(target.toFloat())
+                                isDragging = false
+                                animScrollPos.animateTo(
+                                    targetValue = target.toFloat(),
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                        stiffness = Spring.StiffnessLow,
+                                        visibilityThreshold = 0.0005f
+                                    )
+                                )
                             }
                             deleteCardIndex = null
                             deleteOffset = 0f
@@ -255,12 +427,14 @@ fun AppSwitcherOverlay(
                                 0 -> {
                                     val maxIndex = (backStack.size - 1).coerceAtLeast(0).toFloat()
                                     val delta = -dragAmount.x / dragSpacingPx
-                                    // Rubber-band: 30% friction when past the edge
-                                    val friction = if (
+                                    // Base damping: heavier drag feel (70% of raw input)
+                                    val baseFriction = 0.70f
+                                    // Rubber-band: extra friction (21% total) when past the edge
+                                    val edgeFriction = if (
                                         (dragScrollPos <= 0f && delta < 0f) ||
                                         (dragScrollPos >= maxIndex && delta > 0f)
                                     ) 0.3f else 1f
-                                    dragScrollPos += delta * friction
+                                    dragScrollPos += delta * baseFriction * edgeFriction
                                 }
 
                                 1 -> {
@@ -278,6 +452,8 @@ fun AppSwitcherOverlay(
                 .pointerInput(backStack.size) {
                     detectTapGestures(
                         onTap = { offset ->
+                            if (isShrinking || expandingIndex != null) return@detectTapGestures
+
                             val tapX = offset.x
                             val tapY = offset.y
                             val totalHeight = cardHeightPx + titleHeightPx
@@ -300,9 +476,25 @@ fun AppSwitcherOverlay(
                             }
 
                             if (tappedIndex != null) {
-                                onCardClick(tappedIndex)
+                                flingJob?.cancel()
+                                flingJob = null
+                                expandingIndex = tappedIndex
+                                coroutineScope.launch {
+                                    expandProgress.snapTo(0f)
+                                    expandProgress.animateTo(
+                                        1f,
+                                        tween(400, easing = FastOutSlowInEasing)
+                                    )
+                                    // Navigate first (backStack change only, overlay stays visible).
+                                    // The fullscreen screenshot keeps covering everything.
+                                    onCardClick(tappedIndex)
+                                    // Wait for the AnimatedContent crossfade (~310ms) to settle
+                                    // before dismissing. The fullscreen screenshot covers this gap.
+                                    delay(400)
+                                    onDismiss()
+                                }
                             } else {
-                                onDismiss()
+                                animatedDismiss()
                             }
                         }
                     )

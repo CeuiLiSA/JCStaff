@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -252,6 +253,12 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
+                        .graphicsLayer {
+                            // Hide page content while app switcher is open.
+                            // The overlay's screenshot covers everything; this prevents
+                            // the AnimatedContent crossfade from flashing the old page.
+                            alpha = if (appSwitcherState.isVisible) 0f else 1f
+                        }
                 ) { route ->
                     saveableStateHolder.SaveableStateProvider(route.stableKey) {
                         // Wrap content with ScreenshotCapture for app switcher
