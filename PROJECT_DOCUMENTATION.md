@@ -1118,7 +1118,7 @@ UgoiraState.Done(gifFile)  → 使用 Coil GifDecoder 播放
 - 当前页面居中显示，左侧页面紧密堆叠露出薄边，右侧页面间距较大
 - 支持左右滑动浏览，带阻尼感的惯性滚动和自然减速
 - 到达首尾边界时有 iOS 风格橡皮筋回弹效果
-- 每张卡片顶部显示中文页面标题
+- 卡片标题仅对焦点卡及右侧卡片可见，左侧堆叠卡片标题平滑淡出（iOS 风格）
 - 点击卡片触发 expand-to-fullscreen 动画后跳转到对应页面（移除其后所有页面）
 - 向上滑动可删除卡片（移除对应页面）
 - 点击空白区域或手势返回：自动滚动回原始页面卡片，执行 expand 动画后关闭切换器
@@ -1126,10 +1126,12 @@ UgoiraState.Done(gifFile)  → 使用 Coil GifDecoder 播放
 #### 实现原理
 
 **iOS 风格层叠布局：**
-- 卡片宽度 = 屏幕宽度 × 70%，高度按屏幕比例缩放
-- 非对称间距：左侧 `leftSpacing = cardWidth × 0.28`（紧密堆叠），右侧 `rightSpacing = cardWidth × 0.95`（间距大，当前卡片几乎完全可见）
+- 卡片宽度 = 屏幕宽度 × 66%，高度按屏幕比例缩放
+- 非对称间距：左侧几何级数递减 peek（`basePeek = cardWidth × 0.22`，每层 45% 衰减），右侧 `rightSpacing = cardWidth × 0.78`
+- 左侧卡片深度缩放：`minScale = 0.94`，指数衰减趋近最小值
 - Z-index 按卡片索引递增（右侧卡片始终叠在左侧之上）
-- 每张卡片通过 `Surface(shadowElevation = 12.dp)` 投射阴影，层次分明
+- 每张卡片通过 `Surface(shadowElevation = 32.dp)` 投射阴影，层次分明
+- 卡片标题平滑淡入/淡出：`titleAlpha = (1 + relPos).coerceIn(0, 1)`，左侧堆叠卡片标题透明
 
 **连续滚动模型：**
 ```
@@ -1146,7 +1148,7 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 - 拖拽时施加 70% 基础摩擦力（`baseFriction = 0.70`），增加阻尼感
 - 松手后将像素速度转换为索引空间速度：`velocityInIndex = -velocityX / dragSpacing`
 - 投射最终位置：`projected = scrollPos + velocityInIndex × 0.25`
-- Spring 动画（dampingRatio=0.85 + StiffnessMediumLow）驱动减速停止
+- Spring 动画（dampingRatio=NoBouncy + stiffness=80）驱动减速停止，无回弹、慢悠悠停稳
 
 **橡皮筋回弹：**
 - 滑过边界时额外施加 30% 摩擦力（与基础摩擦叠加，仅 21% 的拖拽距离转化为实际滚动）
@@ -1158,13 +1160,18 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 - **Expand-out（选择卡片）：** 被点击卡片截图从卡片位置扩大到全屏，背景渐隐，其他卡片渐隐
 - 统一使用 `overlayVisualProgress`（0=卡片位置，1=全屏）驱动两个方向的动画
 - 位置、尺寸、圆角半径（16dp↔0dp）均在卡片和全屏之间线性插值
-- 页面内容在切换器可见时设为 `alpha=0`，防止 AnimatedContent 跨页转场闪烁
 - `navigateToIndex` 仅修改导航栈，切换器在 expand 动画完成 + 400ms 延迟后自行关闭
 
 **截图系统：**
 - `ScreenshotCapture` 使用 Compose `graphicsLayer` 捕获每个页面的位图
 - `ScreenshotStore` 管理截图的存储和生命周期
 - 导航时自动捕获当前页截图，返回时清理
+- 截图捕获区域内包含 `MaterialTheme.colorScheme.background`，确保截图不含透明区域，避免背景色丢失
+
+**防闪烁机制：**
+- `overlayReady` 标志位：LaunchedEffect 完成滚动初始化前，渲染全屏截图（非卡片布局），防止首帧卡片位置错乱
+- 页面内容在切换器可见时设为 `alpha=0`，防止 AnimatedContent 跨页转场闪烁
+- 打开切换器时背景立即设为 0.92 透明度，不随 shrink 动画渐变，防止缩小过程中露出透明间隙
 
 **关键文件：**
 

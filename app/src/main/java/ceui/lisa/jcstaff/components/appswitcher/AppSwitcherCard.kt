@@ -36,8 +36,8 @@ fun AppSwitcherCard(
                 onClick = onClick
             ),
         shape = RoundedCornerShape(16.dp),
-        shadowElevation = 12.dp,
-        tonalElevation = 2.dp
+        shadowElevation = 32.dp,
+        tonalElevation = 4.dp
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (screenshot != null) {

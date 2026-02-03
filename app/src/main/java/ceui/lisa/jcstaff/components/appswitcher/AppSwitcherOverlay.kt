@@ -86,8 +86,13 @@ fun AppSwitcherOverlay(
     var isShrinking by remember { mutableStateOf(false) }
     val shrinkProgress = remember { Animatable(0f) }
 
+    // Track whether the overlay has been initialized by LaunchedEffect.
+    // Prevents a one-frame flash of cards before the shrink animation starts.
+    var overlayReady by remember { mutableStateOf(false) }
+
     LaunchedEffect(state.isVisible) {
         if (state.isVisible) {
+            overlayReady = false
             val target = state.selectedIndex.toFloat()
             dragScrollPos = target
             animScrollPos.snapTo(target)
@@ -96,11 +101,14 @@ fun AppSwitcherOverlay(
             isDragging = false
             expandingIndex = null
             expandProgress.snapTo(0f)
+            shrinkProgress.snapTo(0f)
+            overlayReady = true
             // Shrink-in animation: fullscreen → card position
             isShrinking = true
-            shrinkProgress.snapTo(0f)
             shrinkProgress.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
             isShrinking = false
+        } else {
+            overlayReady = false
         }
     }
 
@@ -138,6 +146,27 @@ fun AppSwitcherOverlay(
 
     if (!state.isVisible) return
 
+    // Block rendering until LaunchedEffect has initialised scroll position and
+    // started the shrink animation.  Without this guard the first composition
+    // frame would show cards at arbitrary positions before snapping into place.
+    // Show the selected page's screenshot at fullscreen so the transition is seamless
+    // (page content is already hidden via alpha=0 in MainActivity).
+    if (!overlayReady) {
+        val selectedRoute = backStack.getOrNull(state.selectedIndex)
+        val screenshot = selectedRoute?.let { screenshotStore.getScreenshot(it.stableKey) }
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            if (screenshot != null) {
+                Image(
+                    bitmap = screenshot,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+        return
+    }
+
     // Unified overlay progress: 0 = card position, 1 = fullscreen.
     // Shrink (open): goes 1→0.  Expand (close): goes 0→1.
     val isAnimatingOverlay = isShrinking || expandingIndex != null
@@ -146,7 +175,13 @@ fun AppSwitcherOverlay(
         expandingIndex != null -> expandProgress.value
         else -> 0f
     }
-    val bgAlpha = if (isAnimatingOverlay) 0.92f * (1f - overlayVisualProgress) else 0.92f
+    // During shrink (open): keep background fully opaque so no transparent gap
+    // appears as the overlay card shrinks from fullscreen.
+    // During expand (close): fade background out alongside the expanding card.
+    val bgAlpha = when {
+        expandingIndex != null -> 0.92f * (1f - expandProgress.value)
+        else -> 0.92f
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -157,7 +192,7 @@ fun AppSwitcherOverlay(
         val screenHeightPx = constraints.maxHeight.toFloat()
 
         val screenAspectRatio = screenHeightPx / screenWidthPx
-        val cardWidthPx = screenWidthPx * 0.70f
+        val cardWidthPx = screenWidthPx * 0.66f
         val cardHeightPx = cardWidthPx * screenAspectRatio
         val cardWidthDp = with(density) { cardWidthPx.toDp() }
         val cardHeightDp = with(density) { cardHeightPx.toDp() }
@@ -165,12 +200,13 @@ fun AppSwitcherOverlay(
         // Left cards use geometric-series peek (each card exposes decay× less
         // than the previous), converging like an infinite series.
         // Right cards are far apart so the selected card is nearly fully visible.
-        val leftBasePeek = cardWidthPx * 0.20f   // visible strip of first left card
+        // Spacing tuned so left and right cards move at similar visual rates.
+        val leftBasePeek = cardWidthPx * 0.22f   // visible strip of first left card
         val leftDecay = 0.45f                     // each subsequent peek = 45% of previous
-        val rightSpacingPx = cardWidthPx * 0.95f
+        val rightSpacingPx = cardWidthPx * 0.78f
         // Drag sensitivity: how many pixels of drag = 1 card scroll.
         // Larger value = need to drag further to switch one card.
-        val dragSpacingPx = cardWidthPx * 0.65f
+        val dragSpacingPx = cardWidthPx * 0.60f
         val titleHeightPx = with(density) { 32.dp.toPx() }
         val centerX = screenWidthPx / 2f
         val centerY = screenHeightPx / 2f
@@ -218,7 +254,7 @@ fun AppSwitcherOverlay(
             val depthScale = if (relPos >= 0f) {
                 1f
             } else {
-                val minScale = 0.88f
+                val minScale = 0.94f
                 val decay = 0.6f
                 minScale + (1f - minScale) * decay.pow(-relPos)
             }
@@ -226,6 +262,11 @@ fun AppSwitcherOverlay(
 
             // Fade cards out during expand, fade in during shrink
             val expandFade = if (isAnimatingOverlay) 1f - overlayVisualProgress else 1f
+
+            // iOS-style: left-side (stacked) cards hide their title,
+            // focused card and right-side cards show it.
+            // Smooth 0→1 transition as a card slides from left to center.
+            val titleAlpha = (1f + relPos).coerceIn(0f, 1f)
 
             Column(
                 modifier = Modifier
@@ -252,6 +293,7 @@ fun AppSwitcherOverlay(
                     modifier = Modifier
                         .width(cardWidthDp)
                         .padding(bottom = 8.dp)
+                        .graphicsLayer { alpha = titleAlpha }
                 )
                 AppSwitcherCard(
                     screenshot = screenshotStore.getScreenshot(route.stableKey),
@@ -282,7 +324,7 @@ fun AppSwitcherOverlay(
             val startScale = if (relPos >= 0f) {
                 1f
             } else {
-                val minScale = 0.88f
+                val minScale = 0.94f
                 val decay = 0.6f
                 minScale + (1f - minScale) * decay.pow(-relPos)
             }
@@ -372,8 +414,8 @@ fun AppSwitcherOverlay(
                                             targetValue = targetIndex.toFloat(),
                                             initialVelocity = if (isOverscrolled) 0f else velocityInIndex,
                                             animationSpec = spring(
-                                                dampingRatio = 0.85f,
-                                                stiffness = Spring.StiffnessMediumLow,
+                                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                                stiffness = 80f,
                                                 visibilityThreshold = 0.0005f
                                             )
                                         )

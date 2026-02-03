@@ -261,11 +261,18 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                         }
                 ) { route ->
                     saveableStateHolder.SaveableStateProvider(route.stableKey) {
-                        // Wrap content with ScreenshotCapture for app switcher
+                        // Wrap content with ScreenshotCapture for app switcher.
+                        // The background is inside the capture so the screenshot
+                        // includes it (GraphicsLayer captures with transparency).
                         ScreenshotCapture(
                             key = route.stableKey,
                             screenshotStore = navViewModel.screenshotStore
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.background)
+                            ) {
                             when (route) {
                                 is NavRoute.Landing -> {
                                     LandingScreen(
@@ -421,6 +428,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                 is NavRoute.DownloadHistory -> {
                                     DownloadHistoryScreen()
                                 }
+                            }
                             }
                         }
                     }
