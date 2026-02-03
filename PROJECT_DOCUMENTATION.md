@@ -122,6 +122,7 @@ ceui.lisa.jcstaff/
 │   ├── ErrorRetryState.kt        # 通用错误重试状态（支持下拉刷新+重试按钮）
 │   ├── LoadingIndicator.kt       # MD3 加载指示器
 │   ├── FloatingTopBar.kt         # 浮动顶部栏（返回+分享）
+│   ├── ScrollAwareTopBar.kt      # 滚动感知顶部栏（插画/用户详情页）
 │   ├── SelectionTopBar.kt        # 多选操作栏
 │   ├── ProgressiveImage.kt       # 渐进式图片
 │   ├── MetaInfoRow.kt            # 元信息行
@@ -397,6 +398,7 @@ ModalNavigationDrawer（侧滑抽屉）
 - 顶部显示作品图片（多图可展开）
 - 下方依次展示：标题、作者信息（可关注）、操作栏（收藏/下载/分享）、标签、简介、元数据
 - 底部展示相关推荐作品的瀑布流
+- **滚动感知顶部栏**：当列表向下滚动超过阈值时，顶部显示「作品标题 by 作者名」的 TopAppBar，包含返回按钮和回到顶部按钮
 
 #### 实现原理
 
@@ -506,6 +508,7 @@ ModalNavigationDrawer（侧滑抽屉）
 - 统计数据：投稿数、收藏数、关注数
 - 关注/取消关注按钮
 - 下方展示该用户的所有投稿作品（瀑布流）
+- **滚动感知顶部栏**：当列表向下滚动超过阈值时，顶部显示用户头像、用户名和 @账号的 TopAppBar，包含返回按钮和回到顶部按钮
 
 #### 实现原理
 

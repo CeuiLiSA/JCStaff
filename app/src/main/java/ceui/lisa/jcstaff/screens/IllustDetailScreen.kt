@@ -12,8 +12,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.CircularProgressIndicator
-import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -22,9 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -35,11 +37,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
-import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
-import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.auth.AccountRegistry
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.IllustCard
+import ceui.lisa.jcstaff.components.IllustScrollAwareTopBar
+import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.components.comment.CommentPreviewSection
 import ceui.lisa.jcstaff.components.illust.CollapsibleImageSection
@@ -50,17 +53,18 @@ import ceui.lisa.jcstaff.components.illust.IllustMetaInfo
 import ceui.lisa.jcstaff.components.illust.IllustTags
 import ceui.lisa.jcstaff.core.IllustListViewModel
 import ceui.lisa.jcstaff.core.IllustLoader
+import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import ceui.lisa.jcstaff.core.LocalSelectionManager
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
-import ceui.lisa.jcstaff.auth.AccountRegistry
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -164,25 +168,36 @@ fun IllustDetailScreen(
         }
     }
 
+    val gridState = rememberLazyStaggeredGridState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // 滚动感知 TopBar 显示状态 - 使用 derivedStateOf 避免返回页面时触发动画
+    val showScrollAwareTopBar by remember {
+        derivedStateOf {
+            gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 1200
+        }
+    }
+
     Box {
         Scaffold(
             containerColor = Color.Transparent
         ) { paddingValues ->
-            val gridState = rememberLazyStaggeredGridState()
             val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
             val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
+            val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+            val gridSpacing = if (gridSpacingEnabled) 8.dp else 1.dp
 
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
                 contentPadding = PaddingValues(
-                    start = 0.dp,
-                    end = 0.dp,
+                    start = if (gridSpacingEnabled) 8.dp else 0.dp,
+                    end = if (gridSpacingEnabled) 8.dp else 0.dp,
                     top = 0.dp,
                     bottom = paddingValues.calculateBottomPadding() + 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalItemSpacing = 4.dp,
+                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                verticalItemSpacing = gridSpacing,
                 modifier = Modifier.fillMaxSize()
             ) {
                 // 图片区域 - 可折叠
@@ -196,11 +211,13 @@ fun IllustDetailScreen(
                         isExpanded = isImagesExpanded,
                         onExpandToggle = { isImagesExpanded = !isImagesExpanded },
                         onImageClick = { clickedPreviewUrl, originalUrl, _ ->
-                            navViewModel.navigate(NavRoute.ImageViewer(
-                                imageUrl = clickedPreviewUrl,
-                                originalUrl = originalUrl,
-                                sharedElementKey = ""
-                            ))
+                            navViewModel.navigate(
+                                NavRoute.ImageViewer(
+                                    imageUrl = clickedPreviewUrl,
+                                    originalUrl = originalUrl,
+                                    sharedElementKey = ""
+                                )
+                            )
                         }
                     )
                 }
@@ -253,8 +270,8 @@ fun IllustDetailScreen(
                             isFollowed = isFollowed,
                             onFollowStateChanged = { followed -> isFollowed = followed },
                             onUserClick = { userId ->
-                            navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                        }
+                                navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                            }
                         )
                     }
 
@@ -304,10 +321,12 @@ fun IllustDetailScreen(
                             objectId = illustId,
                             objectType = "illust",
                             onViewAll = {
-                                navViewModel.navigate(NavRoute.CommentDetail(
-                                    objectId = illustId,
-                                    objectType = "illust"
-                                ))
+                                navViewModel.navigate(
+                                    NavRoute.CommentDetail(
+                                        objectId = illustId,
+                                        objectType = "illust"
+                                    )
+                                )
                             }
                         )
                     }
@@ -339,12 +358,14 @@ fun IllustDetailScreen(
                     IllustCard(
                         illust = relatedIllust,
                         onClick = {
-                            navViewModel.navigate(NavRoute.IllustDetail(
-                                illustId = relatedIllust.id,
-                                title = relatedIllust.title ?: "",
-                                previewUrl = relatedIllust.previewUrl(),
-                                aspectRatio = relatedIllust.aspectRatio()
-                            ))
+                            navViewModel.navigate(
+                                NavRoute.IllustDetail(
+                                    illustId = relatedIllust.id,
+                                    title = relatedIllust.title ?: "",
+                                    previewUrl = relatedIllust.previewUrl(),
+                                    aspectRatio = relatedIllust.aspectRatio()
+                                )
+                            )
                         },
                         showIllustInfo = showIllustInfo,
                         cornerRadius = illustCornerRadius
@@ -385,10 +406,23 @@ fun IllustDetailScreen(
             }
         }
 
-        // 浮动顶部栏
-        FloatingTopBar(
-            shareUrl = "https://www.pixiv.net/artworks/$illustId",
-            shareTitle = title
+        // 浮动顶部栏 - 只在 ScrollAwareTopBar 不显示时展示
+        if (!showScrollAwareTopBar) {
+            FloatingTopBar(
+                shareUrl = "https://www.pixiv.net/artworks/$illustId",
+                shareTitle = title
+            )
+        }
+
+        // 滚动感知 TopBar - 滚动到一定位置时显示
+        IllustScrollAwareTopBar(
+            illust = illust,
+            isVisible = showScrollAwareTopBar,
+            onScrollToTop = {
+                coroutineScope.launch {
+                    gridState.animateScrollToItem(0)
+                }
+            }
         )
 
         // Selection top bar overlay

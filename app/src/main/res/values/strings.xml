@@ -201,6 +201,9 @@
     <string name="report">举报</string>
     <string name="block">屏蔽</string>
 
+    <!-- Scroll Aware Top Bar -->
+    <string name="scroll_to_top">回到顶部</string>
+
     <!-- Selection Top Bar -->
     <string name="downloading">下载中 </string>
     <string name="selected_count">已选择 %1$d 项</string>

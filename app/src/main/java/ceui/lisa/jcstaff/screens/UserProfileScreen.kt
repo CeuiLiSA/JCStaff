@@ -12,8 +12,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.CircularProgressIndicator
-import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,27 +21,32 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.components.FloatingTopBar
+import ceui.lisa.jcstaff.components.IllustCard
+import ceui.lisa.jcstaff.components.LoadingIndicator
+import ceui.lisa.jcstaff.components.SelectionTopBar
+import ceui.lisa.jcstaff.components.UserScrollAwareTopBar
+import ceui.lisa.jcstaff.components.user.UserProfileHeader
+import ceui.lisa.jcstaff.core.LocalSelectionManager
+import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
-import androidx.lifecycle.viewmodel.compose.viewModel
-import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
-import ceui.lisa.jcstaff.components.IllustCard
-import ceui.lisa.jcstaff.components.SelectionTopBar
-import ceui.lisa.jcstaff.components.FloatingTopBar
-import ceui.lisa.jcstaff.components.user.UserProfileHeader
-import ceui.lisa.jcstaff.core.SettingsStore
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.profile.UserProfileViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,8 +73,18 @@ fun UserProfileScreen(
 
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
     val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+    val gridSpacing = if (gridSpacingEnabled) 8.dp else 1.dp
 
     val gridState = rememberLazyStaggeredGridState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // 滚动感知 TopBar 显示状态 - 使用 derivedStateOf 避免返回页面时触发动画
+    val showScrollAwareTopBar by remember {
+        derivedStateOf {
+            gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 1200
+        }
+    }
 
     LaunchedEffect(gridState, state.canLoadMore) {
         snapshotFlow {
@@ -95,13 +110,13 @@ fun UserProfileScreen(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
                 contentPadding = PaddingValues(
-                    start = 0.dp,
-                    end = 0.dp,
+                    start = if (gridSpacingEnabled) 8.dp else 0.dp,
+                    end = if (gridSpacingEnabled) 8.dp else 0.dp,
                     top = 0.dp,
                     bottom = 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalItemSpacing = 4.dp,
+                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                verticalItemSpacing = gridSpacing,
                 modifier = Modifier.fillMaxSize()
             ) {
                 // 沉浸式头部
@@ -169,12 +184,14 @@ fun UserProfileScreen(
                     IllustCard(
                         illust = illust,
                         onClick = {
-                            navViewModel.navigate(NavRoute.IllustDetail(
-                                illustId = illust.id,
-                                title = illust.title ?: "",
-                                previewUrl = illust.previewUrl(),
-                                aspectRatio = illust.aspectRatio()
-                            ))
+                            navViewModel.navigate(
+                                NavRoute.IllustDetail(
+                                    illustId = illust.id,
+                                    title = illust.title ?: "",
+                                    previewUrl = illust.previewUrl(),
+                                    aspectRatio = illust.aspectRatio()
+                                )
+                            )
                         },
                         showIllustInfo = showIllustInfo,
                         cornerRadius = illustCornerRadius
@@ -200,10 +217,23 @@ fun UserProfileScreen(
             }
         }
 
-        // 浮动顶部栏
-        FloatingTopBar(
-            shareUrl = "https://www.pixiv.net/users/$userId",
-            shareTitle = state.user?.name ?: ""
+        // 浮动顶部栏 - 只在 ScrollAwareTopBar 不显示时展示
+        if (!showScrollAwareTopBar) {
+            FloatingTopBar(
+                shareUrl = "https://www.pixiv.net/users/$userId",
+                shareTitle = state.user?.name ?: ""
+            )
+        }
+
+        // 滚动感知 TopBar - 滚动到一定位置时显示
+        UserScrollAwareTopBar(
+            user = state.user,
+            isVisible = showScrollAwareTopBar,
+            onScrollToTop = {
+                coroutineScope.launch {
+                    gridState.animateScrollToItem(0)
+                }
+            }
         )
 
         SelectionTopBar(allIllusts = state.illusts)
