@@ -1,7 +1,6 @@
 package ceui.lisa.jcstaff.network
 
 import android.util.Log
-import ceui.lisa.jcstaff.cache.ApiCacheManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.Strictness
@@ -126,26 +125,6 @@ object PixivClient {
         TokenManager.clear()
     }
 
-    /**
-     * 清除 API 缓存（用于下拉刷新等场景）
-     */
-    fun clearApiCache() {
-        ApiCacheManager.clearAllSync()
-    }
-
-    /**
-     * 使指定 URL 的缓存失效
-     */
-    fun invalidateCache(url: String) {
-        ApiCacheManager.invalidateSync(url)
-    }
-
-    /**
-     * 获取缓存统计信息
-     */
-    fun getCacheStats(): String {
-        return ApiCacheManager.getStatsSync()
-    }
 
     /**
      * 通用分页加载方法
@@ -160,49 +139,6 @@ object PixivClient {
             val json = responseBody.string()
             gson.fromJson(json, clazz)
         }
-    }
-
-    /**
-     * 从缓存获取数据（即使过期也返回，用于 stale-while-revalidate）
-     * @param path API 路径，如 "/v1/illust/recommended"
-     * @param queryParams 查询参数
-     * @param clazz 响应类型
-     * @return 缓存的数据，如果没有缓存则返回 null
-     */
-    suspend fun <T> getFromStaleCache(
-        path: String,
-        queryParams: Map<String, String> = emptyMap(),
-        clazz: Class<T>
-    ): T? {
-        val url = buildUrl(path, queryParams)
-        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
-        android.util.Log.d("PixivClient", "🔍 Looking for cache: $cacheKey")
-        val cached = ApiCacheManager.getStale(cacheKey)
-        if (cached == null) {
-            android.util.Log.d("PixivClient", "❌ Cache not found for: $cacheKey")
-            return null
-        }
-        android.util.Log.d("PixivClient", "✅ Cache found for: $cacheKey")
-
-        return withContext(Dispatchers.Default) {
-            try {
-                val json = String(cached.responseBody, Charsets.UTF_8)
-                gson.fromJson(json, clazz)
-            } catch (e: Exception) {
-                android.util.Log.e("PixivClient", "❗ Parse cache failed: ${e.message}")
-                null
-            }
-        }
-    }
-
-    private fun buildUrl(path: String, queryParams: Map<String, String>): String {
-        val baseUrl = APP_API_HOST + path
-        if (queryParams.isEmpty()) return baseUrl
-
-        val queryString = queryParams.entries.joinToString("&") { (key, value) ->
-            "$key=$value"
-        }
-        return "$baseUrl?$queryString"
     }
 
     fun getPkce(): PKCEItem {

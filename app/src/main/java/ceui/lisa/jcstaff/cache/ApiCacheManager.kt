@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -22,8 +23,11 @@ import java.util.concurrent.TimeUnit
 object ApiCacheManager {
 
     private const val TAG = "ApiCache"
+    private const val HOME_KEY = "v1/illust/recommended?include_ranking_illusts=true"
+
     /** 缓存有效期：15 分钟内认为是新鲜的，直接使用 */
     private val CACHE_FRESH_DURATION_MS = TimeUnit.MINUTES.toMillis(15)
+
     /** 缓存最大保留时间：7 天后才删除，支持 stale-while-revalidate */
     private val CACHE_MAX_AGE_MS = TimeUnit.DAYS.toMillis(7)
     private const val MAX_CACHE_SIZE = 100
@@ -96,12 +100,6 @@ object ApiCacheManager {
         }
     }
 
-    /**
-     * 获取缓存（忽略过期，用于 stale-while-revalidate 模式）
-     * 返回缓存内容，即使已过期也返回，让 UI 先显示旧数据
-     */
-    fun getStaleSync(key: String): CacheEntry? = runBlocking { getStale(key) }
-
     suspend fun getStale(key: String): CacheEntry? = withContext(Dispatchers.IO) {
         val cacheDao = dao ?: return@withContext null
 
@@ -115,6 +113,10 @@ object ApiCacheManager {
             Log.d(TAG, "   ├─ Age: ${ageSeconds}s")
             Log.d(TAG, "   ├─ Expired: $expired")
             Log.d(TAG, "   └─ Size: ${entity.responseBody.size} bytes")
+
+            if (shortenKey(key) == HOME_KEY) {
+                delay(700L)
+            }
 
             CacheEntry(
                 responseBody = entity.responseBody,
