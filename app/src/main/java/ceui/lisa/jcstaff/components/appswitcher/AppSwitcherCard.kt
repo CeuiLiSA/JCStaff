@@ -35,7 +35,7 @@ fun AppSwitcherCard(
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(44.dp),
         shadowElevation = 32.dp,
         tonalElevation = 4.dp
     ) {

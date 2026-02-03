@@ -340,7 +340,7 @@ fun AppSwitcherOverlay(
             val currentH = startH + (endH - startH) * p
             val currentCX = startCenterX + (endCenterX - startCenterX) * p
             val currentCY = startCenterY + (endCenterY - startCenterY) * p
-            val cornerRadius = with(density) { (16.dp.toPx() * (1f - p)).toDp() }
+            val cornerRadius = with(density) { (44.dp.toPx() * (1f - p)).toDp() }
 
             Box(
                 modifier = Modifier
