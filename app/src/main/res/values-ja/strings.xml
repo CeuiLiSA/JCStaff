@@ -50,7 +50,11 @@
     <string name="tab_following_novel">フォロー中の小説</string>
     <string name="tab_latest_illust_manga">最新イラスト・マンガ</string>
     <string name="tab_latest_novel">最新小説</string>
+    <string name="latest_works">最新作品</string>
+    <string name="tab_latest_illust">最新イラスト</string>
+    <string name="tab_latest_manga">最新マンガ</string>
     <string name="view_full_ranking">ランキングをすべて見る</string>
+    <string name="drawer_section_history">履歴</string>
     <string name="recommended_for_you">あなたへのおすすめ</string>
     <string name="recommended_illust_subtitle">あなたの好みに基づいて厳選</string>
     <string name="recommended_manga_subtitle">厳選マンガ作品</string>
@@ -100,12 +104,32 @@
     <string name="latest_illusts">最新イラスト</string>
 
     <!-- Settings Screen -->
+    <string name="settings_appearance">外観</string>
+    <string name="settings_general">一般</string>
+    <string name="settings_storage">ストレージ</string>
+    <string name="settings_account">アカウント</string>
+    <string name="view_profile">プロフィールを見る</string>
+    <string name="logout_desc">現在のアカウントからログアウト</string>
     <string name="show_illust_info_title">作品情報を表示</string>
     <string name="show_illust_info_desc">カードにタイトルと作者名を表示</string>
     <string name="card_corner_radius_title">カード角丸</string>
     <string name="card_corner_radius_desc">カードの角丸サイズを調整</string>
     <string name="card_spacing_title">カード間隔</string>
     <string name="card_spacing_desc">オンにするとカード間に余白が入ります</string>
+
+    <!-- Download History Screen -->
+    <string name="download_history">ダウンロード履歴</string>
+    <string name="no_download_history">ダウンロードタスクはありません</string>
+    <string name="clear_download_history_title">ダウンロードタスクを削除</string>
+    <string name="clear_download_history_message">すべてのダウンロードタスクを削除しますか？この操作は取り消せません。</string>
+    <string name="downloading_status">ダウンロード中 %1$d · 待機中 %2$d</string>
+    <string name="retry_all_failed">失敗をすべて再試行</string>
+    <string name="clear_completed">完了済みを削除</string>
+    <string name="clear_all_tasks">すべて削除</string>
+    <string name="status_pending">待機中</string>
+    <string name="status_downloading">ダウンロード中</string>
+    <string name="status_completed">完了</string>
+    <string name="status_failed">失敗</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">履歴を削除</string>
@@ -182,11 +206,25 @@
     <string name="select_all">すべて選択</string>
     <string name="download_selected">選択項目をダウンロード</string>
     <string name="download_complete">ダウンロード完了：%1$d/%2$d</string>
+    <string name="added_to_download_queue">%1$d 件をダウンロードキューに追加しました</string>
 
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">アルバムに保存しました</string>
     <string name="save_failed">保存に失敗しました</string>
     <string name="save_gif">GIF を保存</string>
+    <string name="bookmark_options">ブックマークオプション</string>
+    <string name="bookmark_public">公開ブックマーク</string>
+    <string name="bookmark_private">非公開ブックマーク</string>
+    <string name="bookmark_with_tags">タグ付きブックマーク</string>
+    <string name="bookmark_visibility">ブックマークの公開設定</string>
+    <string name="add_new_tag">新しいタグを追加</string>
+    <string name="selected_tags">選択されたタグ</string>
+    <string name="existing_tags">既存のブックマークタグ</string>
+    <string name="bookmark_success">ブックマークしました</string>
+    <string name="bookmark_failed">ブックマークに失敗しました</string>
+    <string name="all_bookmarks">すべて</string>
+    <string name="filter_by_tag">タグで絞り込み</string>
+    <string name="no_bookmark_tags">ブックマークタグがありません</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">メタデータ取得中...</string>
@@ -299,4 +337,8 @@
     <string name="clean_cache_title">画像キャッシュを削除</string>
     <string name="clean_cache_message">%1$s の画像・GIF キャッシュを削除します。\n\n削除されません：閲覧履歴、検索履歴、アカウント情報、設定。</string>
     <string name="clean_cache_confirm">削除</string>
+
+    <!-- SauceNao -->
+    <string name="sauce_nao">画像検索</string>
+    <string name="sauce_nao_open_in_app">アプリ内で開く</string>
 </resources>

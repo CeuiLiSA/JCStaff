@@ -50,7 +50,11 @@
     <string name="tab_following_novel">关注小说</string>
     <string name="tab_latest_illust_manga">最新插画漫画</string>
     <string name="tab_latest_novel">最新小说</string>
+    <string name="latest_works">最新作品</string>
+    <string name="tab_latest_illust">最新插画</string>
+    <string name="tab_latest_manga">最新漫画</string>
     <string name="view_full_ranking">查看完整排行榜</string>
+    <string name="drawer_section_history">历史记录</string>
     <string name="recommended_for_you">为你推荐</string>
     <string name="recommended_illust_subtitle">基于你的喜好精选</string>
     <string name="recommended_manga_subtitle">精选漫画作品</string>
@@ -100,12 +104,32 @@
     <string name="latest_illusts">最新插画</string>
 
     <!-- Settings Screen -->
+    <string name="settings_appearance">外观</string>
+    <string name="settings_general">通用</string>
+    <string name="settings_storage">存储</string>
+    <string name="settings_account">账号</string>
+    <string name="view_profile">查看个人主页</string>
+    <string name="logout_desc">退出当前账号</string>
     <string name="show_illust_info_title">显示作品信息</string>
     <string name="show_illust_info_desc">在瀑布流卡片上显示标题和作者名</string>
     <string name="card_corner_radius_title">卡片圆角</string>
     <string name="card_corner_radius_desc">调整瀑布流卡片的圆角大小</string>
     <string name="card_spacing_title">卡片间距</string>
     <string name="card_spacing_desc">开启后瀑布流卡片之间有间距</string>
+
+    <!-- Download History Screen -->
+    <string name="download_history">下载历史</string>
+    <string name="no_download_history">暂无下载任务</string>
+    <string name="clear_download_history_title">清空下载任务</string>
+    <string name="clear_download_history_message">确定要清空所有下载任务吗？此操作无法撤销。</string>
+    <string name="downloading_status">下载中 %1$d · 等待 %2$d</string>
+    <string name="retry_all_failed">重试全部失败</string>
+    <string name="clear_completed">清除已完成</string>
+    <string name="clear_all_tasks">清除全部任务</string>
+    <string name="status_pending">等待中</string>
+    <string name="status_downloading">下载中</string>
+    <string name="status_completed">已完成</string>
+    <string name="status_failed">下载失败</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">清空历史</string>
@@ -182,11 +206,25 @@
     <string name="select_all">全选</string>
     <string name="download_selected">下载选中项</string>
     <string name="download_complete">下载完成：%1$d/%2$d</string>
+    <string name="added_to_download_queue">已添加 %1$d 项到下载队列</string>
 
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">已保存到相册</string>
     <string name="save_failed">保存失败</string>
     <string name="save_gif">保存 GIF</string>
+    <string name="bookmark_options">收藏选项</string>
+    <string name="bookmark_public">公开收藏</string>
+    <string name="bookmark_private">私密收藏</string>
+    <string name="bookmark_with_tags">按标签收藏</string>
+    <string name="bookmark_visibility">收藏可见性</string>
+    <string name="add_new_tag">新建标签</string>
+    <string name="selected_tags">已选择的标签</string>
+    <string name="existing_tags">已有的收藏标签</string>
+    <string name="bookmark_success">收藏成功</string>
+    <string name="bookmark_failed">收藏失败</string>
+    <string name="all_bookmarks">全部</string>
+    <string name="filter_by_tag">按标签筛选</string>
+    <string name="no_bookmark_tags">暂无收藏标签</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">获取元数据...</string>
@@ -299,4 +337,8 @@
     <string name="clean_cache_title">清理图片缓存</string>
     <string name="clean_cache_message">将清理 %1$s 的图片和动图缓存。\n\n不会删除：浏览历史、搜索记录、账号信息、个人设置。</string>
     <string name="clean_cache_confirm">清理</string>
+
+    <!-- SauceNao -->
+    <string name="sauce_nao">以图搜源</string>
+    <string name="sauce_nao_open_in_app">在应用内打开</string>
 </resources>

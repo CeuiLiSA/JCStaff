@@ -44,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,6 +77,13 @@ fun DownloadHistoryScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
+
+    // 使用 derivedStateOf 缓存计算结果，减少不必要的重组
+    val failedCount by remember { derivedStateOf { state.failedCount } }
+    val completedCount by remember { derivedStateOf { state.completedCount } }
+    val tasks by remember { derivedStateOf { state.tasks } }
+    val isEmpty by remember { derivedStateOf { state.isEmpty } }
+
     var showClearDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
     var menuTask by remember { mutableStateOf<DownloadTaskEntity?>(null) }
@@ -104,7 +112,7 @@ fun DownloadHistoryScreen(
                     }
                 },
                 actions = {
-                    if (state.failedCount > 0) {
+                    if (failedCount > 0) {
                         IconButton(onClick = { viewModel.retryAllFailed() }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -112,7 +120,7 @@ fun DownloadHistoryScreen(
                             )
                         }
                     }
-                    if (state.tasks.isNotEmpty()) {
+                    if (tasks.isNotEmpty()) {
                         Box {
                             IconButton(onClick = { showMoreMenu = true }) {
                                 Icon(
@@ -124,7 +132,7 @@ fun DownloadHistoryScreen(
                                 expanded = showMoreMenu,
                                 onDismissRequest = { showMoreMenu = false }
                             ) {
-                                if (state.completedCount > 0) {
+                                if (completedCount > 0) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.clear_completed)) },
                                         onClick = {
@@ -147,7 +155,7 @@ fun DownloadHistoryScreen(
             )
         }
     ) { paddingValues ->
-        if (state.isEmpty) {
+        if (isEmpty) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -167,7 +175,7 @@ fun DownloadHistoryScreen(
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.tasks, key = { it.illustId }) { task ->
+                items(tasks, key = { it.illustId }) { task ->
                     DownloadTaskCard(
                         task = task,
                         isCurrentDownload = state.currentDownloadId == task.illustId,

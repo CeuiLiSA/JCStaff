@@ -54,6 +54,7 @@
     <string name="tab_latest_illust">Latest Illustrations</string>
     <string name="tab_latest_manga">Latest Manga</string>
     <string name="view_full_ranking">View Full Ranking</string>
+    <string name="drawer_section_history">History</string>
     <string name="recommended_for_you">Recommended for You</string>
     <string name="recommended_illust_subtitle">Curated based on your preferences</string>
     <string name="recommended_manga_subtitle">Curated manga works</string>
@@ -115,6 +116,20 @@
     <string name="card_corner_radius_desc">Adjust card corner radius</string>
     <string name="card_spacing_title">Card Spacing</string>
     <string name="card_spacing_desc">Add spacing between waterfall cards</string>
+
+    <!-- Download History Screen -->
+    <string name="download_history">Downloads</string>
+    <string name="no_download_history">No download tasks</string>
+    <string name="clear_download_history_title">Clear Download Tasks</string>
+    <string name="clear_download_history_message">Are you sure you want to clear all download tasks? This cannot be undone.</string>
+    <string name="downloading_status">Downloading %1$d · Waiting %2$d</string>
+    <string name="retry_all_failed">Retry All Failed</string>
+    <string name="clear_completed">Clear Completed</string>
+    <string name="clear_all_tasks">Clear All Tasks</string>
+    <string name="status_pending">Pending</string>
+    <string name="status_downloading">Downloading</string>
+    <string name="status_completed">Completed</string>
+    <string name="status_failed">Failed</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">Clear History</string>
@@ -191,11 +206,25 @@
     <string name="select_all">Select All</string>
     <string name="download_selected">Download Selected</string>
     <string name="download_complete">Download complete: %1$d/%2$d</string>
+    <string name="added_to_download_queue">Added %1$d items to download queue</string>
 
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">Saved to gallery</string>
     <string name="save_failed">Save failed</string>
     <string name="save_gif">Save GIF</string>
+    <string name="bookmark_options">Bookmark Options</string>
+    <string name="bookmark_public">Public Bookmark</string>
+    <string name="bookmark_private">Private Bookmark</string>
+    <string name="bookmark_with_tags">Bookmark with Tags</string>
+    <string name="bookmark_visibility">Bookmark Visibility</string>
+    <string name="add_new_tag">Add New Tag</string>
+    <string name="selected_tags">Selected Tags</string>
+    <string name="existing_tags">Existing Bookmark Tags</string>
+    <string name="bookmark_success">Bookmarked</string>
+    <string name="bookmark_failed">Bookmark failed</string>
+    <string name="all_bookmarks">All</string>
+    <string name="filter_by_tag">Filter by Tag</string>
+    <string name="no_bookmark_tags">No bookmark tags</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">Fetching metadata...</string>
@@ -308,4 +337,8 @@
     <string name="clean_cache_title">Clean Image Cache</string>
     <string name="clean_cache_message">This will clean %1$s of image and GIF cache.\n\nWill NOT delete: browse history, search history, account info, settings.</string>
     <string name="clean_cache_confirm">Clean</string>
+
+    <!-- SauceNao -->
+    <string name="sauce_nao">Image Search</string>
+    <string name="sauce_nao_open_in_app">Open in App</string>
 </resources>

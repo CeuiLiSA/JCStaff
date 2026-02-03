@@ -50,7 +50,11 @@
     <string name="tab_following_novel">팔로잉 소설</string>
     <string name="tab_latest_illust_manga">최신 일러스트·만화</string>
     <string name="tab_latest_novel">최신 소설</string>
+    <string name="latest_works">최신 작품</string>
+    <string name="tab_latest_illust">최신 일러스트</string>
+    <string name="tab_latest_manga">최신 만화</string>
     <string name="view_full_ranking">전체 랭킹 보기</string>
+    <string name="drawer_section_history">기록</string>
     <string name="recommended_for_you">당신을 위한 추천</string>
     <string name="recommended_illust_subtitle">취향에 맞게 엄선</string>
     <string name="recommended_manga_subtitle">엄선된 만화 작품</string>
@@ -100,12 +104,32 @@
     <string name="latest_illusts">최신 일러스트</string>
 
     <!-- Settings Screen -->
+    <string name="settings_appearance">외관</string>
+    <string name="settings_general">일반</string>
+    <string name="settings_storage">저장소</string>
+    <string name="settings_account">계정</string>
+    <string name="view_profile">프로필 보기</string>
+    <string name="logout_desc">현재 계정에서 로그아웃</string>
     <string name="show_illust_info_title">작품 정보 표시</string>
     <string name="show_illust_info_desc">카드에 제목과 작가 이름 표시</string>
     <string name="card_corner_radius_title">카드 모서리</string>
     <string name="card_corner_radius_desc">카드 모서리 둥글기 조절</string>
     <string name="card_spacing_title">카드 간격</string>
     <string name="card_spacing_desc">카드 사이에 간격 추가</string>
+
+    <!-- Download History Screen -->
+    <string name="download_history">다운로드 기록</string>
+    <string name="no_download_history">다운로드 작업이 없습니다</string>
+    <string name="clear_download_history_title">다운로드 작업 삭제</string>
+    <string name="clear_download_history_message">모든 다운로드 작업을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</string>
+    <string name="downloading_status">다운로드 중 %1$d · 대기 중 %2$d</string>
+    <string name="retry_all_failed">실패 전체 재시도</string>
+    <string name="clear_completed">완료된 항목 삭제</string>
+    <string name="clear_all_tasks">전체 삭제</string>
+    <string name="status_pending">대기 중</string>
+    <string name="status_downloading">다운로드 중</string>
+    <string name="status_completed">완료</string>
+    <string name="status_failed">실패</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">기록 삭제</string>
@@ -182,11 +206,25 @@
     <string name="select_all">전체 선택</string>
     <string name="download_selected">선택 항목 다운로드</string>
     <string name="download_complete">다운로드 완료: %1$d/%2$d</string>
+    <string name="added_to_download_queue">%1$d개 항목을 다운로드 대기열에 추가했습니다</string>
 
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">갤러리에 저장됨</string>
     <string name="save_failed">저장 실패</string>
     <string name="save_gif">GIF 저장</string>
+    <string name="bookmark_options">북마크 옵션</string>
+    <string name="bookmark_public">공개 북마크</string>
+    <string name="bookmark_private">비공개 북마크</string>
+    <string name="bookmark_with_tags">태그와 함께 북마크</string>
+    <string name="bookmark_visibility">북마크 공개 설정</string>
+    <string name="add_new_tag">새 태그 추가</string>
+    <string name="selected_tags">선택된 태그</string>
+    <string name="existing_tags">기존 북마크 태그</string>
+    <string name="bookmark_success">북마크 완료</string>
+    <string name="bookmark_failed">북마크 실패</string>
+    <string name="all_bookmarks">전체</string>
+    <string name="filter_by_tag">태그로 필터</string>
+    <string name="no_bookmark_tags">북마크 태그가 없습니다</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">메타데이터 가져오는 중...</string>
@@ -299,4 +337,8 @@
     <string name="clean_cache_title">이미지 캐시 정리</string>
     <string name="clean_cache_message">%1$s의 이미지 및 GIF 캐시를 정리합니다.\n\n삭제되지 않음: 탐색 기록, 검색 기록, 계정 정보, 설정.</string>
     <string name="clean_cache_confirm">정리</string>
+
+    <!-- SauceNao -->
+    <string name="sauce_nao">이미지 검색</string>
+    <string name="sauce_nao_open_in_app">앱에서 열기</string>
 </resources>

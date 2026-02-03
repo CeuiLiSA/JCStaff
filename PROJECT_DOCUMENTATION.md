@@ -1336,7 +1336,7 @@ onCreate()
 | ViewModel 数 | 18+ |
 | API 接口数 | 30+ |
 | Web AJAX 接口数 | 2 (标签搜索、标签详情) |
-| 支持语言 | 5 (中/繁中/英/日/韩) |
+| 支持语言 | 5 (中/繁中/英/日/韩)，完整翻译覆盖 |
 | Room Entity | 6 (ApiCache, BrowseHistory, NovelBrowseHistory, UserBrowseHistory, SearchHistory, DownloadTask) |
 | OkHttp Interceptor | 4 |
 | AGSL 着色器效果 | 5 (Neon Plasma, Fire Storm, Traced Tunnel, Tunnel Image, Magic Circle) |

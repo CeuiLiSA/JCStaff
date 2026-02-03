@@ -42,7 +42,7 @@ import java.io.FileOutputStream
 object DownloadTaskManager {
 
     private const val TAG = "DownloadTaskManager"
-    private const val MAX_CONCURRENT_DOWNLOADS = 3
+    private const val MAX_CONCURRENT_DOWNLOADS = 1
 
     private var dao: DownloadTaskDao? = null
     private var appContext: Context? = null
