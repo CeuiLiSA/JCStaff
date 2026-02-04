@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ImageSearch
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
@@ -237,6 +238,12 @@ fun HomeScreen(
                     coroutineScope.launch {
                         drawerState.close()
                         navViewModel.navigate(NavRoute.ShaderDemo)
+                    }
+                },
+                onAppSwitcherDemoClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.showAppSwitcherDemo()
                     }
                 }
             )
@@ -799,7 +806,8 @@ private fun DrawerContent(
     onLatestWorksClick: () -> Unit,
     onSauceNaoClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onShaderDemoClick: () -> Unit
+    onShaderDemoClick: () -> Unit,
+    onAppSwitcherDemoClick: () -> Unit
 ) {
     var accountListExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -1124,6 +1132,11 @@ private fun DrawerContent(
                 icon = Icons.Default.AutoAwesome,
                 label = "Shader Demo",
                 onClick = onShaderDemoClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.Layers,
+                label = "卡片切换测试",
+                onClick = onAppSwitcherDemoClick
             )
 
             Spacer(

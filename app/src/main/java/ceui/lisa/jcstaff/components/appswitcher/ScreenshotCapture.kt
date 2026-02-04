@@ -62,6 +62,11 @@ class ScreenshotStore {
         layers.remove(key)
     }
 
+    /** Directly put a bitmap (e.g., for demo/testing purposes). */
+    fun putBitmap(key: String, bitmap: ImageBitmap) {
+        screenshots[key] = bitmap
+    }
+
     fun clear() {
         screenshots.clear()
         layers.clear()

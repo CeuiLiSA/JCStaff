@@ -35,7 +35,7 @@ fun AppSwitcherCard(
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(44.dp),
+        shape = RoundedCornerShape(30.dp),
         shadowElevation = 32.dp,
         tonalElevation = 4.dp
     ) {
@@ -44,7 +44,7 @@ fun AppSwitcherCard(
                 Image(
                     bitmap = screenshot,
                     contentDescription = null,
-                    contentScale = ContentScale.Fit,
+                    contentScale = ContentScale.FillBounds,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {

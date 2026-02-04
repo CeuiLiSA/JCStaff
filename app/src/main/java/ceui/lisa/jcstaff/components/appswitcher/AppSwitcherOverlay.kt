@@ -206,8 +206,8 @@ fun AppSwitcherOverlay(
         // Right cards are far apart so the selected card is nearly fully visible.
         // Spacing tuned so left and right cards move at similar visual rates.
         val leftBasePeek = cardWidthPx * 0.22f   // visible strip of first left card
-        val leftDecay = 0.45f                     // each subsequent peek = 45% of previous
-        val rightSpacingPx = cardWidthPx * 0.78f
+        val leftDecay = 0.28f                     // fast convergence: only ~2 left cards visible
+        val rightSpacingPx = cardWidthPx * 0.95f
         // Drag sensitivity: how many pixels of drag = 1 card scroll.
         // Larger value = need to drag further to switch one card.
         val dragSpacingPx = cardWidthPx * 0.60f
@@ -253,11 +253,16 @@ fun AppSwitcherOverlay(
             val clampedSp = scrollPos.coerceIn(0f, maxScrollIndex)
             val relPos = index.toFloat() - clampedSp
             val depthScale = if (relPos >= 0f) {
-                1f
+                // iOS: right cards are subtly larger than focused card
+                // Focused (relPos=0) = 0.98, right cards ramp to 1.0
+                val focusedScale = 0.98f
+                (focusedScale + (1f - focusedScale) * relPos).coerceAtMost(1f)
             } else {
-                val minScale = 0.94f
-                val decay = 0.6f
-                minScale + (1f - minScale) * decay.pow(-relPos)
+                // Left cards scale down very subtly (iOS barely scales them)
+                val minScale = 0.96f
+                val focusedScale = 0.98f
+                val decay = 0.50f
+                minScale + (focusedScale - minScale) * decay.pow(-relPos)
             }
             // Fade cards out during expand, fade in during shrink
             val expandFade = if (isAnimatingOverlay) 1f - overlayVisualProgress else 1f
@@ -269,6 +274,12 @@ fun AppSwitcherOverlay(
             // Blur text during the 0.5→1 fade-in / 1→0.5 fade-out range.
             // At titleAlpha=1 → 0dp blur; at titleAlpha≤0.5 → max 10dp blur.
             val titleBlurRadius = ((1f - titleAlpha).coerceAtMost(0.5f) * 2f * 10f).dp
+            // iOS-style dark overlay for left-stacked cards (depth shadow)
+            val darkOverlayAlpha = if (relPos < 0f) {
+                ((-relPos) * 0.25f).coerceAtMost(0.50f)
+            } else {
+                0f
+            }
 
             Column(
                 modifier = Modifier
@@ -305,13 +316,21 @@ fun AppSwitcherOverlay(
                             }
                         }
                 )
-                AppSwitcherCard(
-                    screenshot = screenshotStore.getScreenshot(route.stableKey),
-                    onClick = { },
-                    modifier = Modifier
-                        .width(cardWidthDp)
-                        .height(cardHeightDp)
-                )
+                Box(modifier = Modifier.width(cardWidthDp).height(cardHeightDp)) {
+                    AppSwitcherCard(
+                        screenshot = screenshotStore.getScreenshot(route.stableKey),
+                        onClick = { },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    if (darkOverlayAlpha > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(30.dp))
+                                .background(Color.Black.copy(alpha = darkOverlayAlpha))
+                        )
+                    }
+                }
             }
         }
 
@@ -332,11 +351,13 @@ fun AppSwitcherOverlay(
             val clampedSp = scrollPos.coerceIn(0f, maxScrollIndex)
             val relPos = overlayIdx.toFloat() - clampedSp
             val startScale = if (relPos >= 0f) {
-                1f
+                val focusedScale = 0.98f
+                (focusedScale + (1f - focusedScale) * relPos).coerceAtMost(1f)
             } else {
-                val minScale = 0.94f
-                val decay = 0.6f
-                minScale + (1f - minScale) * decay.pow(-relPos)
+                val minScale = 0.96f
+                val focusedScale = 0.98f
+                val decay = 0.50f
+                minScale + (focusedScale - minScale) * decay.pow(-relPos)
             }
             val startW = cardWidthPx * startScale
             val startH = cardHeightPx * startScale
@@ -353,7 +374,7 @@ fun AppSwitcherOverlay(
             val currentH = startH + (endH - startH) * p
             val currentCX = startCenterX + (endCenterX - startCenterX) * p
             val currentCY = startCenterY + (endCenterY - startCenterY) * p
-            val cornerRadius = with(density) { (44.dp.toPx() * (1f - p)).toDp() }
+            val cornerRadius = with(density) { (30.dp.toPx() * (1f - p)).toDp() }
 
             Box(
                 modifier = Modifier

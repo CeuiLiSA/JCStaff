@@ -1124,10 +1124,11 @@ UgoiraState.Done(gifFile)  → 使用 Coil GifDecoder 播放
 
 #### 实现原理
 
-**iOS 风格层叠布局：**
-- 卡片宽度 = 屏幕宽度 × 66%，高度按屏幕比例缩放
-- 非对称间距：左侧几何级数递减 peek（`basePeek = cardWidth × 0.22`，每层 45% 衰减），右侧 `rightSpacing = cardWidth × 0.78`
-- 左侧卡片深度缩放：`minScale = 0.94`，指数衰减趋近最小值
+**iOS 风格层叠布局（像素级还原 iOS 最近任务）：**
+- 卡片宽度 = 屏幕宽度 × 66%，高度按屏幕比例缩放，圆角 30dp
+- 非对称间距：左侧几何级数递减 peek（`basePeek = cardWidth × 0.22`，每层 28% 衰减，快速收敛使仅 ~2 张左卡可见），右侧 `rightSpacing = cardWidth × 0.95`
+- 非对称深度缩放：主卡 scale = 0.98，右卡 1.0（略大于主卡），左卡从 0.98 衰减至 0.96（极细微的缩小，匹配 iOS）
+- 左侧卡片暗色深度遮罩：`alpha = relPos × 0.25`（最大 0.50），模拟 iOS 纵深阴影
 - Z-index 按卡片索引递增（右侧卡片始终叠在左侧之上）
 - 每张卡片通过 `Surface(shadowElevation = 32.dp)` 投射阴影，层次分明
 - 卡片标题平滑淡入/淡出：`titleAlpha = (1 + relPos).coerceIn(0, 1)`，左侧堆叠卡片标题透明
@@ -1158,7 +1159,7 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 - **Shrink-in（打开切换器）：** 当前页面截图从全屏缩小到卡片位置，背景渐显，其他卡片渐显
 - **Expand-out（选择卡片）：** 被点击卡片截图从卡片位置扩大到全屏，背景渐隐，其他卡片渐隐
 - 统一使用 `overlayVisualProgress`（0=卡片位置，1=全屏）驱动两个方向的动画
-- 位置、尺寸、圆角半径（16dp↔0dp）均在卡片和全屏之间线性插值
+- 位置、尺寸、圆角半径（30dp↔0dp）均在卡片和全屏之间线性插值
 - 使用 iOS 风格自定义插值曲线 `CubicBezierEasing(0.17, 0.84, 0.44, 1.0)`：温和加速 + 长尾平滑减速，无 overshoot
 - `navigateToIndex` 仅修改导航栈，切换器在 expand 动画完成 + 400ms 延迟后自行关闭
 
@@ -1180,8 +1181,8 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 | `AppSwitcherOverlay.kt` | 全屏覆盖层：卡片布局、手势处理、动画 |
 | `AppSwitcherCard.kt` | 单张卡片：截图展示、圆角、阴影 |
 | `AppSwitcherFab.kt` | 浮动按钮：导航深度 > 0 时显示 |
-| `ScreenshotCapture.kt` | 截图捕获：Compose graphicsLayer 位图捕获 |
-| `NavigationViewModel.kt` | 状态管理：AppSwitcherState、截图生命周期 |
+| `ScreenshotCapture.kt` | 截图捕获：Compose graphicsLayer 位图捕获、putBitmap 支持测试 |
+| `NavigationViewModel.kt` | 状态管理：AppSwitcherState、截图生命周期、Demo 模式（20 张彩色测试卡） |
 | `NavRoutes.kt` | `getTitle()` 扩展函数：每个路由的中文标题 |
 
 ---
