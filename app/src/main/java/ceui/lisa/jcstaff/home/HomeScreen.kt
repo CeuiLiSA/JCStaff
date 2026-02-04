@@ -66,6 +66,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -156,16 +157,12 @@ fun HomeScreen(
         selectionManager.clearSelection()
     }
 
-    // 侧边栏展开时，返回手势优先收起侧边栏
-    BackHandler(enabled = drawerState.isOpen) {
-        coroutineScope.launch { drawerState.close() }
-    }
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = !selectionManager.isSelectionMode,
         drawerContent = {
             DrawerContent(
+                drawerState = drawerState,
                 user = currentUser,
                 allAccounts = allAccounts,
                 activeUserId = activeUserId,
@@ -786,6 +783,7 @@ private fun AccountAvatarSmall(
 
 @Composable
 private fun DrawerContent(
+    drawerState: DrawerState,
     user: User?,
     allAccounts: List<AccountEntry>,
     activeUserId: Long?,
@@ -805,6 +803,7 @@ private fun DrawerContent(
     val context = LocalContext.current
 
     ModalDrawerSheet(
+        drawerState = drawerState,
         modifier = Modifier.width(304.dp),
         drawerContainerColor = MaterialTheme.colorScheme.surface,
         windowInsets = WindowInsets(0, 0, 0, 0)
