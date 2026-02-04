@@ -5,15 +5,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import ceui.lisa.jcstaff.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +30,7 @@ fun UserProfileHeader(
     isLoading: Boolean,
     isFollowing: Boolean,
     onFollowClick: () -> Unit,
+    onFollowingClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -76,7 +74,10 @@ fun UserProfileHeader(
         Spacer(modifier = Modifier.height(20.dp))
 
         // 统计数据
-        UserStatsRow(profile = profile)
+        UserStatsRow(
+            profile = profile,
+            onFollowingClick = onFollowingClick
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -107,22 +108,6 @@ fun UserProfileHeader(
         // 工作环境信息卡片
         UserWorkspaceCard(workspace = workspace)
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // 作品分隔线
-        if (user != null) {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
-
-            Text(
-                text = stringResource(R.string.works),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-            )
-        }
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,11 +48,14 @@ fun UserAvatarSection(
     ) {
         // 背景图或渐变色
         if (profile?.background_image_url != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
+            val bgRequest = remember(profile.background_image_url) {
+                ImageRequest.Builder(context)
                     .data(profile.background_image_url)
                     .crossfade(true)
-                    .build(),
+                    .build()
+            }
+            AsyncImage(
+                model = bgRequest,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -88,11 +92,15 @@ fun UserAvatarSection(
                     CircularProgressIndicator(modifier = Modifier.size(32.dp))
                 }
             } else {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(user?.profile_image_urls?.findAvatarUrl())
+                val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
+                val avatarRequest = remember(avatarUrl) {
+                    ImageRequest.Builder(context)
+                        .data(avatarUrl)
                         .crossfade(true)
-                        .build(),
+                        .build()
+                }
+                AsyncImage(
+                    model = avatarRequest,
                     contentDescription = user?.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

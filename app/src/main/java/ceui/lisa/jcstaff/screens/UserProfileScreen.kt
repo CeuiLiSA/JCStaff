@@ -1,22 +1,12 @@
 package ceui.lisa.jcstaff.screens
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,8 +15,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,19 +22,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.components.FloatingTopBar
-import ceui.lisa.jcstaff.components.IllustCard
-import ceui.lisa.jcstaff.components.LoadingIndicator
-import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.components.UserScrollAwareTopBar
+import ceui.lisa.jcstaff.components.user.IllustPreviewRow
+import ceui.lisa.jcstaff.components.user.NovelPreviewRow
+import ceui.lisa.jcstaff.components.user.ProfileSectionHeader
+import ceui.lisa.jcstaff.components.user.ProfileSubSection
 import ceui.lisa.jcstaff.components.user.UserProfileHeader
-import ceui.lisa.jcstaff.core.LocalSelectionManager
-import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.profile.UserProfileViewModel
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+
+private const val CONTENT_TYPE_HEADER = "profile_header"
+private const val CONTENT_TYPE_SECTION_HEADER = "section_header"
+private const val CONTENT_TYPE_SUB_SECTION = "sub_section"
+private const val CONTENT_TYPE_SPACER = "spacer"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,11 +46,6 @@ fun UserProfileScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val state by viewModel.state.collectAsState()
-    val selectionManager = LocalSelectionManager.current
-
-    BackHandler(enabled = selectionManager.isSelectionMode) {
-        selectionManager.clearSelection()
-    }
 
     LaunchedEffect(userId) {
         viewModel.loadUser(userId)
@@ -71,148 +56,159 @@ fun UserProfileScreen(
         state.user?.let { BrowseHistoryRepository.recordUser(it) }
     }
 
-    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-    val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
-    val gridSpacing = if (gridSpacingEnabled) 8.dp else 1.dp
-
-    val gridState = rememberLazyStaggeredGridState()
+    val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    // 滚动感知 TopBar 显示状态 - 使用 derivedStateOf 避免返回页面时触发动画
+    // 滚动感知 TopBar 显示状态
     val showScrollAwareTopBar by remember {
         derivedStateOf {
-            gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 1200
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 1200
         }
     }
 
-    LaunchedEffect(gridState, state.canLoadMore) {
-        snapshotFlow {
-            val layoutInfo = gridState.layoutInfo
-            val totalItems = layoutInfo.totalItemsCount
-            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            totalItems > 0 && lastVisibleItem >= totalItems - 4
-        }
-            .distinctUntilChanged()
-            .filter { it && state.canLoadMore }
-            .collect {
-                viewModel.loadMore()
-            }
+    // 预先记住回调，避免每次重组创建新 lambda
+    val onFollowClick = remember { { viewModel.toggleFollow() } }
+    val onFollowingClick = remember(navViewModel, userId) {
+        { navViewModel.navigate(NavRoute.UserFollowing(userId = userId)) }
     }
+    val onRefresh = remember { { viewModel.refresh() } }
+    val onIllustClick = remember(navViewModel, userId) {
+        { navViewModel.navigate(NavRoute.UserCreatedIllusts(userId = userId, type = "illust")) }
+    }
+    val onMangaClick = remember(navViewModel, userId) {
+        { navViewModel.navigate(NavRoute.UserCreatedIllusts(userId = userId, type = "manga")) }
+    }
+    val onNovelsClick = remember(navViewModel, userId) {
+        { navViewModel.navigate(NavRoute.UserCreatedNovels(userId = userId)) }
+    }
+    val onBookmarkedIllustsClick = remember(navViewModel, userId) {
+        { navViewModel.navigate(NavRoute.Bookmarks(userId = userId)) }
+    }
+    val onBookmarkedNovelsClick = remember(navViewModel, userId) {
+        { navViewModel.navigate(NavRoute.UserBookmarkNovels(userId = userId)) }
+    }
+    val onScrollToTop = remember(coroutineScope, listState) {
+        {
+            coroutineScope.launch {
+                listState.animateScrollToItem(0)
+            }
+            Unit
+        }
+    }
+
+    // 预先记住字符串资源
+    val sectionCreatedTitle = stringResource(R.string.section_created)
+    val sectionBookmarkedTitle = stringResource(R.string.section_bookmarked)
+    val illustsTitle = stringResource(R.string.illustrations)
+    val mangaTitle = stringResource(R.string.manga)
+    val novelTitle = stringResource(R.string.tab_novel)
+
+    // 预先记住分享 URL
+    val shareUrl = remember(userId) { "https://www.pixiv.net/users/$userId" }
 
     Box {
         PullToRefreshBox(
             isRefreshing = state.isLoadingProfile && state.user != null,
-            onRefresh = { viewModel.refresh() },
+            onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize()
         ) {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                state = gridState,
-                contentPadding = PaddingValues(
-                    start = if (gridSpacingEnabled) 8.dp else 0.dp,
-                    end = if (gridSpacingEnabled) 8.dp else 0.dp,
-                    top = 0.dp,
-                    bottom = 16.dp
-                ),
-                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
-                verticalItemSpacing = gridSpacing,
+            LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize()
             ) {
                 // 沉浸式头部
-                item(key = "header", span = StaggeredGridItemSpan.FullLine) {
+                item(key = "header", contentType = CONTENT_TYPE_HEADER) {
                     UserProfileHeader(
                         user = state.user,
                         profile = state.profile,
                         workspace = state.workspace,
                         isLoading = state.isLoadingProfile,
                         isFollowing = state.isFollowing,
-                        onFollowClick = { viewModel.toggleFollow() }
+                        onFollowClick = onFollowClick,
+                        onFollowingClick = onFollowingClick
                     )
                 }
 
-                // 加载中状态
-                if (state.isLoadingIllusts && state.illusts.isEmpty()) {
-                    item(key = "loading", span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            LoadingIndicator()
-                        }
+                // ═══════ 创作 ═══════
+                item(key = "header_created", contentType = CONTENT_TYPE_SECTION_HEADER) {
+                    ProfileSectionHeader(title = sectionCreatedTitle)
+                }
+
+                // 插画
+                item(key = "sub_illusts", contentType = CONTENT_TYPE_SUB_SECTION) {
+                    ProfileSubSection(
+                        title = illustsTitle,
+                        count = state.profile?.total_illusts ?: 0,
+                        onClick = onIllustClick
+                    ) {
+                        IllustPreviewRow(illusts = state.illusts)
                     }
                 }
 
-                // 错误状态
-                if (state.illustsError != null && state.illusts.isEmpty()) {
-                    item(key = "error", span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = state.illustsError ?: stringResource(R.string.load_error),
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
+                // 漫画
+                item(key = "sub_manga", contentType = CONTENT_TYPE_SUB_SECTION) {
+                    ProfileSubSection(
+                        title = mangaTitle,
+                        count = state.profile?.total_manga ?: 0,
+                        onClick = onMangaClick
+                    ) {
+                        IllustPreviewRow(illusts = state.mangaList)
                     }
                 }
 
-                // 空状态
-                if (!state.isLoadingIllusts && state.illusts.isEmpty() && state.illustsError == null && state.user != null) {
-                    item(key = "empty", span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_works),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                // 小说
+                item(key = "sub_novels", contentType = CONTENT_TYPE_SUB_SECTION) {
+                    ProfileSubSection(
+                        title = novelTitle,
+                        count = state.profile?.total_novels ?: 0,
+                        onClick = onNovelsClick
+                    ) {
+                        NovelPreviewRow(novels = state.novels)
                     }
                 }
 
-                // 作品列表
-                items(state.illusts, key = { it.id }) { illust ->
-                    IllustCard(
-                        illust = illust,
-                        onClick = {
-                            navViewModel.navigate(
-                                NavRoute.IllustDetail(
-                                    illustId = illust.id,
-                                    title = illust.title ?: "",
-                                    previewUrl = illust.previewUrl(),
-                                    aspectRatio = illust.aspectRatio()
-                                )
-                            )
-                        },
-                        showIllustInfo = showIllustInfo,
-                        cornerRadius = illustCornerRadius
-                    )
+                // ═══════ 收藏 ═══════
+                item(key = "header_bookmarked", contentType = CONTENT_TYPE_SECTION_HEADER) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ProfileSectionHeader(title = sectionBookmarkedTitle)
                 }
 
-                // 加载更多指示器
-                if (state.isLoadingMore) {
-                    item(key = "loading_more", span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
-                            )
-                        }
+                // 收藏插画
+                item(key = "sub_bookmarked_illusts", contentType = CONTENT_TYPE_SUB_SECTION) {
+                    ProfileSubSection(
+                        title = illustsTitle,
+                        count = state.profile?.total_illust_bookmarks_public ?: 0,
+                        onClick = onBookmarkedIllustsClick
+                    ) {
+                        IllustPreviewRow(illusts = state.bookmarkedIllustsOnly)
                     }
+                }
+
+                // 收藏漫画
+                item(key = "sub_bookmarked_manga", contentType = CONTENT_TYPE_SUB_SECTION) {
+                    ProfileSubSection(
+                        title = mangaTitle,
+                        count = state.bookmarkedManga.size,
+                        onClick = onBookmarkedIllustsClick
+                    ) {
+                        IllustPreviewRow(illusts = state.bookmarkedManga)
+                    }
+                }
+
+                // 收藏小说
+                item(key = "sub_bookmarked_novels", contentType = CONTENT_TYPE_SUB_SECTION) {
+                    ProfileSubSection(
+                        title = novelTitle,
+                        count = state.bookmarkedNovels.size,
+                        onClick = onBookmarkedNovelsClick
+                    ) {
+                        NovelPreviewRow(novels = state.bookmarkedNovels)
+                    }
+                }
+
+                // Bottom spacing
+                item(key = "bottom_spacer", contentType = CONTENT_TYPE_SPACER) {
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }
@@ -220,7 +216,7 @@ fun UserProfileScreen(
         // 浮动顶部栏 - 只在 ScrollAwareTopBar 不显示时展示
         if (!showScrollAwareTopBar) {
             FloatingTopBar(
-                shareUrl = "https://www.pixiv.net/users/$userId",
+                shareUrl = shareUrl,
                 shareTitle = state.user?.name ?: ""
             )
         }
@@ -229,13 +225,7 @@ fun UserProfileScreen(
         UserScrollAwareTopBar(
             user = state.user,
             isVisible = showScrollAwareTopBar,
-            onScrollToTop = {
-                coroutineScope.launch {
-                    gridState.animateScrollToItem(0)
-                }
-            }
+            onScrollToTop = onScrollToTop
         )
-
-        SelectionTopBar(allIllusts = state.illusts)
     }
 }

@@ -343,6 +343,20 @@
     <string name="clean_cache_message">将清理 %1$s 的图片和动图缓存。\n\n不会删除：浏览历史、搜索记录、账号信息、个人设置。</string>
     <string name="clean_cache_confirm">清理</string>
 
+    <!-- User Profile Sections -->
+    <string name="user_created_illusts">插画作品</string>
+    <string name="user_created_manga">漫画作品</string>
+    <string name="user_created_novels">小说作品</string>
+    <string name="user_bookmarked_illusts">收藏插画</string>
+    <string name="user_bookmarked_manga">收藏漫画</string>
+    <string name="user_bookmarked_novels">收藏小说</string>
+    <string name="user_following">关注用户</string>
+    <string name="section_created">创作</string>
+    <string name="section_bookmarked">收藏</string>
+    <string name="no_content">暂无内容</string>
+    <string name="n_works">%1$d 件作品</string>
+    <string name="n_users">%1$d 人</string>
+
     <!-- SauceNao -->
     <string name="sauce_nao">以图搜源</string>
     <string name="sauce_nao_open_in_app">在应用内打开</string>

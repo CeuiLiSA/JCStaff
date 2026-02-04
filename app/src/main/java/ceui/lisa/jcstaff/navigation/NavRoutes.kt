@@ -89,6 +89,18 @@ sealed interface NavRoute {
     data object SauceNao : NavRoute {
         override val stableKey = "SauceNao"
     }
+    data class UserCreatedIllusts(val userId: Long, val type: String) : NavRoute {
+        override val stableKey = "UserCreatedIllusts_${userId}_$type"
+    }
+    data class UserCreatedNovels(val userId: Long) : NavRoute {
+        override val stableKey = "UserCreatedNovels_$userId"
+    }
+    data class UserBookmarkNovels(val userId: Long) : NavRoute {
+        override val stableKey = "UserBookmarkNovels_$userId"
+    }
+    data class UserFollowing(val userId: Long) : NavRoute {
+        override val stableKey = "UserFollowing_$userId"
+    }
 }
 
 /** Get a human-readable title for the route (used in app switcher) */
@@ -115,4 +127,8 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.WebTagDetail -> tag.name ?: "标签详情"
     is NavRoute.CacheBrowser -> "缓存浏览"
     is NavRoute.SauceNao -> "以图搜图"
+    is NavRoute.UserCreatedIllusts -> if (type == "illust") "插画作品" else "漫画作品"
+    is NavRoute.UserCreatedNovels -> "小说作品"
+    is NavRoute.UserBookmarkNovels -> "收藏小说"
+    is NavRoute.UserFollowing -> "关注用户"
 }

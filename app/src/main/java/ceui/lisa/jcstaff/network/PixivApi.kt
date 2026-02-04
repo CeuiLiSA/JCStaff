@@ -204,6 +204,28 @@ interface PixivApi {
         @Field("novel_id") novelId: Long
     ): Unit
 
+    // ===== User Content Endpoints =====
+
+    @GET("/v1/user/novels")
+    suspend fun getUserNovels(
+        @Query("user_id") userId: Long,
+        @Query("filter") filter: String = "for_ios"
+    ): NovelResponse
+
+    @GET("/v1/user/bookmarks/novel")
+    suspend fun getUserBookmarkNovels(
+        @Query("user_id") userId: Long,
+        @Query("restrict") restrict: String = "public",
+        @Query("filter") filter: String = "for_ios"
+    ): NovelResponse
+
+    @GET("/v1/user/following")
+    suspend fun getUserFollowing(
+        @Query("user_id") userId: Long,
+        @Query("restrict") restrict: String = "public",
+        @Query("filter") filter: String = "for_ios"
+    ): UserPreviewResponse
+
     // ===== Comment Endpoints =====
 
     @GET("/v3/illust/comments")

@@ -7,6 +7,8 @@ import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.shouldFetch
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.IllustResponse
+import ceui.lisa.jcstaff.network.Novel
+import ceui.lisa.jcstaff.network.NovelResponse
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.User
 import ceui.lisa.jcstaff.network.UserDetailResponse
@@ -24,17 +26,24 @@ data class UserProfileState(
     val user: User? = null,
     val profile: UserProfile? = null,
     val workspace: Workspace? = null,
+    // Section previews
     val illusts: List<Illust> = emptyList(),
+    val mangaList: List<Illust> = emptyList(),
+    val novels: List<Novel> = emptyList(),
+    val bookmarkedIllustsOnly: List<Illust> = emptyList(),
+    val bookmarkedManga: List<Illust> = emptyList(),
+    val bookmarkedNovels: List<Novel> = emptyList(),
+    // Loading states
     val isLoadingProfile: Boolean = true,
     val isLoadingIllusts: Boolean = true,
-    val isLoadingMore: Boolean = false,
+    val isLoadingManga: Boolean = true,
+    val isLoadingNovels: Boolean = true,
+    val isLoadingBookmarkedIllusts: Boolean = true,
+    val isLoadingBookmarkedNovels: Boolean = true,
     val isFollowing: Boolean = false,
     val profileError: String? = null,
-    val illustsError: String? = null,
-    val nextUrl: String? = null
 ) {
     val isFollowed: Boolean get() = user?.is_followed == true
-    val canLoadMore: Boolean get() = nextUrl != null && !isLoadingMore
 }
 
 /**
@@ -59,6 +68,10 @@ class UserProfileViewModel : ViewModel() {
 
         loadProfile(userId, forceRefresh)
         loadIllusts(userId, forceRefresh)
+        loadManga(userId, forceRefresh)
+        loadNovels(userId)
+        loadBookmarkedIllusts(userId)
+        loadBookmarkedNovels(userId)
     }
 
     private fun loadProfile(userId: Long, forceRefresh: Boolean) {
@@ -108,71 +121,115 @@ class UserProfileViewModel : ViewModel() {
 
     private fun loadIllusts(userId: Long, forceRefresh: Boolean) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingIllusts = true, illustsError = null)
+            _state.value = _state.value.copy(isLoadingIllusts = true)
 
             val cacheConfig = CacheConfig(
                 path = "/v1/user/illusts",
                 queryParams = mapOf("user_id" to userId.toString(), "type" to "illust", "filter" to "for_ios")
             )
 
-            // 从缓存加载
             val cacheResult = cacheConfig.loadFromCache(IllustResponse::class.java)
             if (cacheResult != null) {
                 storeIllusts(cacheResult.data.illusts)
                 _state.value = _state.value.copy(
                     illusts = cacheResult.data.illusts,
-                    isLoadingIllusts = cacheResult.shouldFetch(forceRefresh),
-                    nextUrl = cacheResult.data.next_url
+                    isLoadingIllusts = cacheResult.shouldFetch(forceRefresh)
                 )
             }
 
-            // 判断是否需要发网络请求
-            if (!cacheResult.shouldFetch(forceRefresh)) {
-                return@launch
-            }
+            if (!cacheResult.shouldFetch(forceRefresh)) return@launch
 
             try {
-                val response = PixivClient.pixivApi.getUserIllusts(userId)
+                val response = PixivClient.pixivApi.getUserIllusts(userId, type = "illust")
                 storeIllusts(response.illusts)
-
                 _state.value = _state.value.copy(
                     illusts = response.illusts,
-                    isLoadingIllusts = false,
-                    nextUrl = response.next_url
+                    isLoadingIllusts = false
                 )
             } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoadingIllusts = false,
-                    illustsError = if (_state.value.illusts.isEmpty()) e.message ?: "加载作品失败" else null
-                )
+                _state.value = _state.value.copy(isLoadingIllusts = false)
             }
         }
     }
 
-    /**
-     * 加载更多作品
-     */
-    fun loadMore() {
-        val nextUrl = _state.value.nextUrl ?: return
-        if (_state.value.isLoadingMore) return
-
+    private fun loadManga(userId: Long, forceRefresh: Boolean) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoadingMore = true)
+            _state.value = _state.value.copy(isLoadingManga = true)
+
+            val cacheConfig = CacheConfig(
+                path = "/v1/user/illusts",
+                queryParams = mapOf("user_id" to userId.toString(), "type" to "manga", "filter" to "for_ios")
+            )
+
+            val cacheResult = cacheConfig.loadFromCache(IllustResponse::class.java)
+            if (cacheResult != null) {
+                storeIllusts(cacheResult.data.illusts)
+                _state.value = _state.value.copy(
+                    mangaList = cacheResult.data.illusts,
+                    isLoadingManga = cacheResult.shouldFetch(forceRefresh)
+                )
+            }
+
+            if (!cacheResult.shouldFetch(forceRefresh)) return@launch
 
             try {
-                val response = PixivClient.getNextPage(nextUrl, IllustResponse::class.java)
+                val response = PixivClient.pixivApi.getUserIllusts(userId, type = "manga")
                 storeIllusts(response.illusts)
-
                 _state.value = _state.value.copy(
-                    illusts = _state.value.illusts + response.illusts,
-                    isLoadingMore = false,
-                    nextUrl = response.next_url
+                    mangaList = response.illusts,
+                    isLoadingManga = false
                 )
             } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoadingManga = false)
+            }
+        }
+    }
+
+    private fun loadNovels(userId: Long) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingNovels = true)
+            try {
+                val response = PixivClient.pixivApi.getUserNovels(userId)
+                storeNovels(response.novels)
                 _state.value = _state.value.copy(
-                    isLoadingMore = false,
-                    illustsError = e.message ?: "加载更多失败"
+                    novels = response.novels,
+                    isLoadingNovels = false
                 )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoadingNovels = false)
+            }
+        }
+    }
+
+    private fun loadBookmarkedIllusts(userId: Long) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingBookmarkedIllusts = true)
+            try {
+                val response = PixivClient.pixivApi.getUserBookmarks(userId)
+                storeIllusts(response.illusts)
+                _state.value = _state.value.copy(
+                    bookmarkedIllustsOnly = response.illusts.filter { !it.isManga() },
+                    bookmarkedManga = response.illusts.filter { it.isManga() },
+                    isLoadingBookmarkedIllusts = false
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoadingBookmarkedIllusts = false)
+            }
+        }
+    }
+
+    private fun loadBookmarkedNovels(userId: Long) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingBookmarkedNovels = true)
+            try {
+                val response = PixivClient.pixivApi.getUserBookmarkNovels(userId)
+                storeNovels(response.novels)
+                _state.value = _state.value.copy(
+                    bookmarkedNovels = response.novels,
+                    isLoadingBookmarkedNovels = false
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(isLoadingBookmarkedNovels = false)
             }
         }
     }
@@ -221,6 +278,13 @@ class UserProfileViewModel : ViewModel() {
         illusts.forEach { illust ->
             ObjectStore.put(illust)
             illust.user?.let { user -> ObjectStore.put(user) }
+        }
+    }
+
+    private fun storeNovels(novels: List<Novel>) {
+        novels.forEach { novel ->
+            ObjectStore.put(novel)
+            novel.user?.let { user -> ObjectStore.put(user) }
         }
     }
 }
