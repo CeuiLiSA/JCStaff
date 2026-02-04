@@ -1126,7 +1126,7 @@ UgoiraState.Done(gifFile)  → 使用 Coil GifDecoder 播放
 
 **iOS 风格层叠布局（像素级还原 iOS 最近任务）：**
 - 卡片宽度 = 屏幕宽度 × 66%，高度按屏幕比例缩放，圆角 30dp
-- 非对称间距：左侧几何级数递减 peek（`basePeek = cardWidth × 0.22`，每层 28% 衰减，快速收敛使仅 ~2 张左卡可见），右侧 `rightSpacing = cardWidth × 0.95`
+- 非对称间距：左侧几何级数递减 peek（`basePeek = cardWidth × 0.22`，每层 28% 衰减，快速收敛使仅 ~2 张左卡可见），右侧 `rightSpacing = cardWidth × 0.85`
 - 非对称深度缩放：主卡 scale = 0.98，右卡 1.0（略大于主卡），左卡从 0.98 衰减至 0.96（极细微的缩小，匹配 iOS）
 - 左侧卡片暗色深度遮罩：`alpha = relPos × 0.25`（最大 0.50），模拟 iOS 纵深阴影
 - Z-index 按卡片索引递增（右侧卡片始终叠在左侧之上）
@@ -1181,8 +1181,8 @@ scrollPos = 3.5 → 在第 3 和第 4 张之间
 | `AppSwitcherOverlay.kt` | 全屏覆盖层：卡片布局、手势处理、动画 |
 | `AppSwitcherCard.kt` | 单张卡片：截图展示、圆角、阴影 |
 | `AppSwitcherFab.kt` | 浮动按钮：导航深度 > 0 时显示 |
-| `ScreenshotCapture.kt` | 截图捕获：Compose graphicsLayer 位图捕获、putBitmap 支持测试 |
-| `NavigationViewModel.kt` | 状态管理：AppSwitcherState、截图生命周期、Demo 模式（20 张彩色测试卡） |
+| `ScreenshotCapture.kt` | 截图捕获：Compose graphicsLayer 位图捕获 |
+| `NavigationViewModel.kt` | 状态管理：AppSwitcherState、截图生命周期 |
 | `NavRoutes.kt` | `getTitle()` 扩展函数：每个路由的中文标题 |
 
 ---
