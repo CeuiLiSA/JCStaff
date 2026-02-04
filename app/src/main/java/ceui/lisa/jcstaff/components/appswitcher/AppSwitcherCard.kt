@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 
+private val CardShape = RoundedCornerShape(30.dp)
+
 /**
  * iOS-style card for the app switcher.
  * Title is rendered separately outside the card.
@@ -35,7 +37,7 @@ fun AppSwitcherCard(
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(30.dp),
+        shape = CardShape,
         shadowElevation = 32.dp,
         tonalElevation = 4.dp
     ) {

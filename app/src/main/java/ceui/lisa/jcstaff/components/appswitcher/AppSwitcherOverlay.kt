@@ -25,7 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +62,25 @@ import kotlin.math.roundToInt
 // Approximates UIKit's default spring-like curve without overshoot.
 private val iOSEasing = CubicBezierEasing(0.17f, 0.84f, 0.44f, 1.0f)
 
+// Hoisted shape to avoid per-frame allocation
+private val CardShape = RoundedCornerShape(30.dp)
+
+/** Shared depth-scale calculation for a card at the given relative position. */
+private fun depthScale(relPos: Float): Float {
+    return if (relPos >= 0f) {
+        // iOS: right cards are subtly larger than focused card
+        // Focused (relPos=0) = 0.98, right cards ramp to 1.0
+        val focusedScale = 0.98f
+        (focusedScale + (1f - focusedScale) * relPos).coerceAtMost(1f)
+    } else {
+        // Left cards scale down very subtly (iOS barely scales them)
+        val minScale = 0.96f
+        val focusedScale = 0.98f
+        val decay = 0.50f
+        minScale + (focusedScale - minScale) * decay.pow(-relPos)
+    }
+}
+
 @Composable
 fun AppSwitcherOverlay(
     backStack: List<NavRoute>,
@@ -92,6 +113,12 @@ fun AppSwitcherOverlay(
     // Track whether the overlay has been initialized by LaunchedEffect.
     // Prevents a one-frame flash of cards before the shrink animation starts.
     var overlayReady by remember { mutableStateOf(false) }
+
+    // derivedStateOf: only recomposes when the *active* source changes.
+    // When dragging, ignore animScrollPos changes; when animating, ignore dragScrollPos.
+    val scrollPos by remember {
+        derivedStateOf { if (isDragging) dragScrollPos else animScrollPos.value }
+    }
 
     LaunchedEffect(state.isVisible) {
         if (state.isVisible) {
@@ -217,19 +244,18 @@ fun AppSwitcherOverlay(
         val centerX = screenWidthPx / 2f
         val centerY = screenHeightPx / 2f
 
-        val scrollPos = if (isDragging) dragScrollPos else animScrollPos.value
-        val currentIndex = scrollPos.roundToInt()
-            .coerceIn(0, (backStack.size - 1).coerceAtLeast(0))
+        val maxScrollIndex = (backStack.size - 1).coerceAtLeast(0).toFloat()
+        // Compute once, reuse in loop and overlay
+        val clampedSp = scrollPos.coerceIn(0f, maxScrollIndex)
 
         // Position card based on continuous scrollPos — no discrete jumps.
         // Left side uses geometric series: offset(d) = basePeek*(1-decay^d)/(1-decay)
         // so the visible strips converge like 1, 0.45, 0.2, 0.09, …
         // Right side stays uniform. Overscroll uses rightSpacingPx for rubber-band.
-        val maxScrollIndex = (backStack.size - 1).coerceAtLeast(0).toFloat()
         fun cardCenterX(index: Int, sp: Float = scrollPos): Float {
-            val clampedSp = sp.coerceIn(0f, maxScrollIndex)
-            val overscroll = sp - clampedSp // <0 past left, >0 past right
-            val relPos = index.toFloat() - clampedSp
+            val cSp = sp.coerceIn(0f, maxScrollIndex)
+            val overscroll = sp - cSp // <0 past left, >0 past right
+            val relPos = index.toFloat() - cSp
             val baseX = if (relPos <= 0f) {
                 // Geometric series: total offset converges to basePeek/(1-decay)
                 val d = -relPos
@@ -242,98 +268,98 @@ fun AppSwitcherOverlay(
             return baseX - overscroll * rightSpacingPx
         }
 
+        // Fade cards out during expand, fade in during shrink
+        val expandFade = if (isAnimatingOverlay) 1f - overlayVisualProgress else 1f
+
+        // Off-screen culling boundaries (with margin for scaled cards)
+        val cullLeft = -cardWidthPx
+        val cullRight = screenWidthPx + cardWidthPx
+
         // 1) Cards — iOS style with depth scaling on left cards
         backStack.forEachIndexed { index, route ->
             val baseX = cardCenterX(index)
 
-            // iOS-style: right card always on top of left card
-            val zIndex = index.toFloat()
+            // Skip cards that are completely off-screen
+            if (baseX < cullLeft || baseX > cullRight) return@forEachIndexed
 
-            val totalHeight = cardHeightPx + titleHeightPx
+            key(route.stableKey) {
+                val totalHeight = cardHeightPx + titleHeightPx
 
-            // iOS-style depth scale: left cards shrink with exponential decay,
-            // converging to minScale like a geometric series.
-            val clampedSp = scrollPos.coerceIn(0f, maxScrollIndex)
-            val relPos = index.toFloat() - clampedSp
-            val depthScale = if (relPos >= 0f) {
-                // iOS: right cards are subtly larger than focused card
-                // Focused (relPos=0) = 0.98, right cards ramp to 1.0
-                val focusedScale = 0.98f
-                (focusedScale + (1f - focusedScale) * relPos).coerceAtMost(1f)
-            } else {
-                // Left cards scale down very subtly (iOS barely scales them)
-                val minScale = 0.96f
-                val focusedScale = 0.98f
-                val decay = 0.50f
-                minScale + (focusedScale - minScale) * decay.pow(-relPos)
-            }
-            // Fade cards out during expand, fade in during shrink
-            val expandFade = if (isAnimatingOverlay) 1f - overlayVisualProgress else 1f
+                // iOS-style depth scale: left cards shrink with exponential decay,
+                // converging to minScale like a geometric series.
+                val relPos = index.toFloat() - clampedSp
+                val scale = depthScale(relPos)
 
-            // iOS-style: left-side (stacked) cards hide their title,
-            // focused card and right-side cards show it.
-            // Smooth 0→1 transition as a card slides from left to center.
-            val titleAlpha = minOf(1f + relPos, 2f - relPos).coerceIn(0f, 1f)
-            // Blur text during the 0.5→1 fade-in / 1→0.5 fade-out range.
-            // At titleAlpha=1 → 0dp blur; at titleAlpha≤0.5 → max 10dp blur.
-            val titleBlurRadius = ((1f - titleAlpha).coerceAtMost(0.5f) * 2f * 10f).dp
-            // iOS-style dark overlay for left-stacked cards (depth shadow)
-            val darkOverlayAlpha = if (relPos < 0f) {
-                ((-relPos) * 0.25f).coerceAtMost(0.50f)
-            } else {
-                0f
-            }
+                // iOS-style: left-side (stacked) cards hide their title,
+                // focused card and right-side cards show it.
+                // Smooth 0→1 transition as a card slides from left to center.
+                val titleAlpha = minOf(1f + relPos, 2f - relPos).coerceIn(0f, 1f)
+                // Blur text during the 0.5→1 fade-in / 1→0.5 fade-out range.
+                // At titleAlpha=1 → 0dp blur; at titleAlpha≤0.5 → max 10dp blur.
+                val titleBlurRadius = ((1f - titleAlpha).coerceAtMost(0.5f) * 2f * 10f).dp
+                // iOS-style dark overlay for left-stacked cards (depth shadow)
+                val darkOverlayAlpha = if (relPos < 0f) {
+                    ((-relPos) * 0.25f).coerceAtMost(0.50f)
+                } else {
+                    0f
+                }
 
-            Column(
-                modifier = Modifier
-                    .zIndex(zIndex)
-                    .offset {
-                        IntOffset(
-                            x = (baseX - cardWidthPx / 2f).roundToInt(),
-                            y = (centerY - totalHeight / 2f).roundToInt()
-                        )
-                    }
-                    .graphicsLayer {
-                        scaleX = depthScale
-                        scaleY = depthScale
-                        this.alpha = expandFade
-                    }
-            ) {
-                Text(
-                    text = route.getTitle(),
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Column(
                     modifier = Modifier
-                        .width(cardWidthDp)
-                        .padding(bottom = 8.dp)
-                        .graphicsLayer {
-                            alpha = titleAlpha
-                            if (Build.VERSION.SDK_INT >= 31 && titleBlurRadius > 0.dp) {
-                                val blurPx = titleBlurRadius.toPx()
-                                renderEffect = android.graphics.RenderEffect.createBlurEffect(
-                                    blurPx, blurPx, android.graphics.Shader.TileMode.DECAL
-                                ).asComposeRenderEffect()
-                            }
+                        .zIndex(index.toFloat())
+                        .offset {
+                            IntOffset(
+                                x = (baseX - cardWidthPx / 2f).roundToInt(),
+                                y = (centerY - totalHeight / 2f).roundToInt()
+                            )
                         }
-                )
-                Box(modifier = Modifier
-                    .width(cardWidthDp)
-                    .height(cardHeightDp)) {
-                    AppSwitcherCard(
-                        screenshot = screenshotStore.getScreenshot(route.stableKey),
-                        onClick = { },
-                        modifier = Modifier.fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            this.alpha = expandFade
+                        }
+                ) {
+                    Text(
+                        text = route.getTitle(),
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .width(cardWidthDp)
+                            .padding(bottom = 8.dp)
+                            .graphicsLayer {
+                                alpha = titleAlpha
+                                if (Build.VERSION.SDK_INT >= 31 && titleBlurRadius > 0.dp) {
+                                    val blurPx = titleBlurRadius.toPx()
+                                    renderEffect =
+                                        android.graphics.RenderEffect.createBlurEffect(
+                                            blurPx,
+                                            blurPx,
+                                            android.graphics.Shader.TileMode.DECAL
+                                        ).asComposeRenderEffect()
+                                }
+                            }
                     )
-                    if (darkOverlayAlpha > 0f) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(30.dp))
-                                .background(Color.Black.copy(alpha = darkOverlayAlpha))
+                    Box(
+                        modifier = Modifier
+                            .width(cardWidthDp)
+                            .height(cardHeightDp)
+                    ) {
+                        AppSwitcherCard(
+                            screenshot = screenshotStore.getScreenshot(route.stableKey),
+                            onClick = { },
+                            modifier = Modifier.fillMaxSize()
                         )
+                        if (darkOverlayAlpha > 0f) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CardShape)
+                                    .background(Color.Black.copy(alpha = darkOverlayAlpha))
+                            )
+                        }
                     }
                 }
             }
@@ -353,17 +379,8 @@ fun AppSwitcherOverlay(
             // Start geometry: card's current position and size
             val startCenterX = cardCenterX(overlayIdx)
             val startCenterY = centerY + titleHeightPx / 2f // card center (title is above)
-            val clampedSp = scrollPos.coerceIn(0f, maxScrollIndex)
             val relPos = overlayIdx.toFloat() - clampedSp
-            val startScale = if (relPos >= 0f) {
-                val focusedScale = 0.98f
-                (focusedScale + (1f - focusedScale) * relPos).coerceAtMost(1f)
-            } else {
-                val minScale = 0.96f
-                val focusedScale = 0.98f
-                val decay = 0.50f
-                minScale + (focusedScale - minScale) * decay.pow(-relPos)
-            }
+            val startScale = depthScale(relPos)
             val startW = cardWidthPx * startScale
             val startH = cardHeightPx * startScale
 
