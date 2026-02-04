@@ -294,6 +294,12 @@ fun AppSwitcherOverlay(
             // Skip cards that are completely off-screen
             if (baseX < cullLeft || baseX > cullRight) return@forEachIndexed
 
+            // Hide cards that are fully past the left fade-out zone
+            val relPosEarly = index.toFloat() - clampedSp
+            if (relPosEarly <= -3f) return@forEachIndexed
+            // Smooth fade: fully visible at relPos >= -2, fades to 0 at relPos = -3
+            val leftFadeAlpha = if (relPosEarly < -2f) (3f + relPosEarly) else 1f
+
             key(entry.screenshotKey) {
                 val totalHeight = cardHeightPx + titleHeightPx
 
@@ -328,7 +334,7 @@ fun AppSwitcherOverlay(
                         .graphicsLayer {
                             scaleX = scale
                             scaleY = scale
-                            this.alpha = expandFade
+                            this.alpha = leftFadeAlpha * expandFade
                         }
                 ) {
                     Text(
