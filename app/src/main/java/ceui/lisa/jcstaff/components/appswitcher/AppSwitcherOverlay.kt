@@ -265,7 +265,19 @@ fun AppSwitcherOverlay(
                 // Non-linear: right cards move faster than the focused card (iOS parallax)
                 centerX + relPos.pow(1.2f) * rightSpacingPx
             }
-            return baseX - overscroll * rightSpacingPx
+            // Elastic overscroll: differential movement creates stretch/compress feel.
+            val overscrollWeight = if (overscroll < 0f) {
+                // Left edge: edge card moves least, far cards fan out
+                val d = relPos.coerceAtLeast(0f)
+                (d + 1f) / (d + 2f)
+            } else if (overscroll > 0f) {
+                // Right edge: last card moves most, left cards compress
+                val d = (-relPos).coerceAtLeast(0f)
+                1f / (d + 2f)
+            } else {
+                0f
+            }
+            return baseX - overscroll * rightSpacingPx * overscrollWeight
         }
 
         // Fade cards out during expand, fade in during shrink
