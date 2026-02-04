@@ -236,7 +236,8 @@ fun AppSwitcherOverlay(
                 val totalOffset = leftBasePeek * (1f - leftDecay.pow(d)) / (1f - leftDecay)
                 centerX - totalOffset
             } else {
-                centerX + relPos * rightSpacingPx
+                // Non-linear: right cards move faster than the focused card (iOS parallax)
+                centerX + relPos.pow(1.2f) * rightSpacingPx
             }
             return baseX - overscroll * rightSpacingPx
         }
