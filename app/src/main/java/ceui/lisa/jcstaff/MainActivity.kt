@@ -55,6 +55,7 @@ import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
 import ceui.lisa.jcstaff.components.LoadingIndicator
+import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherDemoScreen
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherFab
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherOverlay
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotCapture
@@ -472,6 +473,12 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                     is NavRoute.ShaderDemo -> {
                                         ShaderDemoScreen()
                                     }
+
+                                    is NavRoute.AppSwitcherDemo -> {
+                                        AppSwitcherDemoScreen()
+                                    }
+
+                                    is NavRoute.DemoPage -> { }
 
                                     is NavRoute.AccountManagement -> {
                                         AccountManagementScreen(

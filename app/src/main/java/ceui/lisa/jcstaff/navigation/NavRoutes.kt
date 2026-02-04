@@ -89,6 +89,12 @@ sealed interface NavRoute {
     data object SauceNao : NavRoute {
         override val stableKey = "SauceNao"
     }
+    data object AppSwitcherDemo : NavRoute {
+        override val stableKey = "AppSwitcherDemo"
+    }
+    data class DemoPage(val title: String) : NavRoute {
+        override val stableKey = "DemoPage_$title"
+    }
     data class UserCreatedIllusts(val userId: Long, val type: String) : NavRoute {
         override val stableKey = "UserCreatedIllusts_${userId}_$type"
     }
@@ -131,4 +137,6 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.UserCreatedNovels -> "小说作品"
     is NavRoute.UserBookmarkNovels -> "收藏小说"
     is NavRoute.UserFollowing -> "关注用户"
+    is NavRoute.AppSwitcherDemo -> "页面切换演示"
+    is NavRoute.DemoPage -> title
 }

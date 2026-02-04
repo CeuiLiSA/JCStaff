@@ -235,6 +235,12 @@ fun HomeScreen(
                         drawerState.close()
                         navViewModel.navigate(NavRoute.ShaderDemo)
                     }
+                },
+                onAppSwitcherDemoClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.navigate(NavRoute.AppSwitcherDemo)
+                    }
                 }
             )
         }
@@ -797,7 +803,8 @@ private fun DrawerContent(
     onLatestWorksClick: () -> Unit,
     onSauceNaoClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onShaderDemoClick: () -> Unit
+    onShaderDemoClick: () -> Unit,
+    onAppSwitcherDemoClick: () -> Unit
 ) {
     var accountListExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -1123,6 +1130,11 @@ private fun DrawerContent(
                 icon = Icons.Default.AutoAwesome,
                 label = "Shader Demo",
                 onClick = onShaderDemoClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.Explore,
+                label = "App Switcher Demo",
+                onClick = onAppSwitcherDemoClick
             )
             Spacer(
                 modifier = Modifier.height(

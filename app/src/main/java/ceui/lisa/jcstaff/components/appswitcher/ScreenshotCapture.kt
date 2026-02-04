@@ -55,6 +55,10 @@ class ScreenshotStore {
         }
     }
 
+    fun putScreenshot(key: String, bitmap: ImageBitmap) {
+        screenshots[key] = bitmap
+    }
+
     fun getScreenshot(key: String): ImageBitmap? = screenshots[key]
 
     fun remove(key: String) {
