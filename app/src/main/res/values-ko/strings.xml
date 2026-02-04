@@ -18,6 +18,7 @@
     <string name="loading">불러오는 중</string>
     <string name="retry">다시 시도</string>
     <string name="pull_to_refresh_retry">아래로 당겨서 새로고침</string>
+    <string name="refresh">새로고침</string>
 
     <!-- Language -->
     <string name="language_title">언어</string>
@@ -169,6 +170,7 @@
     <string name="following">팔로잉</string>
     <string name="follow_failed">팔로우 실패</string>
     <string name="unfollow_failed">팔로우 해제 실패</string>
+    <string name="follow_private">비공개 팔로우</string>
 
     <!-- User Profile -->
     <string name="works">작품</string>
@@ -341,4 +343,18 @@
     <!-- SauceNao -->
     <string name="sauce_nao">이미지 검색</string>
     <string name="sauce_nao_open_in_app">앱에서 열기</string>
+
+    <!-- User Profile Sections -->
+    <string name="user_created_illusts">일러스트 작품</string>
+    <string name="user_created_manga">만화 작품</string>
+    <string name="user_created_novels">소설 작품</string>
+    <string name="user_bookmarked_illusts">북마크 일러스트</string>
+    <string name="user_bookmarked_manga">북마크 만화</string>
+    <string name="user_bookmarked_novels">북마크 소설</string>
+    <string name="user_following">팔로잉 사용자</string>
+    <string name="section_created">창작</string>
+    <string name="section_bookmarked">공개 북마크</string>
+    <string name="no_content">콘텐츠 없음</string>
+    <string name="n_works">%1$d 작품</string>
+    <string name="n_users">%1$d 명</string>
 </resources>

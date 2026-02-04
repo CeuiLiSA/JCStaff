@@ -18,6 +18,7 @@
     <string name="loading">読み込み中</string>
     <string name="retry">再試行</string>
     <string name="pull_to_refresh_retry">下にスワイプして再読み込み</string>
+    <string name="refresh">更新</string>
 
     <!-- Language -->
     <string name="language_title">言語</string>
@@ -169,6 +170,7 @@
     <string name="following">フォロー中</string>
     <string name="follow_failed">フォローに失敗しました</string>
     <string name="unfollow_failed">フォロー解除に失敗しました</string>
+    <string name="follow_private">非公開フォロー</string>
 
     <!-- User Profile -->
     <string name="works">作品</string>
@@ -341,4 +343,18 @@
     <!-- SauceNao -->
     <string name="sauce_nao">画像検索</string>
     <string name="sauce_nao_open_in_app">アプリ内で開く</string>
+
+    <!-- User Profile Sections -->
+    <string name="user_created_illusts">イラスト作品</string>
+    <string name="user_created_manga">マンガ作品</string>
+    <string name="user_created_novels">小説作品</string>
+    <string name="user_bookmarked_illusts">ブックマークイラスト</string>
+    <string name="user_bookmarked_manga">ブックマークマンガ</string>
+    <string name="user_bookmarked_novels">ブックマーク小説</string>
+    <string name="user_following">フォロー中のユーザー</string>
+    <string name="section_created">作品</string>
+    <string name="section_bookmarked">公開ブックマーク</string>
+    <string name="no_content">コンテンツなし</string>
+    <string name="n_works">%1$d 件の作品</string>
+    <string name="n_users">%1$d 人</string>
 </resources>

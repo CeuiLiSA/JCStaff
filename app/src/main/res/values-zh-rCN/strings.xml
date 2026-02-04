@@ -18,6 +18,7 @@
     <string name="loading">加载中</string>
     <string name="retry">重试</string>
     <string name="pull_to_refresh_retry">下拉刷新重试</string>
+    <string name="refresh">刷新</string>
 
     <!-- Language -->
     <string name="language_title">语言</string>
@@ -169,6 +170,7 @@
     <string name="following">已关注</string>
     <string name="follow_failed">关注失败</string>
     <string name="unfollow_failed">取消关注失败</string>
+    <string name="follow_private">悄悄关注</string>
 
     <!-- User Profile -->
     <string name="works">作品</string>
@@ -341,4 +343,18 @@
     <!-- SauceNao -->
     <string name="sauce_nao">以图搜源</string>
     <string name="sauce_nao_open_in_app">在应用内打开</string>
+
+    <!-- User Profile Sections -->
+    <string name="user_created_illusts">插画作品</string>
+    <string name="user_created_manga">漫画作品</string>
+    <string name="user_created_novels">小说作品</string>
+    <string name="user_bookmarked_illusts">收藏插画</string>
+    <string name="user_bookmarked_manga">收藏漫画</string>
+    <string name="user_bookmarked_novels">收藏小说</string>
+    <string name="user_following">关注用户</string>
+    <string name="section_created">创作</string>
+    <string name="section_bookmarked">公开收藏</string>
+    <string name="no_content">暂无内容</string>
+    <string name="n_works">%1$d 件作品</string>
+    <string name="n_users">%1$d 人</string>
 </resources>
