@@ -30,6 +30,7 @@ fun UserProfileHeader(
     isLoading: Boolean,
     isFollowing: Boolean,
     onFollowClick: () -> Unit,
+    onPrivateFollowClick: () -> Unit = {},
     onFollowingClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -85,7 +86,8 @@ fun UserProfileHeader(
         UserFollowButton(
             user = user,
             isFollowing = isFollowing,
-            onFollowClick = onFollowClick
+            onFollowClick = onFollowClick,
+            onPrivateFollowClick = onPrivateFollowClick
         )
 
         // 简介

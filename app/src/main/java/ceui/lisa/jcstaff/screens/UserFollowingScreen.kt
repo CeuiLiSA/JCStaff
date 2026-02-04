@@ -73,10 +73,8 @@ class UserFollowingViewModel : ViewModel() {
     private var loader: PagedDataLoader<UserPreview, UserPreviewResponse>? = null
     private var isBound = false
 
-    val state: StateFlow<PagedState<UserPreview>>
-        get() = loader?.state ?: kotlinx.coroutines.flow.MutableStateFlow(PagedState())
-
-    private var _state: StateFlow<PagedState<UserPreview>>? = null
+    private val _state = kotlinx.coroutines.flow.MutableStateFlow(PagedState<UserPreview>())
+    val state: StateFlow<PagedState<UserPreview>> = _state
 
     fun bind(userId: Long) {
         if (isBound) return
@@ -97,8 +95,13 @@ class UserFollowingViewModel : ViewModel() {
             }
         )
         loader = newLoader
-        _state = newLoader.state
-        viewModelScope.launch { newLoader.load() }
+        viewModelScope.launch {
+            newLoader.load()
+        }
+        // 将 loader 的状态转发到稳定的 _state
+        viewModelScope.launch {
+            newLoader.state.collect { _state.value = it }
+        }
     }
 
     fun loadMore() {

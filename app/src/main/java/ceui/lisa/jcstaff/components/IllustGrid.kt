@@ -174,6 +174,9 @@ fun IllustGrid(
                     LoadingIndicator()
                 }
             }
+            illusts.isEmpty() -> {
+                EmptyRefreshableState(onRefresh = onRefresh)
+            }
             else -> {
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(columns),

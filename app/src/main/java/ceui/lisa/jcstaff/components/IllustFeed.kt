@@ -98,6 +98,9 @@ fun IllustFeed(
                     LoadingIndicator()
                 }
             }
+            state.items.isEmpty() -> {
+                EmptyRefreshableState(onRefresh = onRefresh)
+            }
             else -> {
                 LazyColumn(
                     state = listState,

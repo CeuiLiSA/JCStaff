@@ -62,6 +62,7 @@ import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.network.User
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -95,12 +96,12 @@ fun IllustDetailScreen(
     // 收藏状态
     var isBookmarked by remember(illustId) { mutableStateOf(cachedIllust?.is_bookmarked ?: false) }
 
-    // 关注状态
-    var isFollowed by remember(illustId) {
-        mutableStateOf(
-            cachedIllust?.user?.is_followed ?: false
-        )
-    }
+    // 关注状态：直接观察 ObjectStore 中的 User，确保跨页面同步
+    val userId = illust?.user?.id
+    val observedUser by remember(userId) {
+        userId?.let { ObjectStore.get<User>(StoreKey(it, StoreType.USER)) }
+    }?.collectAsState() ?: remember { mutableStateOf(null) }
+    val isFollowed = observedUser?.is_followed ?: illust?.user?.is_followed ?: false
 
     // 图片区域展开/收起状态
     var isImagesExpanded by remember { mutableStateOf(false) }
@@ -120,7 +121,6 @@ fun IllustDetailScreen(
         observedIllust?.let {
             illust = it
             isBookmarked = it.is_bookmarked ?: false
-            isFollowed = it.user?.is_followed ?: false
         }
     }
 
@@ -268,7 +268,7 @@ fun IllustDetailScreen(
                         IllustAuthorRow(
                             user = loadedIllust.user,
                             isFollowed = isFollowed,
-                            onFollowStateChanged = { followed -> isFollowed = followed },
+                            onFollowStateChanged = { },
                             onUserClick = { userId ->
                                 navViewModel.navigate(NavRoute.UserProfile(userId = userId))
                             }

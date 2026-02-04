@@ -30,8 +30,7 @@ data class UserProfileState(
     val illusts: List<Illust> = emptyList(),
     val mangaList: List<Illust> = emptyList(),
     val novels: List<Novel> = emptyList(),
-    val bookmarkedIllustsOnly: List<Illust> = emptyList(),
-    val bookmarkedManga: List<Illust> = emptyList(),
+    val bookmarkedIllusts: List<Illust> = emptyList(),
     val bookmarkedNovels: List<Novel> = emptyList(),
     // Loading states
     val isLoadingProfile: Boolean = true,
@@ -208,8 +207,7 @@ class UserProfileViewModel : ViewModel() {
                 val response = PixivClient.pixivApi.getUserBookmarks(userId)
                 storeIllusts(response.illusts)
                 _state.value = _state.value.copy(
-                    bookmarkedIllustsOnly = response.illusts.filter { !it.isManga() },
-                    bookmarkedManga = response.illusts.filter { it.isManga() },
+                    bookmarkedIllusts = response.illusts,
                     isLoadingBookmarkedIllusts = false
                 )
             } catch (e: Exception) {
@@ -246,7 +244,7 @@ class UserProfileViewModel : ViewModel() {
     /**
      * 关注/取消关注用户
      */
-    fun toggleFollow() {
+    fun toggleFollow(restrict: String = "public") {
         val user = _state.value.user ?: return
         val isCurrentlyFollowed = user.is_followed == true
 
@@ -257,7 +255,7 @@ class UserProfileViewModel : ViewModel() {
                 if (isCurrentlyFollowed) {
                     PixivClient.pixivApi.unfollowUser(user.id)
                 } else {
-                    PixivClient.pixivApi.followUser(user.id)
+                    PixivClient.pixivApi.followUser(user.id, restrict)
                 }
 
                 // 更新状态

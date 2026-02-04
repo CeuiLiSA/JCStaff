@@ -4,19 +4,29 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +56,7 @@ import kotlinx.coroutines.launch
  * 作品作者信息行组件
  * 显示头像、用户名、账号名和关注按钮
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun IllustAuthorRow(
     user: User?,
@@ -149,36 +160,71 @@ fun IllustAuthorRow(
                     }
                 }
             } else {
-                FilledTonalButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            isFollowing = true
-                            try {
-                                PixivClient.pixivApi.followUser(u.id)
-                                onFollowStateChanged(true)
-                                val updatedUser = u.copy(is_followed = true)
-                                ObjectStore.put(updatedUser)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, context.getString(R.string.follow_failed), Toast.LENGTH_SHORT).show()
-                            } finally {
-                                isFollowing = false
+                var showMenu by remember { mutableStateOf(false) }
+
+                val followAction = { restrict: String ->
+                    coroutineScope.launch {
+                        isFollowing = true
+                        try {
+                            PixivClient.pixivApi.followUser(u.id, restrict)
+                            onFollowStateChanged(true)
+                            val updatedUser = u.copy(is_followed = true)
+                            ObjectStore.put(updatedUser)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, context.getString(R.string.follow_failed), Toast.LENGTH_SHORT).show()
+                        } finally {
+                            isFollowing = false
+                        }
+                    }
+                }
+
+                Box {
+                    SplitButtonLayout(
+                        leadingButton = {
+                            SplitButtonDefaults.TonalLeadingButton(
+                                onClick = { followAction("public") },
+                                enabled = !isFollowing,
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                if (isFollowing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(14.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text(
+                                        text = stringResource(R.string.follow),
+                                        style = MaterialTheme.typography.labelMedium
+                                    )
+                                }
+                            }
+                        },
+                        trailingButton = {
+                            SplitButtonDefaults.TonalTrailingButton(
+                                checked = showMenu,
+                                onCheckedChange = { showMenu = it },
+                                enabled = !isFollowing,
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
-                    },
-                    enabled = !isFollowing,
-                    shape = RoundedCornerShape(20.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    if (isFollowing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(14.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.follow),
-                            style = MaterialTheme.typography.labelMedium
+                    )
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.follow_private)) },
+                            onClick = {
+                                showMenu = false
+                                followAction("private")
+                            }
                         )
                     }
                 }

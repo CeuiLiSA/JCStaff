@@ -119,6 +119,7 @@ ceui.lisa.jcstaff/
 │   ├── IllustFeed.kt             # 社交信息流插画列表（纵向）
 │   ├── NovelCard.kt              # 小说卡片
 │   ├── NovelList.kt              # 小说列表
+│   ├── EmptyState.kt             # 通用空态组件（简单版 + 全屏可刷新版 EmptyRefreshableState）
 │   ├── ErrorRetryState.kt        # 通用错误重试状态（支持下拉刷新+重试按钮）
 │   ├── LoadingIndicator.kt       # MD3 加载指示器
 │   ├── FloatingTopBar.kt         # 浮动顶部栏（返回+分享）
@@ -342,6 +343,8 @@ ModalNavigationDrawer（侧滑抽屉）
 
 **错误处理：** 网络请求失败时，如果有缓存数据则静默失败（保持展示缓存），无缓存时显示 `ErrorRetryState` 组件（支持下拉刷新+重试按钮）。
 
+**空态处理：** 所有列表/网格组件（`IllustGrid`、`IllustFeed`、`NovelList`）在加载完成但无数据时统一显示 `EmptyRefreshableState` 组件（居中文字 + 可选刷新按钮，支持滚动以适配 PullToRefreshBox）。
+
 **性能说明：** HorizontalPager 是懒加载的，默认只组合当前页和相邻页（`beyondBoundsPageCount = 0`），10 个子页面和 3 个子页面对性能影响几乎相同。
 
 ---
@@ -423,6 +426,9 @@ ModalNavigationDrawer（侧滑抽屉）
     ObjectStore.updateTyped(key) { illust.copy(is_bookmarked = true) }
     → 列表页的 Flow 同步更新 → 卡片自动刷新收藏图标
 ```
+
+**跨页面关注状态同步：**
+由于 `Illust`/`Novel` 内嵌了 `User` 的拷贝，更新 `User.is_followed` 不会自动反映到 `Illust` 上。因此 `IllustDetailScreen` 和 `NovelDetailScreen` 直接从 ObjectStore 观察 `User` 的 StateFlow（而非 `Illust` 内嵌的 user），确保在作者详情页关注后返回时状态实时同步。
 
 ---
 
@@ -511,7 +517,9 @@ ModalNavigationDrawer（侧滑抽屉）
 #### 用户视角
 - 沉浸式头部：背景图 + 头像 + 用户名 + 简介
 - 统计数据：投稿数、收藏数、关注数
-- 关注/取消关注按钮
+- 关注按钮使用 M3 `SplitButtonLayout`：左键公开关注，右键展开菜单支持「悄悄关注」（`restrict = "private"`）
+- 分区标题带图标："创作" 使用 `AutoAwesome` 图标，"公开收藏" 使用 `Bookmarks` 图标
+- 收藏区合并为单行（插画与漫画不再分开展示）
 - 下方展示该用户的所有投稿作品（瀑布流）
 - **滚动感知顶部栏**：当列表向下滚动超过阈值时，顶部显示用户头像、用户名和 @账号的 TopAppBar，包含返回按钮和回到顶部按钮
 
@@ -520,6 +528,9 @@ ModalNavigationDrawer（侧滑抽屉）
 - `UserProfileViewModel` 并行加载：
   - `getUserDetail()` — 用户基本信息和统计
   - `getUserIllusts()` — 用户作品列表（分页）
+  - `toggleFollow(restrict)` 支持公开/私密关注
+- `UserFollowButton` — 使用 `SplitButtonLayout`（M3 1.5.0-alpha），未关注状态分为主按钮（公开关注）和下拉按钮（悄悄关注）
+- `ProfileSectionHeader` — 接受 `icon: ImageVector` 参数，标题右侧显示彩色图标
 - `UserProfileHeader` 组件：
   - 背景图使用 `background_image_url`
   - 如无背景图，使用渐变色兜底
@@ -530,6 +541,7 @@ ModalNavigationDrawer（侧滑抽屉）
 ### 9. 收藏管理
 
 #### 用户视角
+- 收藏按钮使用 M3 `SplitButtonLayout`：主按钮公开收藏/取消收藏，下拉菜单支持私密收藏和按标签收藏
 - 在插画详情页点击收藏按钮即时收藏/取消收藏
 - 在抽屉菜单中进入「我的收藏」查看所有收藏
 - 支持多选批量下载收藏的作品
@@ -1384,7 +1396,9 @@ if (!cacheResult.shouldFetch(forceRefresh)) return@launch
                     所有订阅者的 UI 自动更新
 ```
 
-**场景举例：** 在插画详情页收藏了作品 → ObjectStore 中对应的 StateFlow 更新 → 返回推荐列表后，该作品的卡片上收藏图标已同步变化。
+**场景举例：**
+- 收藏同步：在插画详情页收藏了作品 → ObjectStore 中对应的 Illust StateFlow 更新 → 返回推荐列表后，该作品的卡片上收藏图标已同步变化。
+- 关注同步：在作者主页关注了用户 → ObjectStore 中对应的 User StateFlow 更新 → 返回插画/小说详情页后，关注按钮状态已同步变化。
 
 ---
 

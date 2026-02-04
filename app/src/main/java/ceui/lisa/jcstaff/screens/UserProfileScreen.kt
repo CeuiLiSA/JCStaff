@@ -16,6 +16,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Bookmarks
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -68,6 +71,7 @@ fun UserProfileScreen(
 
     // 预先记住回调，避免每次重组创建新 lambda
     val onFollowClick = remember { { viewModel.toggleFollow() } }
+    val onPrivateFollowClick = remember { { viewModel.toggleFollow("private") } }
     val onFollowingClick = remember(navViewModel, userId) {
         { navViewModel.navigate(NavRoute.UserFollowing(userId = userId)) }
     }
@@ -100,6 +104,7 @@ fun UserProfileScreen(
     val sectionCreatedTitle = stringResource(R.string.section_created)
     val sectionBookmarkedTitle = stringResource(R.string.section_bookmarked)
     val illustsTitle = stringResource(R.string.illustrations)
+    val illustMangaTitle = stringResource(R.string.tab_illust_manga)
     val mangaTitle = stringResource(R.string.manga)
     val novelTitle = stringResource(R.string.tab_novel)
 
@@ -125,13 +130,14 @@ fun UserProfileScreen(
                         isLoading = state.isLoadingProfile,
                         isFollowing = state.isFollowing,
                         onFollowClick = onFollowClick,
+                        onPrivateFollowClick = onPrivateFollowClick,
                         onFollowingClick = onFollowingClick
                     )
                 }
 
                 // ═══════ 创作 ═══════
                 item(key = "header_created", contentType = CONTENT_TYPE_SECTION_HEADER) {
-                    ProfileSectionHeader(title = sectionCreatedTitle)
+                    ProfileSectionHeader(title = sectionCreatedTitle, icon = Icons.Rounded.AutoAwesome)
                 }
 
                 // 插画
@@ -167,31 +173,20 @@ fun UserProfileScreen(
                     }
                 }
 
-                // ═══════ 收藏 ═══════
+                // ═══════ 公开收藏 ═══════
                 item(key = "header_bookmarked", contentType = CONTENT_TYPE_SECTION_HEADER) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    ProfileSectionHeader(title = sectionBookmarkedTitle)
+                    ProfileSectionHeader(title = sectionBookmarkedTitle, icon = Icons.Rounded.Bookmarks)
                 }
 
-                // 收藏插画
+                // 收藏插画&漫画
                 item(key = "sub_bookmarked_illusts", contentType = CONTENT_TYPE_SUB_SECTION) {
                     ProfileSubSection(
-                        title = illustsTitle,
+                        title = illustMangaTitle,
                         count = state.profile?.total_illust_bookmarks_public ?: 0,
                         onClick = onBookmarkedIllustsClick
                     ) {
-                        IllustPreviewRow(illusts = state.bookmarkedIllustsOnly)
-                    }
-                }
-
-                // 收藏漫画
-                item(key = "sub_bookmarked_manga", contentType = CONTENT_TYPE_SUB_SECTION) {
-                    ProfileSubSection(
-                        title = mangaTitle,
-                        count = state.bookmarkedManga.size,
-                        onClick = onBookmarkedIllustsClick
-                    ) {
-                        IllustPreviewRow(illusts = state.bookmarkedManga)
+                        IllustPreviewRow(illusts = state.bookmarkedIllusts)
                     }
                 }
 

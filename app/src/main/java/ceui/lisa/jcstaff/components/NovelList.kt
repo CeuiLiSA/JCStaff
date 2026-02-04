@@ -121,6 +121,9 @@ fun NovelList(
                     LoadingIndicator()
                 }
             }
+            novels.isEmpty() -> {
+                EmptyRefreshableState(onRefresh = onRefresh)
+            }
             else -> {
                 LazyColumn(
                     state = listState,

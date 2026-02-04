@@ -59,6 +59,7 @@ import ceui.lisa.jcstaff.core.StoreType
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.Tag
+import ceui.lisa.jcstaff.network.User
 import ceui.lisa.jcstaff.utils.formatRelativeDate
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -72,7 +73,12 @@ fun NovelDetailScreen(
     // Try to get from ObjectStore first
     val novelFlow = ObjectStore.get<Novel>(StoreKey(novelId, StoreType.NOVEL))
     var novel by remember { mutableStateOf(novelFlow?.value) }
-    var isFollowed by remember { mutableStateOf(novel?.user?.is_followed ?: false) }
+    // 关注状态：直接观察 ObjectStore 中的 User，确保跨页面同步
+    val userId = novel?.user?.id
+    val observedUser by remember(userId) {
+        userId?.let { ObjectStore.get<User>(StoreKey(it, StoreType.USER)) }
+    }?.collectAsState() ?: remember { mutableStateOf(null) }
+    val isFollowed = observedUser?.is_followed ?: novel?.user?.is_followed ?: false
     var isBookmarked by remember { mutableStateOf(novel?.is_bookmarked ?: false) }
 
     // Observe ObjectStore changes
@@ -90,7 +96,6 @@ fun NovelDetailScreen(
     // Sync observed novel to local state
     LaunchedEffect(observedNovel) {
         novel = observedNovel
-        isFollowed = observedNovel.user?.is_followed ?: false
         isBookmarked = observedNovel.is_bookmarked ?: false
     }
 
@@ -170,7 +175,7 @@ fun NovelDetailScreen(
             IllustAuthorRow(
                 user = loadedNovel.user,
                 isFollowed = isFollowed,
-                onFollowStateChanged = { followed -> isFollowed = followed },
+                onFollowStateChanged = { },
                 onUserClick = { userId ->
                     navViewModel.navigate(NavRoute.UserProfile(userId = userId))
                 }

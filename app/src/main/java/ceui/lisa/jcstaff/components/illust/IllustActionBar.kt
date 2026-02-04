@@ -34,10 +34,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
@@ -102,25 +105,13 @@ fun IllustActionBar(
     ) {
         // 收藏按钮 (Split Button 样式)
         var showBookmarkMenu by remember { mutableStateOf(false) }
-        val backgroundColor = if (isBookmarked) MaterialTheme.colorScheme.errorContainer
-            else MaterialTheme.colorScheme.surfaceVariant
-        val contentColor = if (isBookmarked) MaterialTheme.colorScheme.onErrorContainer
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        val iconTint = if (isBookmarked) MaterialTheme.colorScheme.error
-            else MaterialTheme.colorScheme.onSurfaceVariant
 
+        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
         Box {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(backgroundColor, RoundedCornerShape(20.dp))
-            ) {
-                // 左边主按钮：点击切换收藏状态（公开）
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickable(enabled = !isBookmarking) {
+            SplitButtonLayout(
+                leadingButton = {
+                    SplitButtonDefaults.TonalLeadingButton(
+                        onClick = {
                             coroutineScope.launch {
                                 isBookmarking = true
                                 try {
@@ -139,55 +130,43 @@ fun IllustActionBar(
                                     isBookmarking = false
                                 }
                             }
+                        },
+                        enabled = !isBookmarking
+                    ) {
+                        if (isBookmarking) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = if (isBookmarked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer
+                            )
                         }
-                        .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
-                ) {
-                    if (isBookmarking) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = contentColor
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = formatCount(illust.total_bookmarks ?: 0),
+                            style = MaterialTheme.typography.labelLarge
                         )
-                    } else {
+                    }
+                },
+                trailingButton = {
+                    SplitButtonDefaults.TonalTrailingButton(
+                        checked = showBookmarkMenu,
+                        onCheckedChange = { showBookmarkMenu = it },
+                        enabled = !isBookmarking
+                    ) {
                         Icon(
-                            imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = null,
-                            tint = iconTint,
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = stringResource(R.string.bookmark_options),
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    Text(
-                        text = formatCount(illust.total_bookmarks ?: 0),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = contentColor,
-                        modifier = Modifier.padding(start = 6.dp)
-                    )
                 }
-
-                // 分隔线
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(24.dp)
-                        .background(contentColor.copy(alpha = 0.3f))
-                )
-
-                // 右边下拉按钮
-                Box(
-                    modifier = Modifier
-                        .clickable(enabled = !isBookmarking) {
-                            showBookmarkMenu = true
-                        }
-                        .padding(horizontal = 8.dp, vertical = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = stringResource(R.string.bookmark_options),
-                        tint = contentColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            )
 
             // 收藏选项菜单
             DropdownMenu(
