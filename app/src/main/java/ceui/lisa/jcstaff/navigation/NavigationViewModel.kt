@@ -17,12 +17,29 @@ data class AppSwitcherState(
     val selectedIndex: Int = -1
 )
 
+/**
+ * Wraps a [NavRoute] with a unique ID so the same route appearing multiple
+ * times in the back stack (e.g. UserProfile → IllustDetail → UserProfile)
+ * gets distinct screenshot keys.
+ */
+data class BackStackEntry(
+    val id: Int,
+    val route: NavRoute
+) {
+    /** Unique key for screenshot storage — distinguishes duplicate routes. */
+    val screenshotKey: String get() = "${id}_${route.stableKey}"
+}
+
 class NavigationViewModel : ViewModel() {
 
-    val backStack: SnapshotStateList<NavRoute> = mutableStateListOf()
+    val backStack: SnapshotStateList<BackStackEntry> = mutableStateListOf()
+    private var nextEntryId = 0
+
+    val currentEntry: BackStackEntry?
+        get() = backStack.lastOrNull()
 
     val currentRoute: NavRoute?
-        get() = backStack.lastOrNull()
+        get() = currentEntry?.route
 
     val canGoBack: Boolean
         get() = backStack.size > 1
@@ -32,7 +49,7 @@ class NavigationViewModel : ViewModel() {
     val navigationDirection: State<NavigationDirection> = _navigationDirection
 
     val previousRouteKey: String?
-        get() = if (backStack.size >= 2) backStack[backStack.size - 2].stableKey else null
+        get() = if (backStack.size >= 2) backStack[backStack.size - 2].screenshotKey else null
 
     // App switcher state
     val screenshotStore = ScreenshotStore()
@@ -46,28 +63,28 @@ class NavigationViewModel : ViewModel() {
     fun navigate(route: NavRoute) {
         _navigationDirection.value = NavigationDirection.FORWARD
         // Capture current page screenshot before navigating away
-        currentRoute?.let { current ->
+        currentEntry?.let { current ->
             viewModelScope.launch {
-                screenshotStore.captureOne(current.stableKey)
+                screenshotStore.captureOne(current.screenshotKey)
             }
         }
-        backStack.add(route)
+        backStack.add(BackStackEntry(nextEntryId++, route))
     }
 
     fun goBack() {
         _navigationDirection.value = NavigationDirection.BACKWARD
         if (backStack.size > 1) {
-            val removed = backStack.removeLast()
-            screenshotStore.remove(removed.stableKey)
+            val removed = backStack.removeAt(backStack.lastIndex)
+            screenshotStore.remove(removed.screenshotKey)
         }
     }
 
     fun clearAndNavigate(route: NavRoute) {
         _navigationDirection.value = NavigationDirection.FORWARD
         // Clear all screenshots when resetting navigation
-        backStack.forEach { screenshotStore.remove(it.stableKey) }
+        backStack.forEach { screenshotStore.remove(it.screenshotKey) }
         backStack.clear()
-        backStack.add(route)
+        backStack.add(BackStackEntry(nextEntryId++, route))
     }
 
     fun showAppSwitcher() {
@@ -98,8 +115,8 @@ class NavigationViewModel : ViewModel() {
         _navigationDirection.value = NavigationDirection.BACKWARD
         // Remove all routes after the target index
         while (backStack.size > index + 1) {
-            val removed = backStack.removeLast()
-            screenshotStore.remove(removed.stableKey)
+            val removed = backStack.removeAt(backStack.lastIndex)
+            screenshotStore.remove(removed.screenshotKey)
         }
     }
 
@@ -107,7 +124,7 @@ class NavigationViewModel : ViewModel() {
     fun removeAtIndex(index: Int) {
         if (index < 0 || index >= backStack.size || backStack.size <= 1) return
         val removed = backStack.removeAt(index)
-        screenshotStore.remove(removed.stableKey)
+        screenshotStore.remove(removed.screenshotKey)
         // Adjust selected index
         val newIndex = (index - 1).coerceAtLeast(0)
         updateSelectedIndex(newIndex)

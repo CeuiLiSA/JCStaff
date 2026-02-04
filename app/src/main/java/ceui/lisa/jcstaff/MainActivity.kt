@@ -87,6 +87,10 @@ import ceui.lisa.jcstaff.screens.ShaderDemoScreen
 import ceui.lisa.jcstaff.screens.SpotlightDetailScreen
 import ceui.lisa.jcstaff.screens.TagDetailScreen
 import ceui.lisa.jcstaff.screens.UgoiraRankingScreen
+import ceui.lisa.jcstaff.screens.UserBookmarkNovelsScreen
+import ceui.lisa.jcstaff.screens.UserCreatedIllustsScreen
+import ceui.lisa.jcstaff.screens.UserCreatedNovelsScreen
+import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.screens.WebTagDetailScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
@@ -196,7 +200,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                if (navViewModel.backStack.isEmpty() || navViewModel.backStack.first() == NavRoute.Landing) {
+                if (navViewModel.backStack.isEmpty() || navViewModel.backStack.first().route == NavRoute.Landing) {
                     navViewModel.clearAndNavigate(NavRoute.Home)
                 }
             }
@@ -211,12 +215,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
         }
     }
 
-    // 在 LaunchedEffect 尚未执行时，根据 authState 同步推导初始路由，避免空白帧
-    val currentRoute = navViewModel.currentRoute ?: when (authState) {
-        is AuthState.Authenticated -> NavRoute.Home
-        is AuthState.NotAuthenticated -> NavRoute.Landing
-        else -> null
-    }
+    val currentEntry = navViewModel.currentEntry
 
     // Predictive back gesture state
     var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
@@ -245,7 +244,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
     }
 
     // Loading 状态显示加载指示器
-    if (authState is AuthState.Loading || currentRoute == null) {
+    if (authState is AuthState.Loading || currentEntry == null) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -311,7 +310,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
             key(activeUserId) {
                 AnimatedContent(
-                    targetState = currentRoute,
+                    targetState = currentEntry,
                     transitionSpec = {
                         if (skipNextTransition) {
                             skipNextTransition = false
@@ -363,13 +362,14 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                 }
                             }
                         )
-                ) { route ->
-                    saveableStateHolder.SaveableStateProvider(route.stableKey) {
+                ) { entry ->
+                    val route = entry.route
+                    saveableStateHolder.SaveableStateProvider(entry.screenshotKey) {
                         // Wrap content with ScreenshotCapture for app switcher.
                         // The background is inside the capture so the screenshot
                         // includes it (GraphicsLayer captures with transparency).
                         ScreenshotCapture(
-                            key = route.stableKey,
+                            key = entry.screenshotKey,
                             screenshotStore = navViewModel.screenshotStore
                         ) {
                             Box(
@@ -533,6 +533,31 @@ fun AppNavigation(authViewModel: AuthViewModel) {
 
                                     is NavRoute.DownloadHistory -> {
                                         DownloadHistoryScreen()
+                                    }
+
+                                    is NavRoute.UserCreatedIllusts -> {
+                                        UserCreatedIllustsScreen(
+                                            userId = route.userId,
+                                            type = route.type
+                                        )
+                                    }
+
+                                    is NavRoute.UserCreatedNovels -> {
+                                        UserCreatedNovelsScreen(
+                                            userId = route.userId
+                                        )
+                                    }
+
+                                    is NavRoute.UserBookmarkNovels -> {
+                                        UserBookmarkNovelsScreen(
+                                            userId = route.userId
+                                        )
+                                    }
+
+                                    is NavRoute.UserFollowing -> {
+                                        UserFollowingScreen(
+                                            userId = route.userId
+                                        )
                                     }
                                 }
                             }

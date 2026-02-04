@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import ceui.lisa.jcstaff.navigation.AppSwitcherState
-import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.navigation.BackStackEntry
 import ceui.lisa.jcstaff.navigation.getTitle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -83,7 +83,7 @@ private fun depthScale(relPos: Float): Float {
 
 @Composable
 fun AppSwitcherOverlay(
-    backStack: List<NavRoute>,
+    backStack: List<BackStackEntry>,
     screenshotStore: ScreenshotStore,
     state: AppSwitcherState,
     onCardClick: (Int) -> Unit,
@@ -180,8 +180,8 @@ fun AppSwitcherOverlay(
     // Show the selected page's screenshot at fullscreen so the transition is seamless
     // (page content is already hidden via alpha=0 in MainActivity).
     if (!overlayReady) {
-        val selectedRoute = backStack.getOrNull(state.selectedIndex)
-        val screenshot = selectedRoute?.let { screenshotStore.getScreenshot(it.stableKey) }
+        val selectedEntry = backStack.getOrNull(state.selectedIndex)
+        val screenshot = selectedEntry?.let { screenshotStore.getScreenshot(it.screenshotKey) }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -288,13 +288,13 @@ fun AppSwitcherOverlay(
         val cullRight = screenWidthPx + cardWidthPx
 
         // 1) Cards — iOS style with depth scaling on left cards
-        backStack.forEachIndexed { index, route ->
+        backStack.forEachIndexed { index, entry ->
             val baseX = cardCenterX(index)
 
             // Skip cards that are completely off-screen
             if (baseX < cullLeft || baseX > cullRight) return@forEachIndexed
 
-            key(route.stableKey) {
+            key(entry.screenshotKey) {
                 val totalHeight = cardHeightPx + titleHeightPx
 
                 // iOS-style depth scale: left cards shrink with exponential decay,
@@ -332,7 +332,7 @@ fun AppSwitcherOverlay(
                         }
                 ) {
                     Text(
-                        text = route.getTitle(),
+                        text = entry.route.getTitle(),
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
@@ -360,7 +360,7 @@ fun AppSwitcherOverlay(
                             .height(cardHeightDp)
                     ) {
                         AppSwitcherCard(
-                            screenshot = screenshotStore.getScreenshot(route.stableKey),
+                            screenshot = screenshotStore.getScreenshot(entry.screenshotKey),
                             onClick = { },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -385,8 +385,8 @@ fun AppSwitcherOverlay(
             else -> null
         }
         if (overlayIdx != null && overlayIdx in backStack.indices) {
-            val route = backStack[overlayIdx]
-            val screenshot = screenshotStore.getScreenshot(route.stableKey)
+            val entry = backStack[overlayIdx]
+            val screenshot = screenshotStore.getScreenshot(entry.screenshotKey)
 
             // Start geometry: card's current position and size
             val startCenterX = cardCenterX(overlayIdx)
