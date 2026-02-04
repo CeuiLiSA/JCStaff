@@ -339,14 +339,14 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                         .background(MaterialTheme.colorScheme.background)
                         .then(
                             if (isPredictiveBack && Build.VERSION.SDK_INT >= 34) {
-                                val cornerRadius = with(density) { (16.dp * predictiveBackProgress).toPx() }
+                                val cornerRadius = with(density) { (40.dp * predictiveBackProgress).toPx() }
                                 Modifier
                                     .graphicsLayer {
-                                        val scale = 1f - (0.1f * predictiveBackProgress)
+                                        val scale = 1f - (0.15f * predictiveBackProgress)
                                         scaleX = scale
                                         scaleY = scale
-                                        // Slight shift toward the swipe edge
-                                        val shiftFraction = 0.05f * predictiveBackProgress
+                                        // Shift toward the swipe edge
+                                        val shiftFraction = 0.1f * predictiveBackProgress
                                         translationX = if (predictiveBackSwipeEdge == 0) { // EDGE_LEFT
                                             size.width * shiftFraction
                                         } else {

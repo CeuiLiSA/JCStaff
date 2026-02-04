@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.components.appswitcher
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
@@ -32,7 +33,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -155,9 +155,11 @@ fun AppSwitcherOverlay(
     if (!overlayReady) {
         val selectedRoute = backStack.getOrNull(state.selectedIndex)
         val screenshot = selectedRoute?.let { screenshotStore.getScreenshot(it.stableKey) }
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
             if (screenshot != null) {
                 Image(
                     bitmap = screenshot,
@@ -207,7 +209,7 @@ fun AppSwitcherOverlay(
         // Spacing tuned so left and right cards move at similar visual rates.
         val leftBasePeek = cardWidthPx * 0.22f   // visible strip of first left card
         val leftDecay = 0.28f                     // fast convergence: only ~2 left cards visible
-        val rightSpacingPx = cardWidthPx * 0.95f
+        val rightSpacingPx = cardWidthPx * 0.85f
         // Drag sensitivity: how many pixels of drag = 1 card scroll.
         // Larger value = need to drag further to switch one card.
         val dragSpacingPx = cardWidthPx * 0.60f
@@ -316,7 +318,9 @@ fun AppSwitcherOverlay(
                             }
                         }
                 )
-                Box(modifier = Modifier.width(cardWidthDp).height(cardHeightDp)) {
+                Box(modifier = Modifier
+                    .width(cardWidthDp)
+                    .height(cardHeightDp)) {
                     AppSwitcherCard(
                         screenshot = screenshotStore.getScreenshot(route.stableKey),
                         onClick = { },

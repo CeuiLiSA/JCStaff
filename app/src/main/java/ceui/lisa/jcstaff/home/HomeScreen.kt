@@ -239,12 +239,6 @@ fun HomeScreen(
                         drawerState.close()
                         navViewModel.navigate(NavRoute.ShaderDemo)
                     }
-                },
-                onAppSwitcherDemoClick = {
-                    coroutineScope.launch {
-                        drawerState.close()
-                        navViewModel.showAppSwitcherDemo()
-                    }
                 }
             )
         }
