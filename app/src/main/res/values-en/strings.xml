@@ -171,6 +171,7 @@
     <string name="follow_failed">Failed to follow</string>
     <string name="unfollow_failed">Failed to unfollow</string>
     <string name="follow_private">Follow Privately</string>
+    <string name="scroll_to_top">Back to Top</string>
 
     <!-- User Profile -->
     <string name="works">Works</string>

@@ -171,6 +171,7 @@
     <string name="follow_failed">フォローに失敗しました</string>
     <string name="unfollow_failed">フォロー解除に失敗しました</string>
     <string name="follow_private">非公開フォロー</string>
+    <string name="scroll_to_top">トップに戻る</string>
 
     <!-- User Profile -->
     <string name="works">作品</string>
