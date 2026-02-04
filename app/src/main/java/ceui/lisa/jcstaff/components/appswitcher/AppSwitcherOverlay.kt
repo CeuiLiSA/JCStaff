@@ -272,7 +272,7 @@ fun AppSwitcherOverlay(
             // iOS-style: left-side (stacked) cards hide their title,
             // focused card and right-side cards show it.
             // Smooth 0→1 transition as a card slides from left to center.
-            val titleAlpha = (1f + relPos).coerceIn(0f, 1f)
+            val titleAlpha = minOf(1f + relPos, 2f - relPos).coerceIn(0f, 1f)
             // Blur text during the 0.5→1 fade-in / 1→0.5 fade-out range.
             // At titleAlpha=1 → 0dp blur; at titleAlpha≤0.5 → max 10dp blur.
             val titleBlurRadius = ((1f - titleAlpha).coerceAtMost(0.5f) * 2f * 10f).dp
