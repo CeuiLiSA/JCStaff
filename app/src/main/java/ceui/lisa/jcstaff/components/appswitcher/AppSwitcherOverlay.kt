@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 // iOS-style easing: gentle acceleration, long smooth deceleration.
 // Approximates UIKit's default spring-like curve without overshoot.
@@ -266,18 +267,43 @@ fun AppSwitcherOverlay(
                 centerX + relPos.pow(1.2f) * rightSpacingPx
             }
             // Elastic overscroll: differential movement creates stretch/compress feel.
+            // Each card has different weight so they fan out / compress.
             val overscrollWeight = if (overscroll < 0f) {
-                // Left edge: edge card moves least, far cards fan out
+                // Left edge (overscroll < 0): rightmost cards move more, leftmost move less
+                // Edge card (d=0) weight=0.45, next card (d=1) weight=0.79, difference visible but both move
                 val d = relPos.coerceAtLeast(0f)
-                (d + 1f) / (d + 2f)
+                0.72f + 0.55f * (d / (d + 0.6f))
             } else if (overscroll > 0f) {
-                // Right edge: last card moves most, left cards compress
+                // Right edge (overscroll > 0): rightmost card moves most, left cards move less
+                // d=0 (rightmost): weight=0.5, d=1: weight=0.25, d=2: weight=0.17
                 val d = (-relPos).coerceAtLeast(0f)
-                1f / (d + 2f)
+                0.65f / (d + 1f)
             } else {
                 0f
             }
-            return baseX - overscroll * rightSpacingPx * overscrollWeight
+            // Use smooth damping: x/(1+|x|) gives diminishing returns without discontinuity
+            val absOver = abs(overscroll)
+            val dampedOverscroll = absOver / (1f + absOver * 0.8f)
+            return baseX - overscroll.sign * dampedOverscroll * rightSpacingPx * overscrollWeight
+        }
+
+        // Calculate Z-axis sink (scale down) for right-edge overscroll.
+        // Rightmost card shrinks slightly, left cards shrink more.
+        fun overscrollSinkScale(index: Int, sp: Float = scrollPos): Float {
+            val cSp = sp.coerceIn(0f, maxScrollIndex)
+            val overscroll = sp - cSp
+            if (overscroll <= 0f) return 1f // No sink when not overscrolling right
+
+            val relPos = index.toFloat() - cSp
+            // d=0 (rightmost): minimal sink, d>0 (left cards): more sink
+            val d = (-relPos).coerceAtLeast(0f)
+            // Rightmost card: sinkWeight=0.3, left cards: up to 1.0
+            val sinkWeight = 0.3f + 0.7f * (d / (d + 0.8f))
+
+            // Smooth damping for the sink amount
+            val dampedOverscroll = overscroll / (1f + overscroll * 0.8f)
+            // Scale down: left cards can shrink up to ~0.85, rightmost ~0.97
+            return 1f - dampedOverscroll * 0.15f * sinkWeight
         }
 
         // Fade cards out during expand, fade in during shrink
@@ -332,8 +358,9 @@ fun AppSwitcherOverlay(
                             )
                         }
                         .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
+                            val finalScale = scale * overscrollSinkScale(index)
+                            scaleX = finalScale
+                            scaleY = finalScale
                             this.alpha = leftFadeAlpha * expandFade
                         }
                 ) {
@@ -531,11 +558,22 @@ fun AppSwitcherOverlay(
                                     val delta = -dragAmount.x / dragSpacingPx
                                     // Base damping: heavier drag feel (70% of raw input)
                                     val baseFriction = 0.70f
-                                    // Rubber-band: extra friction (21% total) when past the edge
-                                    val edgeFriction = if (
-                                        (dragScrollPos <= 0f && delta < 0f) ||
-                                        (dragScrollPos >= maxIndex && delta > 0f)
-                                    ) 0.3f else 1f
+                                    // Rubber-band: progressive resistance when past the edge.
+                                    // iOS-style: initial overscroll is responsive, gets harder as you pull further.
+                                    val overscrollAmount = when {
+                                        dragScrollPos < 0f -> -dragScrollPos
+                                        dragScrollPos > maxIndex -> dragScrollPos - maxIndex
+                                        else -> 0f
+                                    }
+                                    val isOverscrolling = (dragScrollPos <= 0f && delta < 0f) ||
+                                            (dragScrollPos >= maxIndex && delta > 0f)
+                                    val edgeFriction = if (isOverscrolling) {
+                                        // Progressive resistance: starts at 0.6, decreases as you pull further
+                                        // At overscroll=0: friction=0.6, at overscroll=2: friction≈0.3
+                                        0.6f / (1f + overscrollAmount * 0.5f)
+                                    } else {
+                                        1f
+                                    }
                                     dragScrollPos += delta * baseFriction * edgeFriction
                                 }
 
