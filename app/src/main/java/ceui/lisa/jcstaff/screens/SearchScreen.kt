@@ -1,6 +1,7 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -27,8 +29,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -40,22 +42,22 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
@@ -66,117 +68,80 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
-import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
-import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.network.TrendingTag
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
+
+// 标签渐变色（与 IllustTags 保持一致）
+private val tagGradients = listOf(
+    listOf(Color(0xFF667EEA), Color(0xFF764BA2)),
+    listOf(Color(0xFFFF6B6B), Color(0xFFFF8E53)),
+    listOf(Color(0xFF4ECDC4), Color(0xFF44A08D)),
+    listOf(Color(0xFFF093FB), Color(0xFFF5576C)),
+    listOf(Color(0xFF5EE7DF), Color(0xFFB490CA)),
+    listOf(Color(0xFFFA709A), Color(0xFFFEE140)),
+    listOf(Color(0xFF8E9EAB), Color(0xFFEEF2F3)),
+    listOf(Color(0xFF3A6186), Color(0xFF89253E)),
+    listOf(Color(0xFF56AB2F), Color(0xFFA8E063)),
+    listOf(Color(0xFF2193B0), Color(0xFF6DD5ED)),
+    listOf(Color(0xFFCC2B5E), Color(0xFF753A88)),
+    listOf(Color(0xFFED4264), Color(0xFFFFEDBC)),
+    listOf(Color(0xFF00C9FF), Color(0xFF92FE9D)),
+    listOf(Color(0xFF6A11CB), Color(0xFF2575FC)),
+    listOf(Color(0xFFFC466B), Color(0xFF3F5EFB)),
+    listOf(Color(0xFFF7971E), Color(0xFFFFD200)),
+)
 
 /**
  * 搜索页面
  * 支持关键词联想（debounce 500ms）和搜索历史
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, FlowPreview::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun SearchScreen() {
+fun SearchScreen(
+    viewModel: SearchViewModel = viewModel()
+) {
     val navViewModel = LocalNavigationViewModel.current
-    val searchHistory by BrowseHistoryRepository.getSearchHistoryFlow()
-        .collectAsState(initial = emptyList())
+
+    // 从 ViewModel 获取状态
+    val searchHistoryState by viewModel.searchHistoryState.collectAsState()
+    val suggestionsState by viewModel.suggestionsState.collectAsState()
+    val trendingTagsState by viewModel.trendingTagsState.collectAsState()
+    val queryText by viewModel.queryText.collectAsState()
+
     // 使用 TextFieldValue 以支持光标位置控制
-    var queryText by rememberSaveable { mutableStateOf("") }
     var textFieldValue by remember {
-        mutableStateOf(
-            TextFieldValue(
-                queryText,
-                TextRange(queryText.length)
-            )
-        )
+        mutableStateOf(TextFieldValue(queryText, TextRange(queryText.length)))
     }
-    var suggestions by remember { mutableStateOf<List<Tag>>(emptyList()) }
-    var trendingTags by remember { mutableStateOf<List<TrendingTag>>(emptyList()) }
-    var isLoadingSuggestions by remember { mutableStateOf(false) }
+
     val focusRequester = remember { FocusRequester() }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var shouldFocus by remember { mutableStateOf(false) }
     var tagToDelete by remember { mutableStateOf<Tag?>(null) }
 
-    // 监听生命周期，在页面恢复时（如从 TagDetail 返回）将光标定位到文字末尾
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                textFieldValue = TextFieldValue(queryText, TextRange(queryText.length))
-                shouldFocus = true
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    // 在 Compose 上下文中执行 focus 请求
-    LaunchedEffect(shouldFocus) {
-        if (shouldFocus) {
-            focusRequester.requestFocus()
-            shouldFocus = false
-        }
-    }
-
-    // Debounce 关键词联想
-    LaunchedEffect(Unit) {
-        snapshotFlow { queryText }
-            .debounce(500)
-            .distinctUntilChanged()
-            .filter { it.isNotBlank() }
-            .collectLatest { word ->
-                isLoadingSuggestions = true
-                try {
-                    val response = PixivClient.pixivApi.searchAutocomplete(word.trim())
-                    suggestions = response.tags
-                } catch (e: Exception) {
-                    suggestions = emptyList()
-                }
-                isLoadingSuggestions = false
-            }
-    }
-
-    // 清空输入时清空联想
+    // 同步 ViewModel 的 queryText 到 textFieldValue（仅当外部更新时）
     LaunchedEffect(queryText) {
-        if (queryText.isBlank()) {
-            suggestions = emptyList()
+        if (textFieldValue.text != queryText) {
+            textFieldValue = TextFieldValue(queryText, TextRange(queryText.length))
         }
     }
 
-    // 加载热门标签
+    // 首次进入时延迟请求焦点，避免卡顿
     LaunchedEffect(Unit) {
-        try {
-            val response = PixivClient.pixivApi.getTrendingTags()
-            trendingTags = response.trend_tags
-        } catch (e: Exception) {
-            // ignore
-        }
+        kotlinx.coroutines.delay(100)
+        focusRequester.requestFocus()
     }
 
     // 更新文本的辅助函数
     fun updateQuery(newText: String) {
-        queryText = newText
+        viewModel.updateQuery(newText)
         textFieldValue = TextFieldValue(newText, TextRange(newText.length))
     }
 
     BackHandler {
         if (queryText.isNotEmpty()) {
             updateQuery("")
-            suggestions = emptyList()
         } else {
             navViewModel.goBack()
         }
@@ -185,7 +150,7 @@ fun SearchScreen() {
     // 执行搜索：记录历史并跳转到 TagDetail
     fun performSearch(tag: Tag) {
         if (tag.name.isNullOrBlank()) return
-        BrowseHistoryRepository.recordSearch(tag)
+        viewModel.recordSearch(tag)
         navViewModel.navigate(NavRoute.TagDetail(tag = tag))
     }
 
@@ -210,7 +175,7 @@ fun SearchScreen() {
             value = textFieldValue,
             onValueChange = { newValue ->
                 textFieldValue = newValue
-                queryText = newValue.text
+                viewModel.updateQuery(newValue.text)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -235,7 +200,6 @@ fun SearchScreen() {
                 if (queryText.isNotEmpty()) {
                     IconButton(onClick = {
                         updateQuery("")
-                        suggestions = emptyList()
                     }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
@@ -265,10 +229,11 @@ fun SearchScreen() {
         )
 
         // 内容区域
-        if (suggestions.isNotEmpty()) {
+        if (suggestionsState.suggestions.isNotEmpty()) {
             SuggestionsList(
-                suggestions = suggestions,
+                suggestions = suggestionsState.suggestions,
                 keyword = queryText.trim(),
+                isLoading = suggestionsState.isLoading,
                 onSuggestionClick = { tag ->
                     updateQuery(tag.name ?: "")
                     performSearch(tag)
@@ -276,8 +241,8 @@ fun SearchScreen() {
             )
         } else {
             SearchHistoryContent(
-                searchHistory = searchHistory,
-                trendingTags = trendingTags,
+                searchHistoryState = searchHistoryState,
+                trendingTagsState = trendingTagsState,
                 onHistoryClick = { tag ->
                     updateQuery(tag.name ?: "")
                     performSearch(tag)
@@ -288,7 +253,7 @@ fun SearchScreen() {
                         translated_name = trendingTag.translated_name
                     )
                     // 记录搜索历史并跳转到网页版标签详情
-                    BrowseHistoryRepository.recordSearch(tag)
+                    viewModel.recordSearch(tag)
                     navViewModel.navigate(NavRoute.WebTagDetail(tag))
                 },
                 onDeleteClick = { tag ->
@@ -315,7 +280,7 @@ fun SearchScreen() {
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            tag.name?.let { BrowseHistoryRepository.deleteSearchTag(it) }
+                            tag.name?.let { viewModel.deleteSearchTag(it) }
                             tagToDelete = null
                         }
                     ) {
@@ -336,16 +301,29 @@ fun SearchScreen() {
 private fun SuggestionsList(
     suggestions: List<Tag>,
     keyword: String,
+    isLoading: Boolean,
     onSuggestionClick: (Tag) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        items(suggestions, key = { it.name ?: it.hashCode() }) { tag ->
-            SuggestionItem(
-                tag = tag,
-                keyword = keyword,
-                onClick = { onSuggestionClick(tag) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(suggestions, key = { it.name ?: it.hashCode() }) { tag ->
+                SuggestionItem(
+                    tag = tag,
+                    keyword = keyword,
+                    onClick = { onSuggestionClick(tag) }
+                )
+            }
+        }
+        // 加载指示器
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .size(20.dp),
+                strokeWidth = 2.dp
             )
         }
     }
@@ -448,15 +426,29 @@ private fun HighlightedText(
     )
 }
 
+private const val HISTORY_COLLAPSED_COUNT = 10
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SearchHistoryContent(
-    searchHistory: List<Tag>,
-    trendingTags: List<TrendingTag>,
+    searchHistoryState: SearchHistoryState,
+    trendingTagsState: TrendingTagsState,
     onHistoryClick: (Tag) -> Unit,
     onTrendingClick: (TrendingTag) -> Unit,
     onDeleteClick: (Tag) -> Unit
 ) {
+    val searchHistory = searchHistoryState.history
+    val trendingTags = trendingTagsState.tags
+    var isHistoryExpanded by remember { mutableStateOf(false) }
+
+    // 根据展开状态决定显示的历史记录
+    val displayedHistory = if (isHistoryExpanded || searchHistory.size <= HISTORY_COLLAPSED_COUNT) {
+        searchHistory
+    } else {
+        searchHistory.take(HISTORY_COLLAPSED_COUNT)
+    }
+    val hasMoreHistory = searchHistory.size > HISTORY_COLLAPSED_COUNT
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -465,40 +457,45 @@ private fun SearchHistoryContent(
     ) {
         // 最近搜索
         if (searchHistory.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.recent_searches),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.recent_searches),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // 展开/收起按钮
+                if (hasMoreHistory) {
+                    Text(
+                        text = if (isHistoryExpanded) {
+                            stringResource(R.string.collapse_images)
+                        } else {
+                            stringResource(R.string.expand_images)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable { isHistoryExpanded = !isHistoryExpanded }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                searchHistory.forEach { tag ->
-                    val displayText =
-                        if (tag.translated_name != null && tag.translated_name != tag.name) {
-                            "${tag.name} / ${tag.translated_name}"
-                        } else {
-                            tag.name ?: ""
-                        }
-                    FilterChip(
-                        selected = false,
+                displayedHistory.forEachIndexed { index, tag ->
+                    SearchTagChip(
+                        tag = tag,
+                        gradientColors = tagGradients[index % tagGradients.size],
                         onClick = { onHistoryClick(tag) },
-                        label = { Text(displayText) },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { onDeleteClick(tag) },
-                                modifier = Modifier.size(18.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = stringResource(R.string.delete),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
+                        onDeleteClick = { onDeleteClick(tag) }
                     )
                 }
             }
@@ -510,7 +507,7 @@ private fun SearchHistoryContent(
             Text(
                 text = stringResource(R.string.trending_searches),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -518,17 +515,15 @@ private fun SearchHistoryContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                trendingTags.forEach { trendingTag ->
-                    val displayText =
-                        if (trendingTag.translated_name != null && trendingTag.translated_name != trendingTag.tag) {
-                            "${trendingTag.tag} / ${trendingTag.translated_name}"
-                        } else {
-                            trendingTag.tag ?: ""
-                        }
-                    FilterChip(
-                        selected = false,
-                        onClick = { onTrendingClick(trendingTag) },
-                        label = { Text(displayText) }
+                trendingTags.forEachIndexed { index, trendingTag ->
+                    val tag = Tag(
+                        name = trendingTag.tag,
+                        translated_name = trendingTag.translated_name
+                    )
+                    SearchTagChip(
+                        tag = tag,
+                        gradientColors = tagGradients[(index + 5) % tagGradients.size],
+                        onClick = { onTrendingClick(trendingTag) }
                     )
                 }
             }
@@ -559,6 +554,77 @@ private fun SearchHistoryContent(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * 搜索标签芯片 - 带渐变背景
+ */
+@Composable
+private fun SearchTagChip(
+    tag: Tag,
+    gradientColors: List<Color>,
+    onClick: () -> Unit,
+    onDeleteClick: (() -> Unit)? = null
+) {
+    val cornerRadius = 8.dp
+
+    Row(
+        modifier = Modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(cornerRadius))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        gradientColors[0].copy(alpha = 0.15f),
+                        gradientColors[1].copy(alpha = 0.1f)
+                    )
+                )
+            )
+            .drawBehind {
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.3f),
+                    cornerRadius = CornerRadius(cornerRadius.toPx()),
+                    style = Stroke(width = 1.dp.toPx())
+                )
+            }
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "#${tag.name ?: ""}",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = gradientColors[0],
+                maxLines = 1
+            )
+            tag.translated_name?.takeIf { it != tag.name }?.let { translated ->
+                Text(
+                    text = translated,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1
+                )
+            }
+        }
+
+        // 删除按钮（仅搜索历史显示）
+        if (onDeleteClick != null) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.delete),
+                modifier = Modifier
+                    .size(16.dp)
+                    .clickable { onDeleteClick() },
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
         }
     }
 }

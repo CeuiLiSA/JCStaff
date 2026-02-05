@@ -1,12 +1,8 @@
 package ceui.lisa.jcstaff.components.illust
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,20 +12,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -105,7 +95,7 @@ fun IllustTags(
 
 /**
  * 高级标签芯片
- * 微妙渐变背景 + 玻璃边框效果 + 按压缩放动画 + 径向光晕
+ * 微妙渐变背景 + 玻璃边框效果
  */
 @Composable
 private fun FancyTagChip(
@@ -113,98 +103,47 @@ private fun FancyTagChip(
     gradientColors: List<Color>,
     onClick: () -> Unit
 ) {
-    var isPressed by remember { mutableStateOf(false) }
-
-    // 按压缩放动画
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "tag_scale"
-    )
-
-    // 光晕透明度动画
-    val glowAlpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.4f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "glow_alpha"
-    )
-
     val cornerRadius = 8.dp
 
-    Box(
+    Column(
         modifier = Modifier
-            .scale(scale)
-            .drawBehind {
-                // 按压时的径向光晕效果
-                if (glowAlpha > 0f) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                gradientColors[0].copy(alpha = glowAlpha),
-                                Color.Transparent
-                            ),
-                            center = center,
-                            radius = size.maxDimension
-                        )
-                    )
-                }
-            }
-    ) {
-        Column(
-            modifier = Modifier
-                .height(44.dp)
-                .clip(RoundedCornerShape(cornerRadius))
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            gradientColors[0].copy(alpha = 0.15f),
-                            gradientColors[1].copy(alpha = 0.1f)
-                        )
+            .height(44.dp)
+            .clip(RoundedCornerShape(cornerRadius))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        gradientColors[0].copy(alpha = 0.15f),
+                        gradientColors[1].copy(alpha = 0.1f)
                     )
                 )
-                .drawBehind {
-                    // 玻璃边框效果（白色半透明边框）
-                    drawRoundRect(
-                        color = Color.White.copy(alpha = 0.3f),
-                        cornerRadius = CornerRadius(cornerRadius.toPx()),
-                        style = Stroke(width = 1.dp.toPx())
-                    )
-                }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            isPressed = true
-                            tryAwaitRelease()
-                            isPressed = false
-                        },
-                        onTap = { onClick() }
-                    )
-                }
-                .padding(horizontal = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+            )
+            .drawBehind {
+                // 玻璃边框效果（白色半透明边框）
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.3f),
+                    cornerRadius = CornerRadius(cornerRadius.toPx()),
+                    style = Stroke(width = 1.dp.toPx())
+                )
+            }
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "#${tag.name ?: ""}",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = gradientColors[0],
+            maxLines = 1
+        )
+        tag.translated_name?.let { translated ->
             Text(
-                text = "#${tag.name ?: ""}",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = gradientColors[0],
+                text = translated,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 maxLines = 1
             )
-            tag.translated_name?.let { translated ->
-                Text(
-                    text = translated,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    maxLines = 1
-                )
-            }
         }
     }
 }
