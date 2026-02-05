@@ -2,11 +2,15 @@ package ceui.lisa.jcstaff.components.illust
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -35,6 +41,7 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.ProgressiveImage
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.ugoira.UgoiraPlayer
+import coil.compose.rememberAsyncImagePainter
 
 /**
  * 可折叠图片区域组件
@@ -62,11 +69,15 @@ fun CollapsibleImageSection(
     val collapsedMaxHeight = screenHeightDp * 0.75f
     val collapsedMaxHeightPx = with(density) { collapsedMaxHeight.roundToPx() }
 
+    // 计算图片区域最小高度（屏幕40%），避免宽图太扁
+    val minImageHeight = screenHeightDp * 0.5f
+
     // 追踪内容实际高度
     var contentHeightPx by remember { mutableIntStateOf(0) }
 
-    // 判断是否需要显示展开/收起按钮
-    val needsExpandButton = contentHeightPx > collapsedMaxHeightPx
+    // 判断是否需要显示展开/收起按钮（只有多张图且高度超过阈值时才显示）
+    val pageCount = illust?.page_count ?: 1
+    val needsExpandButton = pageCount > 1 && contentHeightPx > collapsedMaxHeightPx
 
     // 计算目标高度
     val targetHeightPx = if (isExpanded || !needsExpandButton) {
@@ -108,35 +119,90 @@ fun CollapsibleImageSection(
                             illustId = illustId,
                             previewUrl = previewUrl,
                             aspectRatio = aspectRatio,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = minImageHeight)
                         )
                     } else {
                         // 普通图片
                         val firstImageKey = "${illustId}_0"
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(aspectRatio)
-                        ) {
-                            ProgressiveImage(
-                                previewUrl = previewUrl,
-                                originalUrl = firstOriginalUrl,
-                                contentDescription = title,
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = {
-                                    onImageClick?.invoke(
-                                        previewUrl,
-                                        firstOriginalUrl,
-                                        firstImageKey
-                                    )
-                                }
-                            )
+                        val screenWidthDp = configuration.screenWidthDp.dp
+
+                        // 使用 illust 的真实宽高计算 aspect ratio（优先），否则使用传入的 aspectRatio
+                        val actualAspectRatio = illust?.let {
+                            val w = it.width?.toFloat() ?: 0f
+                            val h = it.height?.toFloat() ?: 0f
+                            if (w > 0 && h > 0) w / h else null
+                        } ?: aspectRatio
+
+                        // 计算图片自然高度（基于真实 aspect ratio）
+                        val naturalImageHeight = screenWidthDp / actualAspectRatio
+                        // 判断是否需要模糊背景（仅单P作品且自然高度小于最小高度时）
+                        val isSinglePage = (illust?.page_count ?: 1) == 1
+                        val needsBlurBackground = isSinglePage && naturalImageHeight < minImageHeight
+
+                        if (needsBlurBackground) {
+                            // 宽图：添加模糊背景层
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(minImageHeight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                // 模糊背景层
+                                Image(
+                                    painter = rememberAsyncImagePainter(previewUrl),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .blur(radius = 50.dp),
+                                    contentScale = ContentScale.Crop
+                                )
+                                // 原图居中显示
+                                ProgressiveImage(
+                                    previewUrl = previewUrl,
+                                    originalUrl = firstOriginalUrl,
+                                    contentDescription = title,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(actualAspectRatio),
+                                    onClick = {
+                                        onImageClick?.invoke(
+                                            previewUrl,
+                                            firstOriginalUrl,
+                                            firstImageKey
+                                        )
+                                    }
+                                )
+                            }
+                        } else {
+                            // 正常图片：直接显示
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(actualAspectRatio)
+                            ) {
+                                ProgressiveImage(
+                                    previewUrl = previewUrl,
+                                    originalUrl = firstOriginalUrl,
+                                    contentDescription = title,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        onImageClick?.invoke(
+                                            previewUrl,
+                                            firstOriginalUrl,
+                                            firstImageKey
+                                        )
+                                    }
+                                )
+                            }
                         }
 
                         // 多P作品的额外图片
                         illust?.let { loadedIllust ->
                             if (loadedIllust.page_count > 1) {
-                                val additionalPages = loadedIllust.meta_pages?.drop(1) ?: emptyList()
+                                val additionalPages =
+                                    loadedIllust.meta_pages?.drop(1) ?: emptyList()
                                 additionalPages.forEachIndexed { index, page ->
                                     val pageIndex = index + 1
                                     val imageKey = "${illustId}_$pageIndex"
