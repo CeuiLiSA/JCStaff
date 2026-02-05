@@ -39,11 +39,11 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SplitButtonDefaults
-import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -64,18 +64,18 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.BookmarkTagsViewModel
 import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.core.LoadTaskManager
+import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.downloadToGallery
 import ceui.lisa.jcstaff.core.saveFromCacheToGallery
-import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.ugoira.UgoiraViewModel
 import ceui.lisa.jcstaff.utils.formatCount
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -122,7 +122,8 @@ fun IllustActionBar(
                                         PixivClient.pixivApi.addBookmark(illust.id, "public")
                                     }
                                     val newBookmarkState = !isBookmarked
-                                    val updatedIllust = illust.copy(is_bookmarked = newBookmarkState)
+                                    val updatedIllust =
+                                        illust.copy(is_bookmarked = newBookmarkState)
                                     ObjectStore.put(updatedIllust)
                                     onBookmarkStateChanged(newBookmarkState, updatedIllust)
                                 } catch (e: Exception) {
@@ -276,9 +277,17 @@ fun IllustActionBar(
                         }
                         isDownloading = false
                         if (result.isSuccess) {
-                            Toast.makeText(context, context.getString(R.string.saved_to_gallery), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.saved_to_gallery),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         } else {
-                            Toast.makeText(context, context.getString(R.string.save_failed), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.save_failed),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
@@ -354,10 +363,18 @@ fun IllustActionBar(
                         val updatedIllust = illust.copy(is_bookmarked = true)
                         ObjectStore.put(updatedIllust)
                         onBookmarkStateChanged(true, updatedIllust)
-                        Toast.makeText(context, context.getString(R.string.bookmark_success), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.bookmark_success),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        Toast.makeText(context, context.getString(R.string.bookmark_failed), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.bookmark_failed),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } finally {
                         isBookmarking = false
                     }
@@ -534,11 +551,7 @@ private fun AddBookmarkDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (state.isLoading && state.tags.isEmpty()) {
-                    LoadingIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    )
+                    LoadingIndicator()
                 } else if (state.tags.isEmpty()) {
                     Text(
                         text = stringResource(R.string.no_bookmark_tags),

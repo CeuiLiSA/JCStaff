@@ -3,6 +3,7 @@ package ceui.lisa.jcstaff.history
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.User
@@ -84,6 +85,7 @@ class BrowseHistoryViewModel : ViewModel() {
             runCatching {
                 val totalCount = BrowseHistoryRepository.getIllustHistoryCount()
                 val illusts = BrowseHistoryRepository.getIllustHistoryPage(0)
+                storeIllusts(illusts)
                 _illustState.value = IllustHistoryState(
                     illusts = illusts,
                     isLoading = false,
@@ -108,6 +110,7 @@ class BrowseHistoryViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching {
                 val newIllusts = BrowseHistoryRepository.getIllustHistoryPage(illustPage)
+                storeIllusts(newIllusts)
                 val allIllusts = state.illusts + newIllusts
                 _illustState.value = state.copy(
                     illusts = allIllusts,
@@ -126,6 +129,7 @@ class BrowseHistoryViewModel : ViewModel() {
             runCatching {
                 val totalCount = BrowseHistoryRepository.getNovelHistoryCount()
                 val novels = BrowseHistoryRepository.getNovelHistoryPage(0)
+                storeNovels(novels)
                 _novelState.value = NovelHistoryState(
                     novels = novels,
                     isLoading = false,
@@ -150,6 +154,7 @@ class BrowseHistoryViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching {
                 val newNovels = BrowseHistoryRepository.getNovelHistoryPage(novelPage)
+                storeNovels(newNovels)
                 val allNovels = state.novels + newNovels
                 _novelState.value = state.copy(
                     novels = allNovels,
@@ -207,13 +212,15 @@ class BrowseHistoryViewModel : ViewModel() {
 
     fun clearIllustHistory() {
         BrowseHistoryRepository.clearIllustHistory()
-        _illustState.value = IllustHistoryState(isLoading = false, canLoadMore = false, totalCount = 0)
+        _illustState.value =
+            IllustHistoryState(isLoading = false, canLoadMore = false, totalCount = 0)
         illustPage = 0
     }
 
     fun clearNovelHistory() {
         BrowseHistoryRepository.clearNovelHistory()
-        _novelState.value = NovelHistoryState(isLoading = false, canLoadMore = false, totalCount = 0)
+        _novelState.value =
+            NovelHistoryState(isLoading = false, canLoadMore = false, totalCount = 0)
         novelPage = 0
     }
 
@@ -251,5 +258,19 @@ class BrowseHistoryViewModel : ViewModel() {
         clearIllustHistory()
         clearNovelHistory()
         clearUserHistory()
+    }
+
+    private fun storeIllusts(illusts: List<Illust>) {
+        illusts.forEach { illust ->
+            ObjectStore.put(illust)
+            illust.user?.let { user -> ObjectStore.put(user) }
+        }
+    }
+
+    private fun storeNovels(novels: List<Novel>) {
+        novels.forEach { novel ->
+            ObjectStore.put(novel)
+            novel.user?.let { user -> ObjectStore.put(user) }
+        }
     }
 }

@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
@@ -31,6 +32,10 @@ data class IllustDetailState(
  */
 class IllustDetailViewModel : ViewModel() {
 
+    companion object {
+        private const val TAG = "IllustDetailVM"
+    }
+
     private val _state = MutableStateFlow(IllustDetailState())
     val state: StateFlow<IllustDetailState> = _state.asStateFlow()
 
@@ -40,11 +45,19 @@ class IllustDetailViewModel : ViewModel() {
      * 绑定插画 ID 并加载数据
      */
     fun bind(illustId: Long) {
-        if (currentIllustId == illustId) return
+        if (currentIllustId == illustId) {
+            Log.d(TAG, "bind: illustId=$illustId already bound, skip")
+            return
+        }
         currentIllustId = illustId
+        Log.d(TAG, "bind: illustId=$illustId")
 
         // 先尝试从缓存获取
         val cachedIllust = ObjectStore.peek<Illust>(StoreKey(illustId, StoreType.ILLUST))
+        Log.d(
+            TAG,
+            "bind: cache ${if (cachedIllust != null) "hit" else "miss"} for illustId=$illustId"
+        )
 
         _state.update {
             it.copy(
@@ -71,8 +84,13 @@ class IllustDetailViewModel : ViewModel() {
      * 观察 ObjectStore 中的插画更新
      */
     private fun observeIllust(illustId: Long) {
+        Log.d(TAG, "observeIllust: start observing illustId=$illustId")
         viewModelScope.launch(Dispatchers.IO) {
             ObjectStore.get<Illust>(StoreKey(illustId, StoreType.ILLUST))?.collect { illust ->
+                Log.d(
+                    TAG,
+                    "observeIllust: received update for illustId=$illustId, bookmarked=${illust.is_bookmarked}"
+                )
                 _state.update {
                     it.copy(
                         illust = illust,
@@ -87,11 +105,16 @@ class IllustDetailViewModel : ViewModel() {
      * 从 API 加载插画详情
      */
     private fun loadIllustDetail(illustId: Long) {
+        Log.d(TAG, "loadIllustDetail: start loading illustId=$illustId")
         viewModelScope.launch(Dispatchers.IO) {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 val response = PixivClient.pixivApi.getIllustDetail(illustId)
                 response.illust?.let { fetchedIllust ->
+                    Log.d(
+                        TAG,
+                        "loadIllustDetail: success illustId=$illustId, title=${fetchedIllust.title}"
+                    )
                     // 存入 ObjectStore
                     ObjectStore.put(fetchedIllust)
                     fetchedIllust.user?.let { user -> ObjectStore.put(user) }
@@ -108,11 +131,13 @@ class IllustDetailViewModel : ViewModel() {
                     // 记录浏览历史
                     recordBrowseHistory(fetchedIllust)
                 } ?: run {
+                    Log.w(TAG, "loadIllustDetail: response.illust is null for illustId=$illustId")
                     _state.update {
                         it.copy(isLoading = false, error = "加载失败")
                     }
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "loadIllustDetail: error for illustId=$illustId", e)
                 _state.update {
                     it.copy(isLoading = false, error = e.message ?: "加载失败")
                 }
@@ -124,6 +149,7 @@ class IllustDetailViewModel : ViewModel() {
      * 记录浏览历史
      */
     private fun recordBrowseHistory(illust: Illust) {
+        Log.d(TAG, "recordBrowseHistory: illustId=${illust.id}")
         BrowseHistoryRepository.recordIllust(illust)
     }
 
@@ -131,6 +157,7 @@ class IllustDetailViewModel : ViewModel() {
      * 更新收藏状态
      */
     fun updateBookmarkState(isBookmarked: Boolean, updatedIllust: Illust) {
+        Log.d(TAG, "updateBookmarkState: illustId=${updatedIllust.id}, isBookmarked=$isBookmarked")
         _state.update {
             it.copy(
                 illust = updatedIllust,

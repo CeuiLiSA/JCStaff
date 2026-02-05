@@ -32,7 +32,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -51,7 +50,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -242,7 +240,7 @@ fun WebTagDetailScreen(tag: Tag) {
             ) { page ->
                 when {
                     state.isLoading && state.illusts.isEmpty() -> {
-                        LoadingIndicator(modifier = Modifier.fillMaxSize())
+                        LoadingIndicator()
                     }
 
                     state.error != null && state.illusts.isEmpty() -> {
