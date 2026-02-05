@@ -76,6 +76,8 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.comment.CommentViewModel
 import ceui.lisa.jcstaff.components.ActionMenu
 import ceui.lisa.jcstaff.components.ActionMenuItem
+import ceui.lisa.jcstaff.components.EmptyRefreshableState
+import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.comment.CommentCard
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -380,96 +382,110 @@ fun CommentScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            state = listState,
+        var userPulled by remember { mutableStateOf(false) }
+
+        LaunchedEffect(state.isLoading) {
+            if (!state.isLoading) userPulled = false
+        }
+
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = userPulled && state.isLoading,
+            onRefresh = {
+                if (!state.isLoading) {
+                    userPulled = true
+                    commentViewModel.refresh()
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (state.isLoading && state.comments.isEmpty()) {
-                item(key = "loading") {
+            when {
+                state.error != null && state.comments.isEmpty() -> {
+                    ErrorRetryState(
+                        error = state.error ?: stringResource(R.string.load_error),
+                        onRetry = { commentViewModel.refresh() }
+                    )
+                }
+                state.isLoading && state.comments.isEmpty() -> {
                     Box(
-                        modifier = Modifier.fillParentMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         LoadingIndicator()
                     }
                 }
-            } else if (state.comments.isEmpty() && !state.isLoading) {
-                item(key = "empty") {
-                    Box(
-                        modifier = Modifier.fillParentMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.no_comments),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                state.comments.isEmpty() -> {
+                    EmptyRefreshableState(onRefresh = { commentViewModel.refresh() })
                 }
-            }
+                else -> {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(state.comments, key = { "comment_${it.id}" }) { comment ->
+                            val isExpanded = state.expandedReplies.containsKey(comment.id)
+                            val isLoadingReplies = state.loadingReplies.contains(comment.id)
 
-            items(state.comments, key = { "comment_${it.id}" }) { comment ->
-                val isExpanded = state.expandedReplies.containsKey(comment.id)
-                val isLoadingReplies = state.loadingReplies.contains(comment.id)
-
-                CommentCard(
-                    comment = comment,
-                    currentUserId = currentUserId,
-                    isChild = false,
-                    showViewReplies = comment.has_replies && !isExpanded,
-                    isLoadingReplies = isLoadingReplies,
-                    onReply = { commentViewModel.setReplyTarget(comment) },
-                    onViewReplies = if (comment.has_replies) {
-                        { commentViewModel.expandReplies(comment.id) }
-                    } else null,
-                    onLongClick = { actionMenuComment = comment },
-                    onUserClick = { userId ->
-                        navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                    }
-                )
-
-                // Expanded replies
-                val replies = state.expandedReplies[comment.id]
-                if (replies != null) {
-                    replies.forEach { reply ->
-                        CommentCard(
-                            comment = reply,
-                            currentUserId = currentUserId,
-                            isChild = true,
-                            onReply = { commentViewModel.setReplyTarget(reply) },
-                            onLongClick = { actionMenuComment = reply },
-                            onUserClick = { userId ->
-                                navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                            },
-                            modifier = Modifier.background(
-                                MaterialTheme.colorScheme.surfaceContainerLow,
-                                RoundedCornerShape(8.dp)
+                            CommentCard(
+                                comment = comment,
+                                currentUserId = currentUserId,
+                                isChild = false,
+                                showViewReplies = comment.has_replies && !isExpanded,
+                                isLoadingReplies = isLoadingReplies,
+                                onReply = { commentViewModel.setReplyTarget(comment) },
+                                onViewReplies = if (comment.has_replies) {
+                                    { commentViewModel.expandReplies(comment.id) }
+                                } else null,
+                                onLongClick = { actionMenuComment = comment },
+                                onUserClick = { userId ->
+                                    navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                                }
                             )
-                        )
-                    }
-                }
 
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
+                            // Expanded replies
+                            val replies = state.expandedReplies[comment.id]
+                            if (replies != null) {
+                                replies.forEach { reply ->
+                                    CommentCard(
+                                        comment = reply,
+                                        currentUserId = currentUserId,
+                                        isChild = true,
+                                        onReply = { commentViewModel.setReplyTarget(reply) },
+                                        onLongClick = { actionMenuComment = reply },
+                                        onUserClick = { userId ->
+                                            navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                                        },
+                                        modifier = Modifier.background(
+                                            MaterialTheme.colorScheme.surfaceContainerLow,
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                    )
+                                }
+                            }
 
-            // Loading more indicator
-            if (state.isLoading && state.comments.isNotEmpty()) {
-                item(key = "loading_more") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+
+                        // Loading more indicator
+                        if (state.isLoading && state.comments.isNotEmpty()) {
+                            item(key = "loading_more") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.EmptyState
+import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
+import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.UserPreview
@@ -146,6 +148,7 @@ fun IllustPreviewRow(
         EmptyState()
         return
     }
+    val navViewModel = LocalNavigationViewModel.current
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 20.dp),
@@ -167,6 +170,16 @@ fun IllustPreviewRow(
                 modifier = Modifier
                     .size(130.dp)
                     .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        navViewModel.navigate(
+                            NavRoute.IllustDetail(
+                                illustId = illust.id,
+                                title = illust.title ?: "",
+                                previewUrl = illust.previewUrl(),
+                                aspectRatio = illust.aspectRatio()
+                            )
+                        )
+                    }
             )
         }
     }
@@ -184,6 +197,7 @@ fun NovelPreviewRow(
         EmptyState()
         return
     }
+    val navViewModel = LocalNavigationViewModel.current
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 20.dp),
@@ -199,7 +213,11 @@ fun NovelPreviewRow(
                     .build()
             }
             Column(
-                modifier = Modifier.width(110.dp),
+                modifier = Modifier
+                    .width(110.dp)
+                    .clickable {
+                        navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
+                    },
                 horizontalAlignment = Alignment.Start
             ) {
                 AsyncImage(

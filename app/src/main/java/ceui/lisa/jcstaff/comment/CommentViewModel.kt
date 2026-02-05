@@ -48,6 +48,14 @@ class CommentViewModel : ViewModel() {
             _state.value = _state.value.copy(comments = cached)
         }
 
+        fetchComments()
+    }
+
+    fun refresh() {
+        fetchComments()
+    }
+
+    private fun fetchComments() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
