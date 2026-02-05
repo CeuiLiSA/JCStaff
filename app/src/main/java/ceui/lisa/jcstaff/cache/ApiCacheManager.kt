@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -23,7 +22,6 @@ import java.util.concurrent.TimeUnit
 object ApiCacheManager {
 
     private const val TAG = "ApiCache"
-    private const val HOME_KEY = "v1/illust/recommended?include_ranking_illusts=true"
 
     /** 缓存有效期：15 分钟内认为是新鲜的，直接使用 */
     private val CACHE_FRESH_DURATION_MS = TimeUnit.MINUTES.toMillis(15)
@@ -113,10 +111,6 @@ object ApiCacheManager {
             Log.d(TAG, "   ├─ Age: ${ageSeconds}s")
             Log.d(TAG, "   ├─ Expired: $expired")
             Log.d(TAG, "   └─ Size: ${entity.responseBody.size} bytes")
-
-            if (shortenKey(key) == HOME_KEY) {
-                delay(1000L)
-            }
 
             CacheEntry(
                 responseBody = entity.responseBody,
