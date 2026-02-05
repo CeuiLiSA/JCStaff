@@ -423,6 +423,7 @@ fun CommentScreen(
                     currentUserId = currentUserId,
                     isChild = false,
                     showViewReplies = comment.has_replies && !isExpanded,
+                    isLoadingReplies = isLoadingReplies,
                     onReply = { commentViewModel.setReplyTarget(comment) },
                     onViewReplies = if (comment.has_replies) {
                         { commentViewModel.expandReplies(comment.id) }
@@ -432,20 +433,6 @@ fun CommentScreen(
                         navViewModel.navigate(NavRoute.UserProfile(userId = userId))
                     }
                 )
-
-                // Loading replies indicator
-                if (isLoadingReplies) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 68.dp, top = 4.dp, bottom = 4.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                    }
-                }
 
                 // Expanded replies
                 val replies = state.expandedReplies[comment.id]

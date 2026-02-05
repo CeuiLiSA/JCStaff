@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -46,6 +47,7 @@ fun CommentCard(
     currentUserId: Long,
     isChild: Boolean = false,
     showViewReplies: Boolean = false,
+    isLoadingReplies: Boolean = false,
     onReply: () -> Unit,
     onViewReplies: (() -> Unit)? = null,
     onLongClick: () -> Unit,
@@ -134,12 +136,23 @@ fun CommentCard(
                     )
                 }
                 if (showViewReplies && onViewReplies != null) {
-                    TextButton(onClick = onViewReplies) {
-                        Text(
-                            text = stringResource(R.string.view_replies),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                    TextButton(
+                        onClick = onViewReplies,
+                        enabled = !isLoadingReplies
+                    ) {
+                        if (isLoadingReplies) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.view_replies),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
