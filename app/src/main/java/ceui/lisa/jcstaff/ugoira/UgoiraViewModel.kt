@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.R
-import ceui.lisa.jcstaff.core.ImageDownloader
+import ceui.lisa.jcstaff.core.saveFileToGallery
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,7 +49,7 @@ class UgoiraViewModel : ViewModel() {
         val gifFile = UgoiraRepository.getGifFile(illustId)
             ?: return Result.failure(UgoiraException(R.string.ugoira_error_not_generated))
 
-        return ImageDownloader.saveFileToGallery(
+        return saveFileToGallery(
             context = context,
             sourceFile = gifFile,
             fileName = "pixiv_${illustId}.gif",

@@ -35,14 +35,15 @@ object AccountSessionManager {
     /**
      * 快速初始化：仅加载 auth token，返回账号数据用于直接设置认证状态
      */
-    suspend fun initializeAuth(context: Context, userId: Long): AccountResponse? = withContext(Dispatchers.IO) {
-        Log.d(TAG, "Initializing auth for user $userId")
-        val authRepo = AuthRepository(context, userId)
-        currentAuthRepository = authRepo
-        val account = authRepo.initialize()
-        Log.d(TAG, "Auth initialized for user $userId")
-        account
-    }
+    suspend fun initializeAuth(context: Context, userId: Long): AccountResponse? =
+        withContext(Dispatchers.IO) {
+            Log.d(TAG, "Initializing auth for user $userId")
+            val authRepo = AuthRepository(context, userId)
+            currentAuthRepository = authRepo
+            val account = authRepo.initialize()
+            Log.d(TAG, "Auth initialized for user $userId")
+            account
+        }
 
     /**
      * 初始化各项服务（数据库、缓存、历史等），可在后台运行
@@ -76,14 +77,6 @@ object AccountSessionManager {
         ObjectStore.clear()
 
         Log.d(TAG, "Services initialized for user $userId")
-    }
-
-    /**
-     * 完整初始化用户会话（auth + services）
-     */
-    suspend fun initializeSession(context: Context, userId: Long) {
-        initializeAuth(context, userId)
-        initializeServices(context, userId)
     }
 
     /**
@@ -129,7 +122,8 @@ object AccountSessionManager {
         Log.d(TAG, "Switching to account $userId")
         teardownCurrentSession()
         AccountRegistry.setActiveAccount(userId)
-        initializeSession(context, userId)
+        initializeAuth(context, userId)
+        initializeServices(context, userId)
     }
 
     /**

@@ -67,8 +67,9 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.BookmarkTagsViewModel
 import ceui.lisa.jcstaff.components.LoadingIndicator
-import ceui.lisa.jcstaff.core.ImageDownloader
 import ceui.lisa.jcstaff.core.LoadTaskManager
+import ceui.lisa.jcstaff.core.downloadToGallery
+import ceui.lisa.jcstaff.core.saveFromCacheToGallery
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
@@ -260,13 +261,13 @@ fun IllustActionBar(
                             val fileName = "pixiv_${illust.id}_${System.currentTimeMillis()}"
                             val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
                             if (cachedFilePath != null) {
-                                ImageDownloader.saveFromCacheToGallery(
+                                saveFromCacheToGallery(
                                     context = context,
                                     cachedFilePath = cachedFilePath,
                                     fileName = fileName
                                 )
                             } else {
-                                ImageDownloader.downloadToGallery(
+                                downloadToGallery(
                                     context = context,
                                     imageUrl = downloadUrl,
                                     fileName = fileName

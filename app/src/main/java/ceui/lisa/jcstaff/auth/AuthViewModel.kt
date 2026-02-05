@@ -8,13 +8,13 @@ import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.network.PixivClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,10 +29,6 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
 
-    // AccountRegistry must be initialized synchronously before flow properties are accessed
-    init {
-        AccountRegistry.initialize(application)
-    }
 
     /**
      * 所有已注册账号（Eagerly 启动，确保启动时尽早读取）
@@ -65,7 +61,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 // 执行迁移
-                AccountMigration.migrateIfNeeded(application)
+                migrateAccountIfNeeded(application)
 
                 // 获取活跃用户
                 val activeId = AccountRegistry.getActiveUserId()

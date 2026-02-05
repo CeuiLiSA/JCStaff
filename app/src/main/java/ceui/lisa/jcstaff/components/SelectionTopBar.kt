@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
@@ -22,9 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
-import ceui.lisa.jcstaff.core.ImageDownloader
+import ceui.lisa.jcstaff.core.DownloadTaskManager
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.Illust
 
@@ -47,7 +45,10 @@ fun SelectionTopBar(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = stringResource(R.string.selected_count, selectionManager.selectedCount),
+                        text = stringResource(
+                            R.string.selected_count,
+                            selectionManager.selectedCount
+                        ),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
@@ -80,11 +81,14 @@ fun SelectionTopBar(
                         if (selectedIllusts.isEmpty()) return@IconButton
 
                         // 添加到下载队列
-                        ImageDownloader.addToDownloadQueue(selectedIllusts)
+                        DownloadTaskManager.addTasks(selectedIllusts)
 
                         Toast.makeText(
                             context,
-                            context.getString(R.string.added_to_download_queue, selectedIllusts.size),
+                            context.getString(
+                                R.string.added_to_download_queue,
+                                selectedIllusts.size
+                            ),
                             Toast.LENGTH_SHORT
                         ).show()
 

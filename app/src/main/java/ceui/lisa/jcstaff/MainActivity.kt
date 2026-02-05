@@ -42,7 +42,6 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -50,7 +49,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
@@ -59,10 +57,8 @@ import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherDemoScreen
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherFab
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherOverlay
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotCapture
-import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.SelectionManager
-import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.home.HomeScreen
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -95,16 +91,14 @@ import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.screens.WebTagDetailScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
-import coil.Coil
-import coil.ImageLoader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private val authViewModel: AuthViewModel by viewModels()
+    private val navViewModel: NavigationViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // 安装 SplashScreen，必须在 super.onCreate() 之前调用
@@ -113,39 +107,39 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 设置全局 Coil ImageLoader，使用共享的 imageClient（带 Referer 头）
-        Coil.setImageLoader(
-            ImageLoader.Builder(this)
-                .okHttpClient { PixivClient.imageClient }
-                .build()
-        )
-
-        // 初始化全局设置（语言等）
-        SettingsStore.initialize(this)
-
-        // 提前触发 AuthViewModel 创建，使 auth 初始化与语言加载并行执行
-        authViewModel
-
-        // 让 SplashScreen 持续显示，直到认证状态加载完成
-        // 这样可以避免 Compose 首次组合时的 Loading 动画卡顿
-        splashScreen.setKeepOnScreenCondition {
-            authViewModel.authState.value is AuthState.Loading
-        }
-
-        // 异步初始化语言管理器（不再阻塞主线程）
         lifecycleScope.launch(Dispatchers.IO) {
-            val savedTag = SettingsStore.selectedLanguage.first()
-            LanguageManager.initialize(savedTag)
+            authViewModel.authState.collect { authState ->
+                when (authState) {
+                    is AuthState.Authenticated -> {
+                        if (navViewModel.backStack.isEmpty() || navViewModel.backStack.first().route == NavRoute.Landing) {
+                            navViewModel.clearAndNavigate(NavRoute.Home)
+                        }
+                    }
+
+                    is AuthState.NotAuthenticated -> {
+                        navViewModel.clearAndNavigate(NavRoute.Landing)
+                    }
+
+                    is AuthState.Loading -> {
+                        // 保持当前状态，等待加载完成
+                    }
+                }
+            }
         }
 
-        // 注意：per-user 的初始化（DB、缓存、浏览历史等）由 AuthViewModel → AccountSessionManager 负责
+        // 让 SplashScreen 持续显示，直到导航就绪
+        // 使用 StateFlow 而非 SnapshotStateList，因为 setKeepOnScreenCondition
+        // 在渲染线程调用，需要线程安全的状态读取
+        splashScreen.setKeepOnScreenCondition {
+            !navViewModel.isReady.value
+        }
 
         // 处理启动时的 deep link
         handleDeepLink(intent)
 
         setContent {
             JCStaffTheme {
-                AppNavigation(authViewModel)
+                AppNavigation(authViewModel, navViewModel)
             }
         }
     }
@@ -168,13 +162,12 @@ class MainActivity : AppCompatActivity() {
 }
 
 @Composable
-fun AppNavigation(authViewModel: AuthViewModel) {
+fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewModel) {
     val context = LocalContext.current
     val authState by authViewModel.authState.collectAsState()
     val loginState by authViewModel.loginState.collectAsState()
     val activeUserId by authViewModel.activeUserId.collectAsState()
     val allAccounts by authViewModel.allAccounts.collectAsState()
-    val navViewModel: NavigationViewModel = viewModel()
 
     // Handle login state changes
     LaunchedEffect(loginState) {
@@ -196,27 +189,6 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             else -> {}
         }
     }
-
-    // 根据认证状态设置初始路由
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Authenticated -> {
-                if (navViewModel.backStack.isEmpty() || navViewModel.backStack.first().route == NavRoute.Landing) {
-                    navViewModel.clearAndNavigate(NavRoute.Home)
-                }
-            }
-
-            is AuthState.NotAuthenticated -> {
-                navViewModel.clearAndNavigate(NavRoute.Landing)
-            }
-
-            is AuthState.Loading -> {
-                // 保持当前状态，等待加载完成
-            }
-        }
-    }
-
-    val currentEntry = navViewModel.currentEntry
 
     // Predictive back gesture state
     var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
@@ -242,19 +214,6 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             isPredictiveBack = false
             predictiveBackProgress = 0f
         }
-    }
-
-    // Loading 状态显示加载指示器
-    if (authState is AuthState.Loading || currentEntry == null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-            contentAlignment = Alignment.Center
-        ) {
-            LoadingIndicator()
-        }
-        return
     }
 
     // Show loading overlay during the entire login flow (Loading + Success).
@@ -311,18 +270,24 @@ fun AppNavigation(authViewModel: AuthViewModel) {
             // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
             key(activeUserId) {
                 AnimatedContent(
-                    targetState = currentEntry,
+                    targetState = requireNotNull(navViewModel.currentEntry),
                     transitionSpec = {
                         if (skipNextTransition) {
                             skipNextTransition = false
-                            EnterTransition.None togetherWith ExitTransition.None using SizeTransform(clip = false)
+                            EnterTransition.None togetherWith ExitTransition.None using SizeTransform(
+                                clip = false
+                            )
                         } else {
                             val isForward = navigationDirection == NavigationDirection.FORWARD
                             val enterSlide = slideInHorizontally(
                                 animationSpec = tween(400, easing = emphasizedDecelerate),
                                 initialOffsetX = { fullWidth -> if (isForward) (fullWidth * 0.30f).toInt() else -(fullWidth * 0.30f).toInt() }
                             ) + fadeIn(
-                                animationSpec = tween(150, delayMillis = 50, easing = emphasizedDecelerate)
+                                animationSpec = tween(
+                                    150,
+                                    delayMillis = 50,
+                                    easing = emphasizedDecelerate
+                                )
                             )
                             val exitSlide = slideOutHorizontally(
                                 animationSpec = tween(400, easing = emphasizedAccelerate),
@@ -339,7 +304,8 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                         .background(MaterialTheme.colorScheme.background)
                         .then(
                             if (isPredictiveBack && Build.VERSION.SDK_INT >= 34) {
-                                val cornerRadius = with(density) { (40.dp * predictiveBackProgress).toPx() }
+                                val cornerRadius =
+                                    with(density) { (40.dp * predictiveBackProgress).toPx() }
                                 Modifier
                                     .graphicsLayer {
                                         val scale = 1f - (0.15f * predictiveBackProgress)
@@ -347,11 +313,12 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                         scaleY = scale
                                         // Shift toward the swipe edge
                                         val shiftFraction = 0.1f * predictiveBackProgress
-                                        translationX = if (predictiveBackSwipeEdge == 0) { // EDGE_LEFT
-                                            size.width * shiftFraction
-                                        } else {
-                                            -size.width * shiftFraction
-                                        }
+                                        translationX =
+                                            if (predictiveBackSwipeEdge == 0) { // EDGE_LEFT
+                                                size.width * shiftFraction
+                                            } else {
+                                                -size.width * shiftFraction
+                                            }
                                         clip = true
                                         shape = RoundedCornerShape(cornerRadius)
                                         alpha = if (appSwitcherState.isVisible) 0f else 1f
@@ -478,7 +445,7 @@ fun AppNavigation(authViewModel: AuthViewModel) {
                                         AppSwitcherDemoScreen()
                                     }
 
-                                    is NavRoute.DemoPage -> { }
+                                    is NavRoute.DemoPage -> {}
 
                                     is NavRoute.AccountManagement -> {
                                         AccountManagementScreen(

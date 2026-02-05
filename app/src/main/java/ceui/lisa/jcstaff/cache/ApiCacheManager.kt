@@ -115,7 +115,7 @@ object ApiCacheManager {
             Log.d(TAG, "   └─ Size: ${entity.responseBody.size} bytes")
 
             if (shortenKey(key) == HOME_KEY) {
-                delay(700L)
+                delay(1000L)
             }
 
             CacheEntry(

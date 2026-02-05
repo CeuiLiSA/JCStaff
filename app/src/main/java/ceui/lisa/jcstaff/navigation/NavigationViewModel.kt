@@ -8,6 +8,9 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotStore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 enum class NavigationDirection { FORWARD, BACKWARD }
@@ -34,6 +37,10 @@ class NavigationViewModel : ViewModel() {
 
     val backStack: SnapshotStateList<BackStackEntry> = mutableStateListOf()
     private var nextEntryId = 0
+
+    /** 导航是否就绪（用于 SplashScreen 条件判断，StateFlow 线程安全） */
+    private val _isReady = MutableStateFlow(false)
+    val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
     val currentEntry: BackStackEntry?
         get() = backStack.lastOrNull()
@@ -85,6 +92,7 @@ class NavigationViewModel : ViewModel() {
         backStack.forEach { screenshotStore.remove(it.screenshotKey) }
         backStack.clear()
         backStack.add(BackStackEntry(nextEntryId++, route))
+        _isReady.value = true
     }
 
     fun showAppSwitcher() {
