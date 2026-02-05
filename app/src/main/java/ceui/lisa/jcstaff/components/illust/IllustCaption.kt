@@ -25,6 +25,7 @@ fun IllustCaption(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp)
     ) {
         Text(
             text = stringResource(R.string.caption),
