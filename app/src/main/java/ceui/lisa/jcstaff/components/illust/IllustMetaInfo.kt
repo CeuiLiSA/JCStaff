@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Photo
@@ -90,18 +89,18 @@ fun IllustMetaInfo(
         )
 
         // AI 类型
-        if (illust.illust_ai_type > 0) {
-            val aiText = when (illust.illust_ai_type) {
-                1 -> stringResource(R.string.ai_assisted)
-                2 -> stringResource(R.string.ai_generated)
-                else -> stringResource(R.string.ai_related)
-            }
-            MetaInfoRow(
-                icon = Icons.Default.AutoAwesome,
-                label = stringResource(R.string.ai),
-                value = aiText,
-                valueColor = MaterialTheme.colorScheme.tertiary
-            )
-        }
+//        if (illust.illust_ai_type > 0) {
+//            val aiText = when (illust.illust_ai_type) {
+//                1 -> stringResource(R.string.ai_assisted)
+//                2 -> stringResource(R.string.ai_generated)
+//                else -> stringResource(R.string.ai_related)
+//            }
+//            MetaInfoRow(
+//                icon = Icons.Default.AutoAwesome,
+//                label = stringResource(R.string.ai),
+//                value = aiText,
+//                valueColor = MaterialTheme.colorScheme.tertiary
+//            )
+//        }
     }
 }

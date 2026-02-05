@@ -1,28 +1,71 @@
 package ceui.lisa.jcstaff.components.illust
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Tag
 
+// 16 组优雅的标签渐变色
+private val tagGradients = listOf(
+    // 经典优雅系列
+    listOf(Color(0xFF667EEA), Color(0xFF764BA2)),  // 紫蓝梦幻
+    listOf(Color(0xFFFF6B6B), Color(0xFFFF8E53)),  // 珊瑚日落
+    listOf(Color(0xFF4ECDC4), Color(0xFF44A08D)),  // 薄荷青翠
+    listOf(Color(0xFFF093FB), Color(0xFFF5576C)),  // 樱花粉红
+    listOf(Color(0xFF5EE7DF), Color(0xFFB490CA)),  // 极光紫青
+    listOf(Color(0xFFFA709A), Color(0xFFFEE140)),  // 晚霞金粉
+
+    // 高级灰调系列
+    listOf(Color(0xFF8E9EAB), Color(0xFFEEF2F3)),  // 银灰轻雾
+    listOf(Color(0xFF3A6186), Color(0xFF89253E)),  // 深邃酒红
+
+    // 自然系列
+    listOf(Color(0xFF56AB2F), Color(0xFFA8E063)),  // 森林新绿
+    listOf(Color(0xFF2193B0), Color(0xFF6DD5ED)),  // 海洋蔚蓝
+    listOf(Color(0xFFCC2B5E), Color(0xFF753A88)),  // 紫罗兰夜
+    listOf(Color(0xFFED4264), Color(0xFFFFEDBC)),  // 黄昏暖阳
+
+    // 现代科技系列
+    listOf(Color(0xFF00C9FF), Color(0xFF92FE9D)),  // 赛博青绿
+    listOf(Color(0xFF6A11CB), Color(0xFF2575FC)),  // 电子蓝紫
+    listOf(Color(0xFFFC466B), Color(0xFF3F5EFB)),  // 霓虹玫红
+    listOf(Color(0xFFF7971E), Color(0xFFFFD200)),  // 琥珀金黄
+)
+
 /**
- * 作品标签组件
- * 显示作品的标签列表，支持点击搜索
+ * 作品标签组件 - 升级版
+ * 渐变背景 + 玻璃边框 + 按压缩放动画 + 径向光晕
  */
 @Composable
 fun IllustTags(
@@ -42,14 +85,17 @@ fun IllustTags(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
+
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            tags.forEach { tag ->
-                TagChip(
+            tags.forEachIndexed { index, tag ->
+                val gradientIndex = index % tagGradients.size
+                FancyTagChip(
                     tag = tag,
+                    gradientColors = tagGradients[gradientIndex],
                     onClick = { onTagClick?.invoke(tag) }
                 )
             }
@@ -57,32 +103,108 @@ fun IllustTags(
     }
 }
 
+/**
+ * 高级标签芯片
+ * 微妙渐变背景 + 玻璃边框效果 + 按压缩放动画 + 径向光晕
+ */
 @Composable
-private fun TagChip(
+private fun FancyTagChip(
     tag: Tag,
+    gradientColors: List<Color>,
     onClick: () -> Unit
 ) {
-    Column(
+    var isPressed by remember { mutableStateOf(false) }
+
+    // 按压缩放动画
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "tag_scale"
+    )
+
+    // 光晕透明度动画
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.4f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "glow_alpha"
+    )
+
+    val cornerRadius = 8.dp
+
+    Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .scale(scale)
+            .drawBehind {
+                // 按压时的径向光晕效果
+                if (glowAlpha > 0f) {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                gradientColors[0].copy(alpha = glowAlpha),
+                                Color.Transparent
+                            ),
+                            center = center,
+                            radius = size.maxDimension
+                        )
+                    )
+                }
+            }
     ) {
-        Text(
-            text = "#${tag.name ?: ""}",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-        tag.translated_name?.let { translated ->
+        Column(
+            modifier = Modifier
+                .height(44.dp)
+                .clip(RoundedCornerShape(cornerRadius))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            gradientColors[0].copy(alpha = 0.15f),
+                            gradientColors[1].copy(alpha = 0.1f)
+                        )
+                    )
+                )
+                .drawBehind {
+                    // 玻璃边框效果（白色半透明边框）
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.3f),
+                        cornerRadius = CornerRadius(cornerRadius.toPx()),
+                        style = Stroke(width = 1.dp.toPx())
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isPressed = true
+                            tryAwaitRelease()
+                            isPressed = false
+                        },
+                        onTap = { onClick() }
+                    )
+                }
+                .padding(horizontal = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
-                text = translated,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                text = "#${tag.name ?: ""}",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = gradientColors[0],
                 maxLines = 1
             )
+            tag.translated_name?.let { translated ->
+                Text(
+                    text = translated,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1
+                )
+            }
         }
     }
 }
