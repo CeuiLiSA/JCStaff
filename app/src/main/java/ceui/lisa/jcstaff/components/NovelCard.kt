@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.utils.formatCount
 import ceui.lisa.jcstaff.utils.formatRelativeDate
@@ -124,17 +125,11 @@ fun NovelCard(
                     val avatarUrl = novel.user?.profile_image_urls?.findAvatarUrl()
 
                     if (avatarUrl != null) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(avatarUrl)
-                                .crossfade(true)
-                                .build(),
+                        CircleAvatar(
+                            imageUrl = avatarUrl,
+                            size = 20.dp,
                             contentDescription = novel.user?.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                     }

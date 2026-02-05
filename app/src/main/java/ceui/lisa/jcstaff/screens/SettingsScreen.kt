@@ -62,6 +62,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.core.AppLanguage
 import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.SettingsStore
@@ -267,48 +268,13 @@ private fun UserProfileCard(
             .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 头像带边框
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                    shape = CircleShape
-                )
-                .padding(3.dp)
-        ) {
-            val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
-            if (avatarUrl != null) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(avatarUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = user?.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        }
+        // 头像
+        CircleAvatar(
+            imageUrl = user?.profile_image_urls?.findAvatarUrl(),
+            size = 64.dp,
+            contentDescription = user?.name,
+            modifier = Modifier.size(64.dp)
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 

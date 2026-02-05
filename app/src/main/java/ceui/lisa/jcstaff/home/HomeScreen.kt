@@ -116,6 +116,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.IllustFeed
 import ceui.lisa.jcstaff.components.IllustGrid
@@ -702,38 +703,12 @@ private fun UserAvatar(
     size: Int,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-
-    val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
-    if (avatarUrl != null) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(avatarUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = user?.name,
-            contentScale = ContentScale.Crop,
-            modifier = modifier
-                .size(size.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-    } else {
-        Box(
-            modifier = modifier
-                .size(size.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = stringResource(R.string.user_icon),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size((size * 0.6).dp)
-            )
-        }
-    }
+    CircleAvatar(
+        imageUrl = user?.profile_image_urls?.findAvatarUrl(),
+        size = size.dp,
+        contentDescription = user?.name,
+        modifier = modifier.size(size.dp)
+    )
 }
 
 @Composable
@@ -743,48 +718,12 @@ private fun AccountAvatarSmall(
     size: Int = 32,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-
-    if (avatarUrl != null) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(avatarUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = name,
-            contentScale = ContentScale.Crop,
-            modifier = modifier
-                .size(size.dp)
-                .border(
-                    1.dp,
-                    Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.tertiary
-                        )
-                    ),
-                    CircleShape
-                )
-                .padding(2.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-    } else {
-        Box(
-            modifier = modifier
-                .size(size.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = name,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size((size * 0.6).dp)
-            )
-        }
-    }
+    CircleAvatar(
+        imageUrl = avatarUrl,
+        size = size.dp,
+        contentDescription = name,
+        modifier = modifier.size(size.dp)
+    )
 }
 
 @Composable
@@ -841,49 +780,16 @@ private fun DrawerContent(
                             bottom = 20.dp
                         )
                 ) {
-                    // Avatar with gradient ring + premium badge
-                    Box {
-                        val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
-                        if (avatarUrl != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(avatarUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = user?.name,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .border(
-                                        width = 2.dp,
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.tertiary
-                                            )
-                                        ),
-                                        shape = CircleShape
-                                    )
-                                    .padding(3.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
-                        }
+                    // Avatar with border + premium badge (点击跳转主页)
+                    Box(
+                        modifier = Modifier.clickable(onClick = onUserProfileClick)
+                    ) {
+                        CircleAvatar(
+                            imageUrl = user?.profile_image_urls?.findAvatarUrl(),
+                            size = 72.dp,
+                            contentDescription = user?.name,
+                            modifier = Modifier.size(72.dp)
+                        )
 
                         // Premium badge
                         if (user?.is_premium == true) {
@@ -907,16 +813,20 @@ private fun DrawerContent(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Name + account switcher toggle
+                    // Name (点击跳转主页) + account switcher toggle (点击展开账号列表)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { accountListExpanded = !accountListExpanded }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = onUserProfileClick)
+                                .padding(vertical = 4.dp)
+                        ) {
                             Text(
                                 text = user?.name ?: stringResource(R.string.not_logged_in),
                                 style = MaterialTheme.typography.titleLarge,
@@ -945,7 +855,9 @@ private fun DrawerContent(
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clickable { accountListExpanded = !accountListExpanded }
                             ) {
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
@@ -1067,11 +979,6 @@ private fun DrawerContent(
             Spacer(modifier = Modifier.height(8.dp))
 
             // ── Menu items ───────────────────────────────────────────
-            DrawerMenuItem(
-                icon = Icons.Default.AccountCircle,
-                label = stringResource(R.string.my_profile),
-                onClick = onUserProfileClick
-            )
             DrawerMenuItem(
                 icon = Icons.Default.Favorite,
                 label = stringResource(R.string.my_bookmarks),
@@ -1415,29 +1322,16 @@ private fun RankingCard(
 
                 // Author avatar at bottom right of image
                 illust.user?.let { user ->
-                    val avatarUrl = user.profile_image_urls?.findAvatarUrl()
-                    if (avatarUrl != null) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(avatarUrl)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = user.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(8.dp)
-                                .size(28.dp)
-                                .border(
-                                    width = 2.dp,
-                                    color = Color.White,
-                                    shape = CircleShape
-                                )
-                                .padding(1.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        )
-                    }
+                    CircleAvatar(
+                        imageUrl = user.profile_image_urls?.findAvatarUrl(),
+                        size = 28.dp,
+                        contentDescription = user.name,
+                        borderColor = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(8.dp)
+                            .size(28.dp)
+                    )
                 }
             }
 
@@ -1828,74 +1722,18 @@ private fun UserPreviewCard(
                     .padding(16.dp),
                 verticalAlignment = Alignment.Top
             ) {
-                // Avatar with premium ring
+                // Avatar with premium badge
                 Box(
                     contentAlignment = Alignment.BottomEnd
                 ) {
-                    val avatarUrl = user.profile_image_urls?.findAvatarUrl()
                     val isPremium = user.is_premium == true
 
-                    // Avatar border - gradient for premium, subtle for regular
-                    val borderBrush = if (isPremium) {
-                        Brush.sweepGradient(
-                            colors = listOf(
-                                Color(0xFFFFD700), // Gold
-                                Color(0xFFFFA500), // Orange
-                                Color(0xFFFF6347), // Tomato
-                                Color(0xFFFF69B4), // Hot pink
-                                Color(0xFFFFD700)  // Gold (loop)
-                            )
-                        )
-                    } else {
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
-                            )
-                        )
-                    }
-
-                    if (avatarUrl != null) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(avatarUrl)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = user.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(64.dp)
-                                .border(
-                                    width = if (isPremium) 2.5.dp else 2.dp,
-                                    brush = borderBrush,
-                                    shape = CircleShape
-                                )
-                                .padding(3.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .border(
-                                    width = 2.dp,
-                                    brush = borderBrush,
-                                    shape = CircleShape
-                                )
-                                .padding(3.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
+                    CircleAvatar(
+                        imageUrl = user.profile_image_urls?.findAvatarUrl(),
+                        size = 64.dp,
+                        contentDescription = user.name,
+                        modifier = Modifier.size(64.dp)
+                    )
 
                     // Premium badge
                     if (isPremium) {

@@ -88,6 +88,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.LoadingIndicator
@@ -844,16 +845,11 @@ private fun NovelCard(
 
                 // 作者
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(novel.user?.profile_image_urls?.medium)
-                            .crossfade(true)
-                            .build(),
+                    CircleAvatar(
+                        imageUrl = novel.user?.profile_image_urls?.medium,
+                        size = 18.dp,
                         contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(18.dp)
-                            .clip(CircleShape)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(

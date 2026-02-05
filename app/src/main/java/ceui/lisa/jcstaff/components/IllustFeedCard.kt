@@ -5,7 +5,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -52,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -114,61 +112,15 @@ fun IllustFeedCard(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 用户头像（带渐变边框）
-                Box(
+                // 用户头像
+                CircleAvatar(
+                    imageUrl = user?.profile_image_urls?.findAvatarUrl(),
+                    size = 48.dp,
+                    contentDescription = user?.name,
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(CircleShape)
                         .clickable(onClick = onUserClick)
-                ) {
-                    val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
-                    if (avatarUrl != null) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .border(
-                                    width = 2.dp,
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            MaterialTheme.colorScheme.tertiary
-                                        )
-                                    ),
-                                    shape = CircleShape
-                                )
-                                .padding(3.dp)
-                                .clip(CircleShape)
-                        ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(avatarUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = user?.name,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                }
+                )
 
                 Spacer(modifier = Modifier.width(12.dp))
 

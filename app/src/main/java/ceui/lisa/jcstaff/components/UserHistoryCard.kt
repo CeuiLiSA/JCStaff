@@ -1,6 +1,5 @@
 package ceui.lisa.jcstaff.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,21 +8,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.network.User
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 
 @Composable
 fun UserHistoryCard(
@@ -31,7 +24,6 @@ fun UserHistoryCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val avatarUrl = user.profile_image_urls?.findAvatarUrl()
 
     Row(
@@ -41,17 +33,11 @@ fun UserHistoryCard(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(avatarUrl)
-                .crossfade(true)
-                .build(),
+        CircleAvatar(
+            imageUrl = avatarUrl,
+            size = 48.dp,
             contentDescription = user.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+            modifier = Modifier.size(48.dp)
         )
 
         Spacer(modifier = Modifier.width(12.dp))

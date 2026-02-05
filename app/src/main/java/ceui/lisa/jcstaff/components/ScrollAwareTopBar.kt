@@ -178,13 +178,11 @@ fun UserScrollAwareTopBar(
                         ) {
                             // 用户头像
                             loadedUser.profile_image_urls?.findAvatarUrl()?.let { avatarUrl ->
-                                AsyncImage(
-                                    model = avatarUrl,
+                                CircleAvatar(
+                                    imageUrl = avatarUrl,
+                                    size = 36.dp,
                                     contentDescription = null,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
+                                    modifier = Modifier.size(36.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                             }

@@ -70,6 +70,8 @@ import ceui.lisa.jcstaff.tagdetail.SearchSort
 import ceui.lisa.jcstaff.tagdetail.SearchTarget
 import ceui.lisa.jcstaff.tagdetail.TagIllustSearchViewModel
 import ceui.lisa.jcstaff.tagdetail.TagNovelSearchViewModel
+import ceui.lisa.jcstaff.tagdetail.TagUserSearchViewModel
+import ceui.lisa.jcstaff.screens.UserSearchPage
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,13 +81,15 @@ fun TagDetailScreen(
     isPremium: Boolean,
     initialTab: Int = 0,
     illustViewModel: TagIllustSearchViewModel = viewModel(key = "tag_illust_${tag.name}"),
-    novelViewModel: TagNovelSearchViewModel = viewModel(key = "tag_novel_${tag.name}")
+    novelViewModel: TagNovelSearchViewModel = viewModel(key = "tag_novel_${tag.name}"),
+    userViewModel: TagUserSearchViewModel = viewModel(key = "tag_user_${tag.name}")
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val illustState by illustViewModel.state.collectAsState()
     val novelState by novelViewModel.state.collectAsState()
+    val userState by userViewModel.state.collectAsState()
     val selectionManager = LocalSelectionManager.current
-    val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 2 })
+    val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val novelListState = rememberLazyListState()
@@ -95,10 +99,11 @@ fun TagDetailScreen(
 
     val premiumHint = stringResource(R.string.premium_sort_hint)
 
-    // Initialize both ViewModels with the tag
+    // Initialize all ViewModels with the tag
     LaunchedEffect(tag) {
         illustViewModel.init(tag, isPremium)
         novelViewModel.init(tag, isPremium)
+        userViewModel.init(tag)
     }
 
     // Back handler for selection mode
@@ -107,8 +112,9 @@ fun TagDetailScreen(
     }
 
     val tabTitles = listOf(
-        stringResource(R.string.tab_tag_illusts),
-        stringResource(R.string.tab_tag_novels)
+        stringResource(R.string.tab_illust_manga),
+        stringResource(R.string.tab_tag_novels),
+        stringResource(R.string.tab_user)
     )
 
     Box {
@@ -287,6 +293,17 @@ fun TagDetailScreen(
                                 )
                             }
                         }
+                        2 -> {
+                            UserSearchPage(
+                                userPreviews = userState.items,
+                                isLoading = userState.isLoading,
+                                isLoadingMore = userState.isLoadingMore,
+                                canLoadMore = userState.canLoadMore,
+                                error = userState.error,
+                                onRefresh = { userViewModel.refresh() },
+                                onLoadMore = { userViewModel.loadMore() }
+                            )
+                        }
                     }
                 }
             }
@@ -310,6 +327,7 @@ fun TagDetailScreen(
                 TextButton(onClick = {
                     illustViewModel.removeTag(pendingTag)
                     novelViewModel.removeTag(pendingTag)
+                    userViewModel.removeTag(pendingTag)
                     tagPendingRemoval = null
                 }) {
                     Text(stringResource(R.string.remove_tag_title))
@@ -331,6 +349,7 @@ fun TagDetailScreen(
                 val newTag = Tag(name = tagName)
                 illustViewModel.addTag(newTag)
                 novelViewModel.addTag(newTag)
+                userViewModel.addTag(newTag)
                 showAddTagDialog = false
             }
         )

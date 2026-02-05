@@ -1,7 +1,6 @@
 package ceui.lisa.jcstaff.components.user
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -24,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.network.User
 import ceui.lisa.jcstaff.network.UserProfile
 import coil.compose.AsyncImage
@@ -93,30 +93,11 @@ fun UserAvatarSection(
                 }
             } else {
                 val avatarUrl = user?.profile_image_urls?.findAvatarUrl()
-                val avatarRequest = remember(avatarUrl) {
-                    ImageRequest.Builder(context)
-                        .data(avatarUrl)
-                        .crossfade(true)
-                        .build()
-                }
-                AsyncImage(
-                    model = avatarRequest,
+                CircleAvatar(
+                    imageUrl = avatarUrl,
+                    size = 96.dp,
                     contentDescription = user?.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(CircleShape)
-                        .border(
-                            width = 4.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.tertiary
-                                )
-                            ),
-                            shape = CircleShape
-                        )
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier = Modifier.size(96.dp)
                 )
                 // Premium 徽章
                 if (user?.is_premium == true || profile?.is_premium == true) {

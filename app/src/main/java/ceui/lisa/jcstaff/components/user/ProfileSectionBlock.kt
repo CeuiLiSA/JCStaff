@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.EmptyState
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Novel
@@ -242,24 +243,15 @@ fun UserPreviewRow(
     ) {
         items(users.take(20), key = { it.user?.id ?: 0L }) { userPreview ->
             val avatarUrl = userPreview.user?.profile_image_urls?.findAvatarUrl()
-            val context = LocalContext.current
-            val imageRequest = remember(avatarUrl) {
-                ImageRequest.Builder(context)
-                    .data(avatarUrl)
-                    .crossfade(true)
-                    .build()
-            }
             Column(
                 modifier = Modifier.width(72.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AsyncImage(
-                    model = imageRequest,
+                CircleAvatar(
+                    imageUrl = avatarUrl,
+                    size = 60.dp,
                     contentDescription = userPreview.user?.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
+                    modifier = Modifier.size(60.dp)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(

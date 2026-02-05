@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountEntry
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -215,34 +216,12 @@ private fun AccountCard(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Avatar
-        if (account.avatarUrl != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(account.avatarUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = account.userName,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = account.userName,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        }
+        CircleAvatar(
+            imageUrl = account.avatarUrl,
+            size = 48.dp,
+            contentDescription = account.userName,
+            modifier = Modifier.size(48.dp)
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 

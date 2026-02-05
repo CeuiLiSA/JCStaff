@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.CircularProgressIndicator
+import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.LoadingIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -352,28 +353,11 @@ private fun SpotlightArtworkItem(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(amWork.userImage)
-                    .crossfade(true)
-                    .build(),
+            CircleAvatar(
+                imageUrl = amWork.userImage,
+                size = 40.dp,
                 contentDescription = amWork.user,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(40.dp)
-                    .border(
-                        width = 1.5.dp,
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        ),
-                        shape = CircleShape
-                    )
-                    .padding(2.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                modifier = Modifier.size(40.dp)
             )
 
             Spacer(modifier = Modifier.width(12.dp))

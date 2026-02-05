@@ -59,6 +59,13 @@ interface PixivApi {
         @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
     ): IllustResponse
 
+    @GET("/v1/search/user")
+    suspend fun searchUsers(
+        @Query("word") word: String,
+        @Query("filter") filter: String = "for_ios",
+        @Query("offset") offset: Int? = null
+    ): UserPreviewResponse
+
     @GET("/v1/illust/detail")
     suspend fun getIllustDetail(
         @Query("illust_id") illustId: Long
