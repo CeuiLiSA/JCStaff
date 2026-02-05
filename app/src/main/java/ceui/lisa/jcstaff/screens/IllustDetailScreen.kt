@@ -182,9 +182,9 @@ fun IllustDetailScreen(
         Scaffold(
             containerColor = Color.Transparent
         ) { paddingValues ->
-            val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-            val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-            val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+            val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
+            val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
+            val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
             val gridSpacing = if (gridSpacingEnabled) 8.dp else 1.dp
 
             LazyVerticalStaggeredGrid(

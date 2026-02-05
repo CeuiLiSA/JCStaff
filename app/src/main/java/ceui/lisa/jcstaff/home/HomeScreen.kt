@@ -1208,7 +1208,7 @@ private fun RankingCarousel(
     modifier: Modifier = Modifier
 ) {
     // Check if grid spacing is enabled to determine layout behavior
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
 
     // Calculate header padding to align with LazyRow cards
     // When grid spacing enabled: Grid has 8dp padding, so header needs 8dp more = 16dp total
@@ -1505,7 +1505,7 @@ private fun SectionHeader(
     onSeeAllClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
     // When grid spacing enabled: Grid has 8dp padding, so need 8dp more = 16dp total (align with RankingCarousel)
     // When disabled: Grid has 0dp padding, so need 10dp
     val horizontalPadding = if (gridSpacingEnabled) 8.dp else 10.dp

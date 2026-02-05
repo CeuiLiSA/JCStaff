@@ -115,10 +115,10 @@ fun IllustGrid(
     // 选择管理器
     val selectionManager = LocalSelectionManager.current
 
-    // 设置
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
-    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-    val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
+    // 设置（StateFlow 已有初始值，无需 initial 参数）
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
+    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
+    val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
 
     val density = LocalDensity.current
     val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }

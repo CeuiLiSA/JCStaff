@@ -80,9 +80,9 @@ fun SettingsScreen(
     onLogoutClick: () -> Unit = {}
 ) {
     val navViewModel = LocalNavigationViewModel.current
-    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState(initial = true)
-    val cornerRadius by SettingsStore.illustCardCornerRadius.collectAsState(initial = 8)
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState(initial = true)
+    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
+    val cornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
+    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }

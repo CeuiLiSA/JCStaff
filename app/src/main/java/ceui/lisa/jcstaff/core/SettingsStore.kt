@@ -2,19 +2,22 @@ package ceui.lisa.jcstaff.core
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Global DataStore for language (shared across all accounts)
@@ -31,10 +34,26 @@ object SettingsStore {
     private var dataStore: DataStore<Preferences>? = null
     private var globalDataStore: DataStore<Preferences>? = null
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var syncJob: Job? = null
+
     /**
      * Per-user DataStore 单例缓存：每个文件名只创建一个实例
      */
     private val dataStoreCache = mutableMapOf<String, DataStore<Preferences>>()
+
+    // StateFlow 缓存当前值，避免 Cold Flow 导致的闪烁
+    private val _showIllustInfo = MutableStateFlow(true)
+    val showIllustInfo: StateFlow<Boolean> = _showIllustInfo.asStateFlow()
+
+    private val _illustCardCornerRadius = MutableStateFlow(8)
+    val illustCardCornerRadius: StateFlow<Int> = _illustCardCornerRadius.asStateFlow()
+
+    private val _gridSpacingEnabled = MutableStateFlow(true)
+    val gridSpacingEnabled: StateFlow<Boolean> = _gridSpacingEnabled.asStateFlow()
+
+    private val _selectedLanguage = MutableStateFlow<String?>(null)
+    val selectedLanguage: StateFlow<String?> = _selectedLanguage.asStateFlow()
 
     @Synchronized
     private fun getOrCreateDataStore(context: Context, name: String): DataStore<Preferences> {
@@ -42,6 +61,27 @@ object SettingsStore {
             PreferenceDataStoreFactory.create(
                 produceFile = { context.applicationContext.preferencesDataStoreFile(name) }
             )
+        }
+    }
+
+    /**
+     * 启动同步 DataStore → StateFlow 的协程
+     */
+    private fun startSync() {
+        syncJob?.cancel()
+        syncJob = scope.launch {
+            // 同步 per-user 设置
+            dataStore?.data?.collect { preferences ->
+                _showIllustInfo.value = preferences[SHOW_ILLUST_INFO] ?: true
+                _illustCardCornerRadius.value = preferences[ILLUST_CARD_CORNER_RADIUS] ?: 8
+                _gridSpacingEnabled.value = preferences[GRID_SPACING_ENABLED] ?: true
+            }
+        }
+        // 同步全局语言设置
+        scope.launch {
+            globalDataStore?.data?.collect { preferences ->
+                _selectedLanguage.value = preferences[SELECTED_LANGUAGE]
+            }
         }
     }
 
@@ -54,6 +94,7 @@ object SettingsStore {
         if (dataStore == null) {
             dataStore = globalDataStore
         }
+        startSync()
     }
 
     /**
@@ -62,6 +103,7 @@ object SettingsStore {
     fun initialize(context: Context, userId: Long) {
         globalDataStore = context.globalSettingsDataStore
         dataStore = getOrCreateDataStore(context, "settings_$userId")
+        startSync()
     }
 
     /**
@@ -69,73 +111,40 @@ object SettingsStore {
      */
     fun reset() {
         dataStore = globalDataStore
+        // 重置为默认值
+        _showIllustInfo.value = true
+        _illustCardCornerRadius.value = 8
+        _gridSpacingEnabled.value = true
+        startSync()
     }
 
-    /**
-     * 是否在 IllustCard 上显示标题和作者名
-     * 默认为 true
-     */
-    val showIllustInfo: Flow<Boolean>
-        get() = dataStore?.data?.map { preferences ->
-            preferences[SHOW_ILLUST_INFO] ?: true
-        } ?: kotlinx.coroutines.flow.flowOf(true)
-
     suspend fun setShowIllustInfo(show: Boolean) {
+        _showIllustInfo.value = show
         dataStore?.edit { preferences ->
             preferences[SHOW_ILLUST_INFO] = show
         }
     }
 
-    /**
-     * IllustCard 圆角大小 (dp)
-     * 默认为 8，范围 0-24
-     */
-    val illustCardCornerRadius: Flow<Int>
-        get() = dataStore?.data?.map { preferences ->
-            preferences[ILLUST_CARD_CORNER_RADIUS] ?: 8
-        } ?: kotlinx.coroutines.flow.flowOf(8)
-
     suspend fun setIllustCardCornerRadius(radius: Int) {
+        val clamped = radius.coerceIn(0, 24)
+        _illustCardCornerRadius.value = clamped
         dataStore?.edit { preferences ->
-            preferences[ILLUST_CARD_CORNER_RADIUS] = radius.coerceIn(0, 24)
+            preferences[ILLUST_CARD_CORNER_RADIUS] = clamped
         }
     }
 
-    /**
-     * 瀑布流是否开启间距
-     * 默认为 true（开启，间距 8dp）
-     * 关闭时使用最小间距 1px
-     */
-    val gridSpacingEnabled: Flow<Boolean>
-        get() = dataStore?.data?.map { preferences ->
-            preferences[GRID_SPACING_ENABLED] ?: true
-        } ?: kotlinx.coroutines.flow.flowOf(true)
-
     suspend fun setGridSpacingEnabled(enabled: Boolean) {
+        _gridSpacingEnabled.value = enabled
         dataStore?.edit { preferences ->
             preferences[GRID_SPACING_ENABLED] = enabled
         }
     }
 
-    /**
-     * Language is global (not per-account)
-     */
-    val selectedLanguage: Flow<String?>
-        get() = globalDataStore?.data?.map { preferences ->
-            preferences[SELECTED_LANGUAGE]
-        } ?: kotlinx.coroutines.flow.flowOf(null)
-
     suspend fun setSelectedLanguage(tag: String) {
+        _selectedLanguage.value = tag
         globalDataStore?.edit { preferences ->
             preferences[SELECTED_LANGUAGE] = tag
         }
     }
 
-    fun getSelectedLanguageBlocking(): String? {
-        return runBlocking(Dispatchers.IO) {
-            globalDataStore?.data?.map { preferences ->
-                preferences[SELECTED_LANGUAGE]
-            }?.first()
-        }
-    }
 }
