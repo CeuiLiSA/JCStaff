@@ -19,6 +19,12 @@ interface BrowseHistoryDao {
     fun getAllFlow(): Flow<List<BrowseHistoryEntity>>
 
     /**
+     * 分页获取历史记录（按时间倒序）
+     */
+    @Query("SELECT * FROM browse_history ORDER BY viewed_at DESC LIMIT :limit OFFSET :offset")
+    suspend fun getPage(limit: Int, offset: Int): List<BrowseHistoryEntity>
+
+    /**
      * 插入或更新历史记录（REPLACE 策略，重复浏览更新时间戳）
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)

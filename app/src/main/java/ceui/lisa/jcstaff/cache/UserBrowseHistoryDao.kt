@@ -15,6 +15,12 @@ interface UserBrowseHistoryDao {
     @Query("SELECT * FROM user_browse_history ORDER BY viewed_at DESC")
     fun getAllFlow(): Flow<List<UserBrowseHistoryEntity>>
 
+    /**
+     * 分页获取历史记录（按时间倒序）
+     */
+    @Query("SELECT * FROM user_browse_history ORDER BY viewed_at DESC LIMIT :limit OFFSET :offset")
+    suspend fun getPage(limit: Int, offset: Int): List<UserBrowseHistoryEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(entity: UserBrowseHistoryEntity)
 

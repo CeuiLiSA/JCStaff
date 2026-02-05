@@ -26,6 +26,7 @@ object BrowseHistoryRepository {
 
     private const val TAG = "BrowseHistory"
     private const val MAX_HISTORY_SIZE = 500
+    private const val PAGE_SIZE = 30
     private val EXPIRE_DURATION_MS = TimeUnit.DAYS.toMillis(30)
 
     private var illustDao: BrowseHistoryDao? = null
@@ -87,6 +88,17 @@ object BrowseHistoryRepository {
         }
     }
 
+    suspend fun getIllustHistoryPage(page: Int): List<Illust> {
+        val dao = illustDao ?: return emptyList()
+        return dao.getPage(PAGE_SIZE, page * PAGE_SIZE).mapNotNull {
+            runCatching { gson.fromJson(it.illustJson, Illust::class.java) }.getOrNull()
+        }
+    }
+
+    suspend fun getIllustHistoryCount(): Int {
+        return illustDao?.count() ?: 0
+    }
+
     fun clearIllustHistory() {
         illustDao?.let { dao -> scope.launch { runCatching { dao.deleteAll() } } }
     }
@@ -127,6 +139,17 @@ object BrowseHistoryRepository {
         }
     }
 
+    suspend fun getNovelHistoryPage(page: Int): List<Novel> {
+        val dao = novelDao ?: return emptyList()
+        return dao.getPage(PAGE_SIZE, page * PAGE_SIZE).mapNotNull {
+            runCatching { gson.fromJson(it.novelJson, Novel::class.java) }.getOrNull()
+        }
+    }
+
+    suspend fun getNovelHistoryCount(): Int {
+        return novelDao?.count() ?: 0
+    }
+
     fun clearNovelHistory() {
         novelDao?.let { dao -> scope.launch { runCatching { dao.deleteAll() } } }
     }
@@ -163,6 +186,17 @@ object BrowseHistoryRepository {
         return dao.getAllFlow().map { entities ->
             entities.mapNotNull { runCatching { gson.fromJson(it.userJson, User::class.java) }.getOrNull() }
         }
+    }
+
+    suspend fun getUserHistoryPage(page: Int): List<User> {
+        val dao = userDao ?: return emptyList()
+        return dao.getPage(PAGE_SIZE, page * PAGE_SIZE).mapNotNull {
+            runCatching { gson.fromJson(it.userJson, User::class.java) }.getOrNull()
+        }
+    }
+
+    suspend fun getUserHistoryCount(): Int {
+        return userDao?.count() ?: 0
     }
 
     fun clearUserHistory() {

@@ -2,18 +2,18 @@ package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -21,12 +21,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -35,12 +35,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -58,6 +60,11 @@ import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.components.UserHistoryCard
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.history.BrowseHistoryViewModel
+import ceui.lisa.jcstaff.history.IllustHistoryState
+import ceui.lisa.jcstaff.history.NovelHistoryState
+import ceui.lisa.jcstaff.history.UserHistoryState
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,9 +83,9 @@ fun BrowseHistoryScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val tabTitles = listOf(
-        stringResource(R.string.tab_illust) + " (${illustState.illusts.size})",
-        stringResource(R.string.tab_novel) + " (${novelState.novels.size})",
-        stringResource(R.string.tab_user) + " (${userState.users.size})"
+        stringResource(R.string.tab_illust) + " (${illustState.totalCount})",
+        stringResource(R.string.tab_novel) + " (${novelState.totalCount})",
+        stringResource(R.string.tab_user) + " (${userState.totalCount})"
     )
 
     // 返回键退出选择模式
@@ -162,21 +169,24 @@ fun BrowseHistoryScreen(
                     when (page) {
                         0 -> IllustHistoryPage(
                             illustState = illustState,
-                            onDeleteIllust = { viewModel.deleteIllust(it) }
+                            onDeleteIllust = { viewModel.deleteIllust(it) },
+                            onLoadMore = { viewModel.loadMoreIllusts() }
                         )
                         1 -> NovelHistoryPage(
                             novelState = novelState,
                             onNovelClick = { novel ->
                                 navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
                             },
-                            onDeleteNovel = { viewModel.deleteNovel(it) }
+                            onDeleteNovel = { viewModel.deleteNovel(it) },
+                            onLoadMore = { viewModel.loadMoreNovels() }
                         )
                         2 -> UserHistoryPage(
                             userState = userState,
                             onUserClick = { user ->
                                 navViewModel.navigate(NavRoute.UserProfile(userId = user.id))
                             },
-                            onDeleteUser = { viewModel.deleteUser(it) }
+                            onDeleteUser = { viewModel.deleteUser(it) },
+                            onLoadMore = { viewModel.loadMoreUsers() }
                         )
                     }
                 }
@@ -218,8 +228,9 @@ fun BrowseHistoryScreen(
 
 @Composable
 private fun IllustHistoryPage(
-    illustState: ceui.lisa.jcstaff.history.IllustHistoryState,
-    onDeleteIllust: (Long) -> Unit
+    illustState: IllustHistoryState,
+    onDeleteIllust: (Long) -> Unit,
+    onLoadMore: () -> Unit
 ) {
     val navViewModel = LocalNavigationViewModel.current
     var menuIllustId by remember { mutableStateOf<Long?>(null) }
@@ -253,7 +264,10 @@ private fun IllustHistoryPage(
             },
             modifier = Modifier.fillMaxSize(),
             isLoading = illustState.isLoading,
-            error = illustState.error
+            isLoadingMore = illustState.isLoadingMore,
+            canLoadMore = illustState.canLoadMore,
+            error = illustState.error,
+            onLoadMore = onLoadMore
         )
     }
 
@@ -279,11 +293,26 @@ private fun IllustHistoryPage(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NovelHistoryPage(
-    novelState: ceui.lisa.jcstaff.history.NovelHistoryState,
+    novelState: NovelHistoryState,
     onNovelClick: (ceui.lisa.jcstaff.network.Novel) -> Unit,
-    onDeleteNovel: (Long) -> Unit
+    onDeleteNovel: (Long) -> Unit,
+    onLoadMore: () -> Unit
 ) {
     var menuNovelId by remember { mutableStateOf<Long?>(null) }
+    val listState = rememberLazyListState()
+
+    // 检测滚动到底部
+    LaunchedEffect(listState, novelState.canLoadMore) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisibleItem >= totalItems - 4
+        }
+            .distinctUntilChanged()
+            .filter { it && novelState.canLoadMore && !novelState.isLoadingMore }
+            .collect { onLoadMore() }
+    }
 
     if (novelState.isEmpty) {
         Box(
@@ -297,7 +326,10 @@ private fun NovelHistoryPage(
             )
         }
     } else {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize()
+        ) {
             items(novelState.novels, key = { it.id }) { novel ->
                 Box(
                     modifier = Modifier
@@ -312,6 +344,23 @@ private fun NovelHistoryPage(
                         onClick = { onNovelClick(novel) },
                         modifier = Modifier
                     )
+                }
+            }
+
+            // 加载更多指示器
+            if (novelState.isLoadingMore) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
                 }
             }
         }
@@ -339,11 +388,26 @@ private fun NovelHistoryPage(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UserHistoryPage(
-    userState: ceui.lisa.jcstaff.history.UserHistoryState,
+    userState: UserHistoryState,
     onUserClick: (ceui.lisa.jcstaff.network.User) -> Unit,
-    onDeleteUser: (Long) -> Unit
+    onDeleteUser: (Long) -> Unit,
+    onLoadMore: () -> Unit
 ) {
     var menuUserId by remember { mutableStateOf<Long?>(null) }
+    val listState = rememberLazyListState()
+
+    // 检测滚动到底部
+    LaunchedEffect(listState, userState.canLoadMore) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisibleItem >= totalItems - 4
+        }
+            .distinctUntilChanged()
+            .filter { it && userState.canLoadMore && !userState.isLoadingMore }
+            .collect { onLoadMore() }
+    }
 
     if (userState.isEmpty) {
         Box(
@@ -357,7 +421,10 @@ private fun UserHistoryPage(
             )
         }
     } else {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize()
+        ) {
             items(userState.users, key = { it.id }) { user ->
                 Box(
                     modifier = Modifier.combinedClickable(
@@ -370,6 +437,23 @@ private fun UserHistoryPage(
                         onClick = { onUserClick(user) },
                         modifier = Modifier
                     )
+                }
+            }
+
+            // 加载更多指示器
+            if (userState.isLoadingMore) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
                 }
             }
         }
