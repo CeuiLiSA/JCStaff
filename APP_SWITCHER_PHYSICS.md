@@ -2,6 +2,18 @@
 
 iOS 风格应用切换器在 Jetpack Compose 中的数学建模与物理仿真全解析。
 
+## 效果演示
+
+<p align="center">
+  <img src="docs/charts/demo_01.gif" width="200" alt="左边界橡皮筋效果"/>
+  <img src="docs/charts/demo_02.gif" width="200" alt="右边界橡皮筋效果"/>
+  <img src="docs/charts/demo_03.gif" width="200" alt="卡片切换效果"/>
+</p>
+
+<p align="center">
+  <em>左边界过拉（扇形展开） | 右边界过拉（拉伸+Z轴下沉） | 卡片切换动画</em>
+</p>
+
 ---
 
 ## 1. 状态空间
@@ -59,26 +71,85 @@ blurRadius = min(1 - titleAlpha, 0.5) × 20dp
 
 ---
 
-## 5. 拖拽物理与双层摩擦
+## 5. 拖拽物理与渐进式摩擦
 
 像素→索引转换：`delta_index = -delta_pixel / (cardWidth × 0.60)`。
 
-双层摩擦模型：基础摩擦 0.70（正常区域手指利用率 70%），边缘追加 0.30（过拉区域合成利用率仅 21%），产生 iOS 橡皮筋阻尼感。
+### 5.1 渐进式摩擦模型（新）
+
+旧方案使用固定的双层摩擦（基础 0.70 × 边缘 0.30 = 0.21），导致橡皮筋几乎拉不动。
+
+新方案采用渐进式阻力：
+```kotlin
+val edgeFriction = 0.6f / (1f + overscrollAmount * 0.5f)
+val totalFriction = baseFriction * edgeFriction  // 0.70 × edgeFriction
+```
+
+![渐进式摩擦](docs/charts/09_progressive_friction.png)
+
+- 初始摩擦 0.42（旧方案的 2 倍），响应灵敏
+- 越拉阻力越大，符合 iOS 物理直觉
+- 摩擦系数从 0.42 渐减至 ~0.14
 
 ---
 
-## 6. 弹性过拉：非均匀位移
+## 6. 弹性过拉：平滑阻尼与差异化位移
 
-过拉时位移非均匀分配，替代刚性整体平移：
+### 6.1 平滑阻尼函数（新）
 
+旧方案使用 `sqrt(x)` 会导致动画末端跳动（x→0 时导数趋于无穷大）。
+
+新方案采用平滑阻尼：
+```kotlin
+val dampedOverscroll = absOver / (1f + absOver * 0.8f)
 ```
-x_final(i) = x_base(i) - overscroll × rightSpacing × weight(i)
+
+![平滑阻尼函数](docs/charts/07_damped_overscroll.png)
+
+- x=0 处导数=1（初始响应灵敏）
+- 渐近线 y=1.25（有限极限）
+- 全程连续可导，无跳动
+
+### 6.2 差异化位移权重（更新）
+
+过拉时各卡片位移不同，产生扇形展开/拉伸效果：
+
+```kotlin
+x_final(i) = x_base(i) - sign(overscroll) × dampedOverscroll × rightSpacing × weight(i)
 ```
 
 ![弹性过拉权重](docs/charts/04_overscroll_weights.png)
 
-左边界拉过时（扇形展开）：`weight = (d+1)/(d+2)`，边缘卡仅半量位移，远端卡接近全量。
-右边界拉过时（压缩挤压）：`weight = 1/(d+2)`，边缘卡半量位移，远端卡趋近零。
+**左边界过拉（扇形展开）：**
+```kotlin
+weight = 0.72 + 0.55 × d/(d+0.6)
+```
+- 边缘卡 (d=0): weight=0.72，移动较少
+- 远端卡 (d=1): weight=1.06，移动更多
+- 效果：卡片组"扇形展开"
+
+**右边界过拉（拉伸效果）：**
+```kotlin
+weight = 0.65 / (d+1)
+```
+- 最右卡 (d=0): weight=0.65，移动最多
+- 左侧卡 (d=1): weight=0.33，移动较少
+- 效果：最右卡被"拉出"，其他卡原地
+
+### 6.3 Z 轴下沉效果（新）
+
+右边界过拉时，所有可见卡片产生 Z 轴下沉（scale 缩小），最右卡缩小少，左侧卡缩小更多：
+
+```kotlin
+val sinkWeight = 0.3f + 0.7f * (d / (d + 0.8f))
+val scale = 1f - dampedOverscroll * 0.15f * sinkWeight
+```
+
+![Z轴下沉效果](docs/charts/08_z_sink_scale.png)
+
+- 最右卡 (d=0): sinkWeight=0.30，缩小到 ~0.97
+- 左侧卡 (d=2): sinkWeight=0.80，缩小到 ~0.87
+- 产生"最右卡被拉出，后面卡片被压下去"的层次感
 
 ---
 
@@ -133,7 +204,8 @@ x_final(i) = x_base(i) - overscroll × rightSpacing × weight(i)
 | 暗色遮罩 | 0.25/relPos，上限 0.50 | 左卡阴影深度 |
 | 拖拽灵敏度 | cardWidth × 60% | 拖多远 = 滑 1 张卡 |
 | 基础摩擦 | 0.70 | 手指利用率 70% |
-| 边缘摩擦 | 0.30 | 过拉合成利用率 21% |
+| 边缘摩擦（新） | 0.6/(1+0.5×overscroll) | 渐进式阻力 |
+| 平滑阻尼系数 | 0.8 | dampedOverscroll 衰减率 |
 | 惯性投影 | 0.25 | 速度→距离转化率 |
 | 弹簧阻尼比 | 1.0 | 临界阻尼（无振荡） |
 | 弹簧刚度 | 80 | 缓慢飘停 |
@@ -141,5 +213,7 @@ x_final(i) = x_base(i) - overscroll × rightSpacing × weight(i)
 | 贝塞尔曲线 | (0.17, 0.84, 0.44, 1.0) | iOS 风格缓动 |
 | 标题模糊上限 | 10 dp | 最大高斯模糊半径 |
 | 背景不透明度 | 0.92 | 切换器遮罩亮度 |
-| 左过拉权重 | (d+1)/(d+2) | 扇形展开 |
-| 右过拉权重 | 1/(d+2) | 压缩挤压 |
+| 左过拉权重（新） | 0.72 + 0.55×d/(d+0.6) | 扇形展开 |
+| 右过拉权重（新） | 0.65/(d+1) | 拉伸效果 |
+| Z轴下沉权重（新） | 0.3 + 0.7×d/(d+0.8) | 右过拉深度感 |
+| Z轴下沉系数（新） | 0.15 | 最大缩小幅度 |
