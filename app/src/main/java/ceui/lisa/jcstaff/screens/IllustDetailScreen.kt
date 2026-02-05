@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountRegistry
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.IllustScrollAwareTopBar
@@ -283,7 +284,7 @@ fun IllustDetailScreen(
                 }
 
                 // 相关作品标题
-                if (relatedState.illusts.isNotEmpty() || relatedState.isLoading) {
+                if (relatedState.illusts.isNotEmpty() || relatedState.isLoading || relatedState.hasError) {
                     item(key = "related_header", span = StaggeredGridItemSpan.FullLine) {
                         RelatedIllustsHeader()
                     }
@@ -292,14 +293,19 @@ fun IllustDetailScreen(
                 // 相关作品加载中
                 if (relatedState.isLoading && relatedState.isEmpty) {
                     item(key = "related_loading", span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            LoadingIndicator()
-                        }
+                        LoadingIndicator()
+                    }
+                }
+
+                // 相关作品加载失败
+                if (relatedState.hasError && relatedState.isEmpty) {
+                    item(key = "related_error", span = StaggeredGridItemSpan.FullLine) {
+                        ErrorRetryState(
+                            error = relatedState.error ?: stringResource(R.string.load_error),
+                            onRetry = { relatedViewModel.refresh() },
+                            scrollable = false,
+                            showPullToRefreshHint = false
+                        )
                     }
                 }
 

@@ -389,9 +389,7 @@ fun CommentScreen(
             if (state.isLoading && state.comments.isEmpty()) {
                 item(key = "loading") {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
+                        modifier = Modifier.fillParentMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         LoadingIndicator()
@@ -400,9 +398,7 @@ fun CommentScreen(
             } else if (state.comments.isEmpty() && !state.isLoading) {
                 item(key = "empty") {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
+                        modifier = Modifier.fillParentMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

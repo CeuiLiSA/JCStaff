@@ -1,12 +1,9 @@
 package ceui.lisa.jcstaff.components.comment
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -14,6 +11,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -24,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.comment.CommentViewModel
+import ceui.lisa.jcstaff.components.ErrorRetryState
+import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.network.Comment
 import ceui.lisa.jcstaff.network.PixivClient
 
@@ -36,10 +36,15 @@ fun CommentPreviewSection(
 ) {
     var comments by remember { mutableStateOf<List<Comment>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var retryTrigger by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(objectId, objectType) {
+    LaunchedEffect(objectId, objectType, retryTrigger) {
+        isLoading = true
+        error = null
+
         val cached = CommentViewModel.commentsCache[CommentViewModel.cacheKey(objectType, objectId)]
-        if (cached != null) {
+        if (cached != null && retryTrigger == 0) {
             comments = cached
             isLoading = false
             return@LaunchedEffect
@@ -53,8 +58,10 @@ fun CommentPreviewSection(
             }
             CommentViewModel.commentsCache[CommentViewModel.cacheKey(objectType, objectId)] = response.comments
             comments = response.comments
-        } catch (_: Exception) {
-            comments = emptyList()
+            error = null
+        } catch (e: Exception) {
+            comments = null
+            error = e.message
         } finally {
             isLoading = false
         }
@@ -90,14 +97,15 @@ fun CommentPreviewSection(
 
         when {
             isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                }
+                LoadingIndicator()
+            }
+            error != null -> {
+                ErrorRetryState(
+                    error = error ?: stringResource(R.string.load_error),
+                    onRetry = { retryTrigger++ },
+                    scrollable = false,
+                    showPullToRefreshHint = false
+                )
             }
             comments.isNullOrEmpty() -> {
                 Text(
