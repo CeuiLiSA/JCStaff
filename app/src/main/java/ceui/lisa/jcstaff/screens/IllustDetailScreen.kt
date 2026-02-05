@@ -54,15 +54,10 @@ import ceui.lisa.jcstaff.components.illust.IllustTags
 import ceui.lisa.jcstaff.core.IllustListViewModel
 import ceui.lisa.jcstaff.core.IllustLoader
 import ceui.lisa.jcstaff.core.LocalSelectionManager
-import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.SettingsStore
-import ceui.lisa.jcstaff.core.StoreKey
-import ceui.lisa.jcstaff.core.StoreType
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
-import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
-import ceui.lisa.jcstaff.network.User
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -74,32 +69,28 @@ fun IllustDetailScreen(
     title: String,
     previewUrl: String,
     aspectRatio: Float,
+    detailViewModel: IllustDetailViewModel = viewModel(key = "detail_$illustId"),
     relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val currentUserId by AccountRegistry.activeUserId.collectAsState(initial = null)
 
-    // 从 ObjectStore 获取缓存数据
-    val cachedIllust = remember(illustId) {
-        ObjectStore.peek<Illust>(StoreKey(illustId, StoreType.ILLUST))
+    // 从 ViewModel 获取状态
+    val detailState by detailViewModel.state.collectAsState()
+    val illust = detailState.illust
+    val isLoading = detailState.isLoading
+    val error = detailState.error
+    val isBookmarked = detailState.isBookmarked
+
+    // 绑定 ViewModel
+    LaunchedEffect(illustId) {
+        detailViewModel.bind(illustId)
     }
-
-    val illustFlow = remember(illustId) {
-        ObjectStore.get<Illust>(StoreKey(illustId, StoreType.ILLUST))
-    }
-    val observedIllust by illustFlow?.collectAsState() ?: remember { mutableStateOf(cachedIllust) }
-
-    var illust by remember { mutableStateOf(cachedIllust) }
-    var isLoading by remember { mutableStateOf(cachedIllust == null) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    // 收藏状态
-    var isBookmarked by remember(illustId) { mutableStateOf(cachedIllust?.is_bookmarked ?: false) }
 
     // 关注状态：直接观察 ObjectStore 中的 User，确保跨页面同步
     val userId = illust?.user?.id
     val observedUser by remember(userId) {
-        userId?.let { ObjectStore.get<User>(StoreKey(it, StoreType.USER)) }
+        userId?.let { detailViewModel.getUserFollowState(it) }
     }?.collectAsState() ?: remember { mutableStateOf(null) }
     val isFollowed = observedUser?.is_followed ?: illust?.user?.is_followed ?: false
 
@@ -117,35 +108,6 @@ fun IllustDetailScreen(
     // 相关作品状态
     val relatedState by relatedViewModel.state.collectAsState()
 
-    LaunchedEffect(observedIllust) {
-        observedIllust?.let {
-            illust = it
-            isBookmarked = it.is_bookmarked ?: false
-        }
-    }
-
-    // 加载作品详情
-    LaunchedEffect(illustId) {
-        if (cachedIllust == null) {
-            isLoading = true
-            error = null
-            try {
-                val response = PixivClient.pixivApi.getIllustDetail(illustId)
-                response.illust?.let { fetchedIllust ->
-                    ObjectStore.put(fetchedIllust)
-                    fetchedIllust.user?.let { user -> ObjectStore.put(user) }
-                    illust = fetchedIllust
-                }
-            } catch (e: Exception) {
-                error = e.message
-            } finally {
-                isLoading = false
-            }
-        } else {
-            isLoading = false
-        }
-    }
-
     // 绑定相关作品加载器
     LaunchedEffect(illustId) {
         relatedViewModel.bind(IllustLoader {
@@ -153,19 +115,8 @@ fun IllustDetailScreen(
         })
     }
 
-    // 记录浏览历史
-    LaunchedEffect(illust) {
-        illust?.let { BrowseHistoryRepository.recordIllust(it) }
-    }
-
     val firstOriginalUrl = remember(illust) {
-        illust?.let { loadedIllust ->
-            if (loadedIllust.page_count == 1) {
-                loadedIllust.meta_single_page?.original_image_url
-            } else {
-                loadedIllust.meta_pages?.firstOrNull()?.image_urls?.original
-            }
-        }
+        detailViewModel.getFirstOriginalUrl()
     }
 
     val gridState = rememberLazyStaggeredGridState()
@@ -282,8 +233,7 @@ fun IllustDetailScreen(
                             isBookmarked = isBookmarked,
                             downloadUrl = firstOriginalUrl ?: previewUrl,
                             onBookmarkStateChanged = { newState, updatedIllust ->
-                                isBookmarked = newState
-                                illust = updatedIllust
+                                detailViewModel.updateBookmarkState(newState, updatedIllust)
                             },
                             currentUserId = currentUserId ?: 0L
                         )
