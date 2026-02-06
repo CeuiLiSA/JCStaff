@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.IllustListViewModel
 import ceui.lisa.jcstaff.core.IllustLoader
 import ceui.lisa.jcstaff.core.LocalSelectionManager
@@ -45,9 +46,16 @@ fun UserCreatedIllustsScreen(
     }
 
     LaunchedEffect(userId, type) {
-        viewModel.bind(IllustLoader {
-            PixivClient.pixivApi.getUserIllusts(userId, type = type)
-        })
+        val cacheConfig = CacheConfig(
+            path = "/v1/user/illusts",
+            queryParams = mapOf("user_id" to userId.toString(), "type" to type, "filter" to "for_ios")
+        )
+        viewModel.bind(
+            loader = IllustLoader {
+                PixivClient.pixivApi.getUserIllusts(userId, type = type)
+            },
+            cacheConfig = cacheConfig
+        )
     }
 
     val title = if (type == "illust") {

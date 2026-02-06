@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.NovelList
+import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.NovelListViewModel
 import ceui.lisa.jcstaff.core.NovelLoader
 import ceui.lisa.jcstaff.core.PagedState
@@ -36,9 +37,16 @@ fun UserCreatedNovelsScreen(
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(userId) {
-        viewModel.bind(NovelLoader {
-            PixivClient.pixivApi.getUserNovels(userId)
-        })
+        val cacheConfig = CacheConfig(
+            path = "/v1/user/novels",
+            queryParams = mapOf("user_id" to userId.toString(), "filter" to "for_ios")
+        )
+        viewModel.bind(
+            loader = NovelLoader {
+                PixivClient.pixivApi.getUserNovels(userId)
+            },
+            cacheConfig = cacheConfig
+        )
     }
 
     Scaffold(

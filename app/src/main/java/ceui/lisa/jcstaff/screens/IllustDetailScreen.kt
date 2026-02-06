@@ -360,7 +360,12 @@ fun IllustDetailScreen(
             // 检测相关作品区域是否可见，触发懒加载
             LaunchedEffect(gridState, illustId) {
                 snapshotFlow {
-                    gridState.layoutInfo.visibleItemsInfo.any { it.key == "related_trigger" }
+                    val firstIndex = gridState.firstVisibleItemIndex
+                    val scrollOffset = gridState.firstVisibleItemScrollOffset
+                    // 必须有滚动行为（排除初始状态 firstIndex=0, scrollOffset=0）
+                    val hasScrolled = firstIndex > 0 || scrollOffset > 0
+                    // 滚动到一定位置才触发：过了第2个item，或者在第1-2个item但滚动了足够距离
+                    hasScrolled && (firstIndex >= 2 || scrollOffset > 800)
                 }
                     .distinctUntilChanged()
                     .filter { it }

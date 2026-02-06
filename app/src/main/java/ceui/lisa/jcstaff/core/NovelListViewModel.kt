@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.core
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.network.Novel
@@ -9,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+private const val TAG = "NovelListVM"
 
 /**
  * 小说列表加载器（支持分页）
@@ -42,22 +45,44 @@ class NovelListViewModel : ViewModel() {
     val state: StateFlow<NovelListState> = _state.asStateFlow()
 
     private var loader: NovelLoader? = null
+    private var cacheConfig: CacheConfig? = null
     private var isBound = false
 
-    fun bind(loader: NovelLoader) {
+    fun bind(loader: NovelLoader, cacheConfig: CacheConfig? = null) {
         if (isBound) return
         this.loader = loader
+        this.cacheConfig = cacheConfig
         this.isBound = true
-        load()
+        load(forceRefresh = false)
     }
 
-    fun load() {
+    fun load(forceRefresh: Boolean = true) {
         val currentLoader = loader ?: return
 
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
+            // 先尝试从缓存加载
+            val config = cacheConfig
+            if (config != null) {
+                val cacheResult = config.loadFromCache(NovelResponse::class.java)
+                if (cacheResult != null) {
+                    Log.d(TAG, "load: cache hit, ${cacheResult.data.novels.size} novels")
+                    storeNovels(cacheResult.data.novels)
+                    _state.value = _state.value.copy(
+                        novels = cacheResult.data.novels,
+                        isLoading = cacheResult.shouldFetch(forceRefresh),
+                        nextUrl = cacheResult.data.next_url
+                    )
+                    if (!cacheResult.shouldFetch(forceRefresh)) {
+                        Log.d(TAG, "load: cache fresh, skip network")
+                        return@launch
+                    }
+                }
+            }
+
             try {
+                Log.d(TAG, "load: fetching from network")
                 val response = currentLoader.load()
                 storeNovels(response.novels)
 
@@ -69,7 +94,7 @@ class NovelListViewModel : ViewModel() {
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = e.message ?: "加载失败"
+                    error = if (_state.value.novels.isEmpty()) e.message ?: "加载失败" else null
                 )
             }
         }
@@ -107,5 +132,5 @@ class NovelListViewModel : ViewModel() {
         }
     }
 
-    fun refresh() = load()
+    fun refresh() = load(forceRefresh = true)
 }

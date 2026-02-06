@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.core
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.network.Illust
@@ -17,6 +18,8 @@ import kotlinx.coroutines.launch
 fun interface IllustLoader {
     suspend fun load(): IllustResponse
 }
+
+private const val TAG = "IllustListVM"
 
 /**
  * 插画列表状态
@@ -57,29 +60,54 @@ class IllustListViewModel : ViewModel() {
     val state: StateFlow<IllustListState> = _state.asStateFlow()
 
     private var loader: IllustLoader? = null
+    private var cacheConfig: CacheConfig? = null
     private var isBound = false
 
     /**
      * 绑定加载器，首次绑定时自动加载
      * 同一个 ViewModel 实例只能绑定一次
+     * @param loader 加载器
+     * @param cacheConfig 可选的缓存配置，传入后会先检查缓存
      */
-    fun bind(loader: IllustLoader) {
+    fun bind(loader: IllustLoader, cacheConfig: CacheConfig? = null) {
         if (isBound) return
         this.loader = loader
+        this.cacheConfig = cacheConfig
         this.isBound = true
-        load()
+        load(forceRefresh = false)
     }
 
     /**
      * 加载数据（首次加载或刷新）
      */
-    fun load() {
+    fun load(forceRefresh: Boolean = true) {
         val currentLoader = loader ?: return
 
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
+            // 先尝试从缓存加载
+            val config = cacheConfig
+            if (config != null) {
+                val cacheResult = config.loadFromCache(IllustResponse::class.java)
+                if (cacheResult != null) {
+                    Log.d(TAG, "load: cache hit, ${cacheResult.data.illusts.size} illusts")
+                    storeIllusts(cacheResult.data.illusts)
+                    _state.value = _state.value.copy(
+                        illusts = cacheResult.data.illusts,
+                        isLoading = cacheResult.shouldFetch(forceRefresh),
+                        nextUrl = cacheResult.data.next_url
+                    )
+                    // 如果不需要刷新，直接返回
+                    if (!cacheResult.shouldFetch(forceRefresh)) {
+                        Log.d(TAG, "load: cache fresh, skip network")
+                        return@launch
+                    }
+                }
+            }
+
             try {
+                Log.d(TAG, "load: fetching from network")
                 val response = currentLoader.load()
 
                 // 存入 ObjectStore
@@ -93,7 +121,7 @@ class IllustListViewModel : ViewModel() {
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = e.message ?: "加载失败"
+                    error = if (_state.value.illusts.isEmpty()) e.message ?: "加载失败" else null
                 )
             }
         }
@@ -137,7 +165,7 @@ class IllustListViewModel : ViewModel() {
     }
 
     /**
-     * 刷新（重新加载）
+     * 刷新（重新加载，强制刷新）
      */
-    fun refresh() = load()
+    fun refresh() = load(forceRefresh = true)
 }

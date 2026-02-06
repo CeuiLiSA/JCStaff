@@ -67,10 +67,12 @@ fun CommentCard(
             .padding(
                 start = if (isChild) 48.dp else 16.dp,
                 end = 16.dp,
-                top = 8.dp,
+                top = 12.dp,
                 bottom = 8.dp
-            )
+            ),
+        verticalAlignment = Alignment.Top
     ) {
+        // 头像
         CircleAvatar(
             imageUrl = comment.user.profile_image_urls?.findAvatarUrl(),
             size = avatarSize,
@@ -82,17 +84,21 @@ fun CommentCard(
 
         Spacer(modifier = Modifier.width(12.dp))
 
+        // 右侧内容区
         Column(modifier = Modifier.weight(1f)) {
+            // 名字 + 时间行
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = comment.user.name ?: "",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.clickable { onUserClick(comment.user.id) }
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onUserClick(comment.user.id) }
                 )
                 comment.date?.let { dateStr ->
                     formatRelativeDate(dateStr)?.let { formatted ->
@@ -105,7 +111,17 @@ fun CommentCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            // @account
+            if (!comment.user.account.isNullOrBlank()) {
+                Text(
+                    text = "@${comment.user.account}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // 评论内容
+            Spacer(modifier = Modifier.height(8.dp))
 
             if (comment.stamp != null) {
                 AsyncImage(
@@ -119,39 +135,46 @@ fun CommentCard(
                         .clip(RoundedCornerShape(10.dp))
                 )
             } else if (comment.comment != null) {
-                CommentText(text = comment.comment)
+                CommentText(
+                    text = comment.comment,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        lineHeight = 22.sp
+                    )
+                )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(onClick = onReply) {
-                    Text(
-                        text = stringResource(R.string.add_comment),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                if (showViewReplies && onViewReplies != null) {
-                    TextButton(
-                        onClick = onViewReplies,
-                        enabled = !isLoadingReplies
-                    ) {
-                        if (isLoadingReplies) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(14.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else {
+            // 按钮行 - 左对齐（子评论不显示按钮）
+            if (!isChild || (showViewReplies && onViewReplies != null)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (!isChild) {
+                        TextButton(onClick = onReply) {
                             Text(
-                                text = stringResource(R.string.view_replies),
+                                text = stringResource(R.string.reply),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
+                        }
+                    }
+                    if (showViewReplies && onViewReplies != null) {
+                        TextButton(
+                            onClick = onViewReplies,
+                            enabled = !isLoadingReplies
+                        ) {
+                            if (isLoadingReplies) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.view_replies),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }

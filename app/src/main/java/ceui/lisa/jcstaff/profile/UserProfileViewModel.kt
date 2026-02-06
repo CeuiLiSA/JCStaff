@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.profile
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.CacheConfig
@@ -248,6 +249,23 @@ class UserProfileViewModel : ViewModel() {
     private fun loadNovels(userId: Long) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingNovels = true)
+
+            val cacheConfig = CacheConfig(
+                path = "/v1/user/novels",
+                queryParams = mapOf("user_id" to userId.toString(), "filter" to "for_ios")
+            )
+
+            val cacheResult = cacheConfig.loadFromCache(NovelResponse::class.java)
+            if (cacheResult != null) {
+                storeNovels(cacheResult.data.novels)
+                _state.value = _state.value.copy(
+                    novels = cacheResult.data.novels,
+                    isLoadingNovels = cacheResult.shouldFetch(false)
+                )
+            }
+
+            if (!cacheResult.shouldFetch(false)) return@launch
+
             try {
                 val response = PixivClient.pixivApi.getUserNovels(userId)
                 storeNovels(response.novels)
@@ -264,6 +282,27 @@ class UserProfileViewModel : ViewModel() {
     private fun loadBookmarkedIllusts(userId: Long) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingBookmarkedIllusts = true)
+
+            val cacheConfig = CacheConfig(
+                path = "/v1/user/bookmarks/illust",
+                queryParams = mapOf(
+                    "user_id" to userId.toString(),
+                    "restrict" to "public",
+                    "filter" to "for_ios"
+                )
+            )
+
+            val cacheResult = cacheConfig.loadFromCache(IllustResponse::class.java)
+            if (cacheResult != null) {
+                storeIllusts(cacheResult.data.illusts)
+                _state.value = _state.value.copy(
+                    bookmarkedIllusts = cacheResult.data.illusts,
+                    isLoadingBookmarkedIllusts = cacheResult.shouldFetch(false)
+                )
+            }
+
+            if (!cacheResult.shouldFetch(false)) return@launch
+
             try {
                 val response = PixivClient.pixivApi.getUserBookmarks(userId)
                 storeIllusts(response.illusts)
@@ -280,6 +319,27 @@ class UserProfileViewModel : ViewModel() {
     private fun loadBookmarkedNovels(userId: Long) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingBookmarkedNovels = true)
+
+            val cacheConfig = CacheConfig(
+                path = "/v1/user/bookmarks/novel",
+                queryParams = mapOf(
+                    "user_id" to userId.toString(),
+                    "restrict" to "public",
+                    "filter" to "for_ios"
+                )
+            )
+
+            val cacheResult = cacheConfig.loadFromCache(NovelResponse::class.java)
+            if (cacheResult != null) {
+                storeNovels(cacheResult.data.novels)
+                _state.value = _state.value.copy(
+                    bookmarkedNovels = cacheResult.data.novels,
+                    isLoadingBookmarkedNovels = cacheResult.shouldFetch(false)
+                )
+            }
+
+            if (!cacheResult.shouldFetch(false)) return@launch
+
             try {
                 val response = PixivClient.pixivApi.getUserBookmarkNovels(userId)
                 storeNovels(response.novels)
@@ -334,10 +394,16 @@ class UserProfileViewModel : ViewModel() {
     }
 
     private fun storeIllusts(illusts: List<Illust>) {
+        Log.d(TAG, "storeIllusts: storing ${illusts.size} illusts")
         illusts.forEach { illust ->
             ObjectStore.put(illust)
             illust.user?.let { user -> ObjectStore.put(user) }
         }
+        Log.d(TAG, "storeIllusts: done, ObjectStore size = ${ObjectStore.size()}")
+    }
+
+    companion object {
+        private const val TAG = "UserProfileVM"
     }
 
     private fun storeNovels(novels: List<Novel>) {

@@ -285,6 +285,7 @@
     <string name="comments">评论</string>
     <string name="no_comments">暂无评论</string>
     <string name="add_comment">发表评论</string>
+    <string name="reply">回复</string>
     <string name="reply_to">回复 %1$s</string>
     <string name="view_replies">查看回复</string>
     <string name="view_all_comments">查看全部评论</string>
