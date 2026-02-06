@@ -217,6 +217,12 @@
     <string name="unblock_confirm_title">确认取消屏蔽</string>
     <string name="unblock_confirm_message">确定要取消屏蔽吗？取消后该内容将重新出现在列表中。</string>
     <string name="no_blocked_content">暂无屏蔽内容</string>
+    <string name="content_blocked_title">内容已屏蔽</string>
+    <string name="content_blocked_message">该内容已被屏蔽。</string>
+    <string name="user_blocked_title">用户已屏蔽</string>
+    <string name="user_blocked_message">该用户已被屏蔽。</string>
+    <string name="unblock_user">取消屏蔽用户</string>
+    <string name="unblock_work">取消屏蔽作品</string>
     <string name="user_id_label">用户 ID: %1$d</string>
     <string name="work_id_label">作品 ID: %1$d</string>
 

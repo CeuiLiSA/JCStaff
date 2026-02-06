@@ -43,8 +43,10 @@ import ceui.lisa.jcstaff.auth.AccountRegistry
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.components.EmptyState
 import ceui.lisa.jcstaff.components.ErrorRetryState
+import ceui.lisa.jcstaff.components.BlockType
 import ceui.lisa.jcstaff.components.BlockUserDialog
 import ceui.lisa.jcstaff.components.BlockWorkDialog
+import ceui.lisa.jcstaff.components.BlockedContentOverlay
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.components.IllustCard
@@ -115,6 +117,18 @@ fun IllustDetailScreen(
     var showBlockUserDialog by remember { mutableStateOf(false) }
     var showBlockWorkDialog by remember { mutableStateOf(false) }
 
+    // 屏蔽状态观察
+    val blockedUserIds by ContentFilterManager.blockedUserIds.collectAsState()
+    val blockedContentIds by ContentFilterManager.blockedContentIds.collectAsState()
+    val isUserBlocked = userId != null && userId in blockedUserIds
+    val isContentBlocked = illustId in blockedContentIds
+    val isBlocked = isUserBlocked || isContentBlocked
+
+    // 记录屏蔽类型，避免 collectAsState 延迟导致 blockType 判断错误
+    var lastBlockType by remember { mutableStateOf<BlockType?>(null) }
+    val blockType = lastBlockType
+        ?: if (isContentBlocked) BlockType.CONTENT else BlockType.USER
+
     // 选择模式
     val selectionManager = LocalSelectionManager.current
 
@@ -143,6 +157,14 @@ fun IllustDetailScreen(
         }
     }
 
+    BlockedContentOverlay(
+        isBlocked = isBlocked,
+        blockType = blockType,
+        onUnblock = {
+            if (isContentBlocked) ContentFilterManager.unblockContent(illustId)
+            if (isUserBlocked && userId != null) ContentFilterManager.unblockUser(userId)
+        }
+    ) {
     Box {
         Scaffold(
             containerColor = Color.Transparent
@@ -465,8 +487,8 @@ fun IllustDetailScreen(
                 onDismiss = { showBlockUserDialog = false },
                 onConfirm = {
                     showBlockUserDialog = false
+                    lastBlockType = BlockType.USER
                     ContentFilterManager.blockUser(userId)
-                    navViewModel.goBack()
                 }
             )
         }
@@ -477,8 +499,8 @@ fun IllustDetailScreen(
                 onDismiss = { showBlockWorkDialog = false },
                 onConfirm = {
                     showBlockWorkDialog = false
+                    lastBlockType = BlockType.CONTENT
                     ContentFilterManager.blockContent(illustId)
-                    navViewModel.goBack()
                 }
             )
         }
@@ -497,6 +519,7 @@ fun IllustDetailScreen(
         // Selection top bar overlay
         SelectionTopBar(allIllusts = relatedState.illusts)
     }
+    } // BlockedContentOverlay
 }
 
 /**

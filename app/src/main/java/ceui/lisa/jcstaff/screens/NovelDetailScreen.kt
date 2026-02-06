@@ -17,17 +17,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,18 +42,23 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.components.BlockType
+import ceui.lisa.jcstaff.components.BlockUserDialog
+import ceui.lisa.jcstaff.components.BlockWorkDialog
+import ceui.lisa.jcstaff.components.BlockedContentOverlay
+import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.comment.CommentPreviewSection
 import ceui.lisa.jcstaff.components.illust.IllustAuthorRow
 import ceui.lisa.jcstaff.components.illust.IllustCaption
 import ceui.lisa.jcstaff.components.illust.IllustTags
 import ceui.lisa.jcstaff.components.novel.NovelActionBar
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.PixivClient
-import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.network.User
 import ceui.lisa.jcstaff.utils.formatRelativeDate
 import coil.compose.AsyncImage
@@ -104,37 +104,43 @@ fun NovelDetailScreen(
         novel?.let { BrowseHistoryRepository.recordNovel(it) }
     }
 
+    // 屏蔽确认对话框
+    var showBlockUserDialog by remember { mutableStateOf(false) }
+    var showBlockWorkDialog by remember { mutableStateOf(false) }
+
+    // 屏蔽状态观察
+    val blockedUserIds by ContentFilterManager.blockedUserIds.collectAsState()
+    val blockedContentIds by ContentFilterManager.blockedContentIds.collectAsState()
+    val isUserBlocked = userId != null && userId in blockedUserIds
+    val isContentBlocked = novelId in blockedContentIds
+    val isBlocked = isUserBlocked || isContentBlocked
+
+    // 记录屏蔽类型，避免 collectAsState 延迟导致 blockType 判断错误
+    var lastBlockType by remember { mutableStateOf<BlockType?>(null) }
+    val blockType = lastBlockType
+        ?: if (isContentBlocked) BlockType.CONTENT else BlockType.USER
+
     val loadedNovel = novel ?: return
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = loadedNovel.title ?: stringResource(R.string.novel_detail),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navViewModel.goBack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                }
-            )
+    BlockedContentOverlay(
+        isBlocked = isBlocked,
+        blockType = blockType,
+        onUnblock = {
+            if (isContentBlocked) ContentFilterManager.unblockContent(novelId)
+            if (isUserBlocked && userId != null) ContentFilterManager.unblockUser(userId)
         }
-    ) { innerPadding ->
+    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .verticalScroll(scrollState)
         ) {
+            // Top spacing for floating top bar
+            Spacer(modifier = Modifier.height(100.dp))
+
             // Cover image
             val coverUrl = loadedNovel.image_urls?.medium
                 ?: loadedNovel.image_urls?.large
@@ -289,5 +295,38 @@ fun NovelDetailScreen(
             // Bottom spacing
             Spacer(modifier = Modifier.height(32.dp))
         }
+
+        // Floating top bar with block menu
+        FloatingTopBar(
+            shareUrl = "https://www.pixiv.net/novel/show.php?id=$novelId",
+            shareTitle = loadedNovel.title ?: "",
+            onBlockClick = { showBlockUserDialog = true },
+            onBlockWorkClick = { showBlockWorkDialog = true }
+        )
+
+        // 屏蔽用户确认对话框
+        if (showBlockUserDialog && userId != null) {
+            BlockUserDialog(
+                onDismiss = { showBlockUserDialog = false },
+                onConfirm = {
+                    showBlockUserDialog = false
+                    lastBlockType = BlockType.USER
+                    ContentFilterManager.blockUser(userId)
+                }
+            )
+        }
+
+        // 屏蔽作品确认对话框
+        if (showBlockWorkDialog) {
+            BlockWorkDialog(
+                onDismiss = { showBlockWorkDialog = false },
+                onConfirm = {
+                    showBlockWorkDialog = false
+                    lastBlockType = BlockType.CONTENT
+                    ContentFilterManager.blockContent(novelId)
+                }
+            )
+        }
     }
+    } // BlockedContentOverlay
 }

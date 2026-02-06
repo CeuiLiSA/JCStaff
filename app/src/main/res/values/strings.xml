@@ -218,6 +218,12 @@
     <string name="unblock_confirm_title">Confirm Unblock</string>
     <string name="unblock_confirm_message">Are you sure you want to unblock this content? It will appear in lists again.</string>
     <string name="no_blocked_content">No blocked content</string>
+    <string name="content_blocked_title">Content Blocked</string>
+    <string name="content_blocked_message">This content has been blocked.</string>
+    <string name="user_blocked_title">User Blocked</string>
+    <string name="user_blocked_message">This user has been blocked.</string>
+    <string name="unblock_user">Unblock User</string>
+    <string name="unblock_work">Unblock Work</string>
     <string name="user_id_label">User ID: %1$d</string>
     <string name="work_id_label">Work ID: %1$d</string>
 

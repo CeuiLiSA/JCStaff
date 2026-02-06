@@ -5,11 +5,14 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import ceui.lisa.jcstaff.R
 
@@ -23,8 +26,10 @@ fun AppSwitcherFab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
     AnimatedVisibility(
-        visible = navigationDepth > 0,
+        visible = navigationDepth > 0 && !isImeVisible,
         enter = scaleIn(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,

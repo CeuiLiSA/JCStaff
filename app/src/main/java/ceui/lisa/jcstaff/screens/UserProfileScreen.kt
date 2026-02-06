@@ -29,7 +29,9 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import ceui.lisa.jcstaff.components.BlockType
 import ceui.lisa.jcstaff.components.BlockUserDialog
+import ceui.lisa.jcstaff.components.BlockedContentOverlay
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.components.UserScrollAwareTopBar
@@ -79,6 +81,10 @@ fun UserProfileScreen(
     // 屏蔽确认对话框
     var showBlockDialog by remember { mutableStateOf(false) }
 
+    // 屏蔽状态观察
+    val blockedUserIds by ContentFilterManager.blockedUserIds.collectAsState()
+    val isBlocked = userId in blockedUserIds
+
     // 预先记住回调，避免每次重组创建新 lambda
     val onFollowClick = remember { { viewModel.toggleFollow() } }
     val onPrivateFollowClick = remember { { viewModel.toggleFollow("private") } }
@@ -121,6 +127,11 @@ fun UserProfileScreen(
     // 预先记住分享 URL
     val shareUrl = remember(userId) { "https://www.pixiv.net/users/$userId" }
 
+    BlockedContentOverlay(
+        isBlocked = isBlocked,
+        blockType = BlockType.USER,
+        onUnblock = { ContentFilterManager.unblockUser(userId) }
+    ) {
     Box {
         PullToRefreshBox(
             isRefreshing = state.isLoadingProfile && state.user != null,
@@ -246,7 +257,6 @@ fun UserProfileScreen(
                 onConfirm = {
                     showBlockDialog = false
                     ContentFilterManager.blockUser(userId)
-                    navViewModel.goBack()
                 }
             )
         }
@@ -258,4 +268,5 @@ fun UserProfileScreen(
             onScrollToTop = onScrollToTop
         )
     }
+    } // BlockedContentOverlay
 }
