@@ -31,8 +31,8 @@ fun EmptyState(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 36.dp),
-        contentAlignment = Alignment.CenterStart
+            .height(160.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,

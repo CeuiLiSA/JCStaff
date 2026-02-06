@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.comment.CommentViewModel
+import ceui.lisa.jcstaff.components.EmptyState
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.network.Comment
@@ -56,7 +57,8 @@ fun CommentPreviewSection(
             } else {
                 PixivClient.pixivApi.getNovelComments(objectId)
             }
-            CommentViewModel.commentsCache[CommentViewModel.cacheKey(objectType, objectId)] = response.comments
+            CommentViewModel.commentsCache[CommentViewModel.cacheKey(objectType, objectId)] =
+                response.comments
             comments = response.comments
             error = null
         } catch (e: Exception) {
@@ -99,6 +101,7 @@ fun CommentPreviewSection(
             isLoading -> {
                 LoadingIndicator()
             }
+
             error != null -> {
                 ErrorRetryState(
                     error = error ?: stringResource(R.string.load_error),
@@ -107,14 +110,13 @@ fun CommentPreviewSection(
                     showPullToRefreshHint = false
                 )
             }
+
             comments.isNullOrEmpty() -> {
-                Text(
-                    text = stringResource(R.string.no_comments),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                EmptyState(
+                    text = stringResource(R.string.no_comments)
                 )
             }
+
             else -> {
                 comments!!.take(3).forEach { comment ->
                     CompactCommentCard(

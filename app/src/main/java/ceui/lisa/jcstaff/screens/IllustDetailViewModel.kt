@@ -24,7 +24,8 @@ data class IllustDetailState(
     val illust: Illust? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val isBookmarked: Boolean = false
+    val isBookmarked: Boolean = false,
+    val relatedLoadTriggered: Boolean = false
 )
 
 /**
@@ -182,6 +183,16 @@ class IllustDetailViewModel : ViewModel() {
             illust.meta_single_page?.original_image_url
         } else {
             illust.meta_pages?.firstOrNull()?.image_urls?.original
+        }
+    }
+
+    /**
+     * 标记相关作品加载已触发
+     */
+    fun markRelatedLoadTriggered() {
+        if (!_state.value.relatedLoadTriggered) {
+            Log.d(TAG, "markRelatedLoadTriggered: for illustId=$currentIllustId")
+            _state.update { it.copy(relatedLoadTriggered = true) }
         }
     }
 }

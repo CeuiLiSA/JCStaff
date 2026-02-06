@@ -15,6 +15,9 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -205,6 +208,18 @@ fun UserProfileScreen(
                 item(key = "bottom_spacer", contentType = CONTENT_TYPE_SPACER) {
                     Spacer(modifier = Modifier.height(32.dp))
                 }
+            }
+
+            // 检测收藏小说区域是否可见，触发懒加载
+            LaunchedEffect(listState) {
+                snapshotFlow {
+                    listState.layoutInfo.visibleItemsInfo.any { it.key == "sub_bookmarked_novels" }
+                }
+                    .distinctUntilChanged()
+                    .filter { it }
+                    .collect {
+                        viewModel.triggerBookmarkedNovelsLoad()
+                    }
             }
         }
 

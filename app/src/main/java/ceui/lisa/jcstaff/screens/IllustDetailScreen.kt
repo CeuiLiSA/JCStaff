@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.auth.AccountRegistry
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.components.EmptyState
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.FloatingTopBar
 import ceui.lisa.jcstaff.components.IllustCard
@@ -109,12 +110,8 @@ fun IllustDetailScreen(
     // 相关作品状态
     val relatedState by relatedViewModel.state.collectAsState()
 
-    // 绑定相关作品加载器
-    LaunchedEffect(illustId) {
-        relatedViewModel.bind(IllustLoader {
-            PixivClient.pixivApi.getRelatedIllusts(illustId)
-        })
-    }
+    // 相关作品是否已触发加载（从 ViewModel 获取）
+    val relatedLoadTriggered = detailState.relatedLoadTriggered
 
     val firstOriginalUrl = remember(illust) {
         detailViewModel.getFirstOriginalUrl()
@@ -283,8 +280,13 @@ fun IllustDetailScreen(
                     }
                 }
 
-                // 相关作品标题
-                if (relatedState.illusts.isNotEmpty() || relatedState.isLoading || relatedState.hasError) {
+                // 相关作品区域占位符 - 用于检测滚动位置
+                item(key = "related_trigger", span = StaggeredGridItemSpan.FullLine) {
+                    // 空内容，仅用于触发检测
+                }
+
+                // 相关作品标题（加载触发后显示）
+                if (relatedLoadTriggered) {
                     item(key = "related_header", span = StaggeredGridItemSpan.FullLine) {
                         RelatedIllustsHeader()
                     }
@@ -305,6 +307,15 @@ fun IllustDetailScreen(
                             onRetry = { relatedViewModel.refresh() },
                             scrollable = false,
                             showPullToRefreshHint = false
+                        )
+                    }
+                }
+
+                // 相关作品空态
+                if (relatedLoadTriggered && !relatedState.isLoading && !relatedState.hasError && relatedState.isEmpty) {
+                    item(key = "related_empty", span = StaggeredGridItemSpan.FullLine) {
+                        EmptyState(
+                            text = stringResource(R.string.no_related_works)
                         )
                     }
                 }
@@ -344,6 +355,23 @@ fun IllustDetailScreen(
                         }
                     }
                 }
+            }
+
+            // 检测相关作品区域是否可见，触发懒加载
+            LaunchedEffect(gridState, illustId) {
+                snapshotFlow {
+                    gridState.layoutInfo.visibleItemsInfo.any { it.key == "related_trigger" }
+                }
+                    .distinctUntilChanged()
+                    .filter { it }
+                    .collect {
+                        if (!detailViewModel.state.value.relatedLoadTriggered) {
+                            detailViewModel.markRelatedLoadTriggered()
+                            relatedViewModel.bind(IllustLoader {
+                                PixivClient.pixivApi.getRelatedIllusts(illustId)
+                            })
+                        }
+                    }
             }
 
             // 检测是否滚动到底部

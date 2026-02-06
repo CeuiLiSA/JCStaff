@@ -147,6 +147,7 @@
     <string name="expand_images">展开全部</string>
     <string name="collapse_images">收起</string>
     <string name="related_works">相关作品</string>
+    <string name="no_related_works">暂无相关作品</string>
     <string name="publish_date">发布时间</string>
     <string name="just_now">刚刚</string>
     <string name="minutes_ago">%1$d 分钟前</string>

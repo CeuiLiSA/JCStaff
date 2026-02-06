@@ -38,7 +38,8 @@ data class UserProfileState(
     val isLoadingManga: Boolean = true,
     val isLoadingNovels: Boolean = true,
     val isLoadingBookmarkedIllusts: Boolean = true,
-    val isLoadingBookmarkedNovels: Boolean = true,
+    val isLoadingBookmarkedNovels: Boolean = false,
+    val bookmarkedNovelsLoadTriggered: Boolean = false,
     val isFollowing: Boolean = false,
     val profileError: String? = null,
 ) {
@@ -58,6 +59,7 @@ class UserProfileViewModel : ViewModel() {
 
     /**
      * 加载用户数据
+     * 优先加载 profile，根据 profile 中的 total_xxx 字段决定是否加载对应内容
      */
     fun loadUser(userId: Long, forceRefresh: Boolean = false) {
         if (isLoaded && currentUserId == userId && !forceRefresh) return
@@ -65,15 +67,14 @@ class UserProfileViewModel : ViewModel() {
         currentUserId = userId
         isLoaded = true
 
-        loadProfile(userId, forceRefresh)
-        loadIllusts(userId, forceRefresh)
-        loadManga(userId, forceRefresh)
-        loadNovels(userId)
-        loadBookmarkedIllusts(userId)
-        loadBookmarkedNovels(userId)
+        // 先加载 profile，获取各板块的数量
+        loadProfileFirst(userId, forceRefresh)
     }
 
-    private fun loadProfile(userId: Long, forceRefresh: Boolean) {
+    /**
+     * 优先加载 profile，然后根据 total_xxx 决定是否加载其他内容
+     */
+    private fun loadProfileFirst(userId: Long, forceRefresh: Boolean) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingProfile = true, profileError = null)
 
@@ -90,8 +91,16 @@ class UserProfileViewModel : ViewModel() {
                     user = cacheResult.data.user,
                     profile = cacheResult.data.profile,
                     workspace = cacheResult.data.workspace,
-                    isLoadingProfile = cacheResult.shouldFetch(forceRefresh)
+                    isLoadingProfile = cacheResult.shouldFetch(forceRefresh),
+                    // 根据 profile 中的 count 设置 loading 状态
+                    isLoadingIllusts = (cacheResult.data.profile?.total_illusts ?: 0) > 0,
+                    isLoadingManga = (cacheResult.data.profile?.total_manga ?: 0) > 0,
+                    isLoadingNovels = (cacheResult.data.profile?.total_novels ?: 0) > 0,
+                    isLoadingBookmarkedIllusts = (cacheResult.data.profile?.total_illust_bookmarks_public ?: 0) > 0,
+                    isLoadingBookmarkedNovels = false // 收藏小说没有 count 字段，先设为 false
                 )
+                // 使用缓存的 profile 触发内容加载
+                loadContentBasedOnProfile(userId, cacheResult.data.profile, forceRefresh)
             }
 
             // 判断是否需要发网络请求
@@ -107,14 +116,66 @@ class UserProfileViewModel : ViewModel() {
                     user = response.user,
                     profile = response.profile,
                     workspace = response.workspace,
-                    isLoadingProfile = false
+                    isLoadingProfile = false,
+                    // 根据 profile 中的 count 设置 loading 状态
+                    isLoadingIllusts = (response.profile?.total_illusts ?: 0) > 0,
+                    isLoadingManga = (response.profile?.total_manga ?: 0) > 0,
+                    isLoadingNovels = (response.profile?.total_novels ?: 0) > 0,
+                    isLoadingBookmarkedIllusts = (response.profile?.total_illust_bookmarks_public ?: 0) > 0,
+                    isLoadingBookmarkedNovels = false
                 )
+
+                // 如果没有缓存命中，使用网络响应的 profile 触发内容加载
+                if (cacheResult == null) {
+                    loadContentBasedOnProfile(userId, response.profile, forceRefresh)
+                }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoadingProfile = false,
+                    isLoadingIllusts = false,
+                    isLoadingManga = false,
+                    isLoadingNovels = false,
+                    isLoadingBookmarkedIllusts = false,
+                    isLoadingBookmarkedNovels = false,
                     profileError = if (_state.value.user == null) e.message ?: "加载用户信息失败" else null
                 )
             }
+        }
+    }
+
+    /**
+     * 根据 profile 中的 count 决定是否加载各板块内容
+     */
+    private fun loadContentBasedOnProfile(userId: Long, profile: UserProfile?, forceRefresh: Boolean) {
+        val totalIllusts = profile?.total_illusts ?: 0
+        val totalManga = profile?.total_manga ?: 0
+        val totalNovels = profile?.total_novels ?: 0
+        val totalBookmarkedIllusts = profile?.total_illust_bookmarks_public ?: 0
+
+        // 只有 count > 0 才发起网络请求
+        if (totalIllusts > 0) {
+            loadIllusts(userId, forceRefresh)
+        }
+        if (totalManga > 0) {
+            loadManga(userId, forceRefresh)
+        }
+        if (totalNovels > 0) {
+            loadNovels(userId)
+        }
+        if (totalBookmarkedIllusts > 0) {
+            loadBookmarkedIllusts(userId)
+        }
+        // 收藏小说没有 count 字段，滚动到可见时才加载
+    }
+
+    /**
+     * 触发收藏小说加载（滚动到可见时调用）
+     */
+    fun triggerBookmarkedNovelsLoad() {
+        if (_state.value.bookmarkedNovelsLoadTriggered) return
+        _state.value = _state.value.copy(bookmarkedNovelsLoadTriggered = true)
+        if (currentUserId > 0) {
+            loadBookmarkedNovels(currentUserId)
         }
     }
 
