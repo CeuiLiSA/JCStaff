@@ -81,7 +81,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -366,30 +366,23 @@ private fun RecommendedTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            indicator = { tabPositions ->
-                if (innerPagerState.currentPage < tabPositions.size) {
-                    TabRowDefaults.PrimaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
-                        width = 32.dp,
-                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                    )
-                }
+            contentColor = MaterialTheme.colorScheme.primary,
+            indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
+                    width = 32.dp,
+                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                )
             }
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = innerPagerState.currentPage == index,
                     onClick = { coroutineScope.launch { innerPagerState.animateScrollToPage(index) } },
-                    text = {
-                        Text(
-                            text = title,
-                            fontWeight = if (innerPagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
+                    text = { Text(title) }
                 )
             }
         }
@@ -545,18 +538,16 @@ private fun DiscoverTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            indicator = { tabPositions ->
-                if (innerPagerState.currentPage < tabPositions.size) {
-                    TabRowDefaults.PrimaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
-                        width = 32.dp,
-                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                    )
-                }
+            indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
+                    width = 32.dp,
+                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                )
             }
         ) {
             tabs.forEachIndexed { index, title ->
@@ -638,18 +629,16 @@ private fun NewWorksTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            indicator = { tabPositions ->
-                if (innerPagerState.currentPage < tabPositions.size) {
-                    TabRowDefaults.PrimaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
-                        width = 32.dp,
-                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                    )
-                }
+            indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
+                    width = 32.dp,
+                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                )
             }
         ) {
             tabs.forEachIndexed { index, title ->
@@ -1964,18 +1953,16 @@ private fun GeneralTabPage() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = innerPagerState.currentPage,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            indicator = { tabPositions ->
-                if (innerPagerState.currentPage < tabPositions.size) {
-                    TabRowDefaults.PrimaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[innerPagerState.currentPage]),
-                        width = 32.dp,
-                        shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-                    )
-                }
+            indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
+                    width = 32.dp,
+                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                )
             }
         ) {
             tabs.forEachIndexed { index, title ->

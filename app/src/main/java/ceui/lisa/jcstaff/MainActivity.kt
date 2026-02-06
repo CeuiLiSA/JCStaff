@@ -89,7 +89,6 @@ import ceui.lisa.jcstaff.screens.UserCreatedIllustsScreen
 import ceui.lisa.jcstaff.screens.UserCreatedNovelsScreen
 import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
-import ceui.lisa.jcstaff.screens.WebTagDetailScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -111,7 +110,8 @@ class MainActivity : AppCompatActivity() {
             authViewModel.authState.collect { authState ->
                 when (authState) {
                     is AuthState.Authenticated -> {
-                        if (navViewModel.backStack.isEmpty() || navViewModel.backStack.first().route == NavRoute.Landing) {
+                        val stack = navViewModel.backStack.value
+                        if (stack.isEmpty() || stack.first().route == NavRoute.Landing) {
                             navViewModel.clearAndNavigate(NavRoute.Home)
                         }
                     }
@@ -196,7 +196,12 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
     var isPredictiveBack by remember { mutableStateOf(false) }
     var skipNextTransition by remember { mutableStateOf(false) }
 
-    PredictiveBackHandler(enabled = navViewModel.canGoBack) { backEvents ->
+    // 使用 StateFlow 安全读取
+    val canGoBack by navViewModel.canGoBack.collectAsState()
+    val currentEntry by navViewModel.currentEntry.collectAsState()
+    val backStackList by navViewModel.backStack.collectAsState()
+
+    PredictiveBackHandler(enabled = canGoBack) { backEvents ->
         try {
             isPredictiveBack = true
             predictiveBackProgress = 0f
@@ -234,8 +239,8 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
 
     val saveableStateHolder = rememberSaveableStateHolder()
     val selectionManager = remember { SelectionManager() }
-    val appSwitcherState by navViewModel.appSwitcherState
-    val navigationDirection by navViewModel.navigationDirection
+    val appSwitcherState by navViewModel.appSwitcherState.collectAsState()
+    val navigationDirection by navViewModel.navigationDirection.collectAsState()
     val density = LocalDensity.current
 
     // Material 3 emphasized easing curves
@@ -270,7 +275,7 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
             // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
             key(activeUserId) {
                 AnimatedContent(
-                    targetState = requireNotNull(navViewModel.currentEntry),
+                    targetState = requireNotNull(currentEntry),
                     transitionSpec = {
                         if (skipNextTransition) {
                             skipNextTransition = false
@@ -494,7 +499,12 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                                     }
 
                                     is NavRoute.WebTagDetail -> {
-                                        WebTagDetailScreen(tag = route.tag)
+                                        val isPremium =
+                                            (authState as? AuthState.Authenticated)?.user?.is_premium == true
+                                        TagDetailScreen(
+                                            tag = route.tag,
+                                            isPremium = isPremium
+                                        )
                                     }
 
                                     is NavRoute.CacheBrowser -> {
@@ -551,7 +561,7 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
 
             // App Switcher Overlay
             AppSwitcherOverlay(
-                backStack = navViewModel.backStack.toList(),
+                backStack = backStackList,
                 screenshotStore = navViewModel.screenshotStore,
                 state = appSwitcherState,
                 onCardClick = { navViewModel.navigateToIndex(it) },

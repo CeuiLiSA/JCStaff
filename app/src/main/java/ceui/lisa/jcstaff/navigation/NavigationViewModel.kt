@@ -1,10 +1,6 @@
 package ceui.lisa.jcstaff.navigation
 
-import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotStore
@@ -35,63 +31,81 @@ data class BackStackEntry(
 
 class NavigationViewModel : ViewModel() {
 
-    val backStack: SnapshotStateList<BackStackEntry> = mutableStateListOf()
+    // 使用 StateFlow 替代 SnapshotStateList，确保线程安全
+    private val _backStack = MutableStateFlow<List<BackStackEntry>>(emptyList())
+    val backStack: StateFlow<List<BackStackEntry>> = _backStack.asStateFlow()
+
     private var nextEntryId = 0
 
     /** 导航是否就绪（用于 SplashScreen 条件判断，StateFlow 线程安全） */
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
-    val currentEntry: BackStackEntry?
-        get() = backStack.lastOrNull()
+    /** 是否可以返回（StateFlow 线程安全） */
+    val canGoBack: StateFlow<Boolean> = MutableStateFlow(false)
+    private val _canGoBack get() = canGoBack as MutableStateFlow
+
+    /** 当前 entry（StateFlow 线程安全） */
+    private val _currentEntry = MutableStateFlow<BackStackEntry?>(null)
+    val currentEntry: StateFlow<BackStackEntry?> = _currentEntry.asStateFlow()
 
     val currentRoute: NavRoute?
-        get() = currentEntry?.route
-
-    val canGoBack: Boolean
-        get() = backStack.size > 1
+        get() = _currentEntry.value?.route
 
     // Navigation direction for transition animations
-    private val _navigationDirection = mutableStateOf(NavigationDirection.FORWARD)
-    val navigationDirection: State<NavigationDirection> = _navigationDirection
+    private val _navigationDirection = MutableStateFlow(NavigationDirection.FORWARD)
+    val navigationDirection: StateFlow<NavigationDirection> = _navigationDirection.asStateFlow()
 
     val previousRouteKey: String?
-        get() = if (backStack.size >= 2) backStack[backStack.size - 2].screenshotKey else null
+        get() {
+            val stack = _backStack.value
+            return if (stack.size >= 2) stack[stack.size - 2].screenshotKey else null
+        }
 
     // App switcher state
     val screenshotStore = ScreenshotStore()
-    private val _appSwitcherState = mutableStateOf(AppSwitcherState())
-    val appSwitcherState: State<AppSwitcherState> = _appSwitcherState
+    private val _appSwitcherState = MutableStateFlow(AppSwitcherState())
+    val appSwitcherState: StateFlow<AppSwitcherState> = _appSwitcherState.asStateFlow()
 
     /** Navigation depth (0 for Home, 1 for first navigated screen, etc.) */
     val navigationDepth: Int
-        get() = (backStack.size - 1).coerceAtLeast(0)
+        get() = (_backStack.value.size - 1).coerceAtLeast(0)
+
+    private fun updateDerivedState() {
+        val stack = _backStack.value
+        _canGoBack.value = stack.size > 1
+        _currentEntry.value = stack.lastOrNull()
+    }
 
     fun navigate(route: NavRoute) {
         _navigationDirection.value = NavigationDirection.FORWARD
         // Capture current page screenshot before navigating away
-        currentEntry?.let { current ->
+        _currentEntry.value?.let { current ->
             viewModelScope.launch {
                 screenshotStore.captureOne(current.screenshotKey)
             }
         }
-        backStack.add(BackStackEntry(nextEntryId++, route))
+        _backStack.value = _backStack.value + BackStackEntry(nextEntryId++, route)
+        updateDerivedState()
     }
 
     fun goBack() {
         _navigationDirection.value = NavigationDirection.BACKWARD
-        if (backStack.size > 1) {
-            val removed = backStack.removeAt(backStack.lastIndex)
+        val stack = _backStack.value
+        if (stack.size > 1) {
+            val removed = stack.last()
+            _backStack.value = stack.dropLast(1)
             screenshotStore.remove(removed.screenshotKey)
+            updateDerivedState()
         }
     }
 
     fun clearAndNavigate(route: NavRoute) {
         _navigationDirection.value = NavigationDirection.FORWARD
         // Clear all screenshots when resetting navigation
-        backStack.forEach { screenshotStore.remove(it.screenshotKey) }
-        backStack.clear()
-        backStack.add(BackStackEntry(nextEntryId++, route))
+        _backStack.value.forEach { screenshotStore.remove(it.screenshotKey) }
+        _backStack.value = listOf(BackStackEntry(nextEntryId++, route))
+        updateDerivedState()
         _isReady.value = true
     }
 
@@ -101,7 +115,7 @@ class NavigationViewModel : ViewModel() {
             screenshotStore.captureAll()
             _appSwitcherState.value = AppSwitcherState(
                 isVisible = true,
-                selectedIndex = backStack.size - 1
+                selectedIndex = _backStack.value.size - 1
             )
         }
     }
@@ -112,32 +126,36 @@ class NavigationViewModel : ViewModel() {
 
     fun updateSelectedIndex(index: Int) {
         _appSwitcherState.value = _appSwitcherState.value.copy(
-            selectedIndex = index.coerceIn(0, (backStack.size - 1).coerceAtLeast(0))
+            selectedIndex = index.coerceIn(0, (_backStack.value.size - 1).coerceAtLeast(0))
         )
     }
 
     /** Navigate to the page at the given index, removing all pages after it.
      *  Does NOT hide the app switcher — the caller controls overlay dismissal. */
     fun navigateToIndex(index: Int) {
-        if (index < 0 || index >= backStack.size) return
+        val stack = _backStack.value
+        if (index < 0 || index >= stack.size) return
         _navigationDirection.value = NavigationDirection.BACKWARD
         // Remove all routes after the target index
-        while (backStack.size > index + 1) {
-            val removed = backStack.removeAt(backStack.lastIndex)
-            screenshotStore.remove(removed.screenshotKey)
-        }
+        val toRemove = stack.drop(index + 1)
+        toRemove.forEach { screenshotStore.remove(it.screenshotKey) }
+        _backStack.value = stack.take(index + 1)
+        updateDerivedState()
     }
 
     /** Remove the page at the given index (swipe-up delete) */
     fun removeAtIndex(index: Int) {
-        if (index < 0 || index >= backStack.size || backStack.size <= 1) return
-        val removed = backStack.removeAt(index)
+        val stack = _backStack.value
+        if (index < 0 || index >= stack.size || stack.size <= 1) return
+        val removed = stack[index]
+        _backStack.value = stack.filterIndexed { i, _ -> i != index }
         screenshotStore.remove(removed.screenshotKey)
+        updateDerivedState()
         // Adjust selected index
         val newIndex = (index - 1).coerceAtLeast(0)
         updateSelectedIndex(newIndex)
         // If only one page left, close the switcher
-        if (backStack.size <= 1) {
+        if (_backStack.value.size <= 1) {
             hideAppSwitcher()
         }
     }

@@ -12,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -32,8 +31,8 @@ fun LoadingIndicator(blockHeight: Dp = 160.dp) {
             CircularProgressIndicator(
                 modifier = Modifier
                     .size(28.dp),
-                color = Color.White,
-                trackColor = Color.White.copy(alpha = 0.3f),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                 strokeWidth = 5.dp
             )
             Spacer(Modifier.height(12.dp))
