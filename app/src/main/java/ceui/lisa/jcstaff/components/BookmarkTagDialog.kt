@@ -37,48 +37,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.core.CacheConfig
-import ceui.lisa.jcstaff.core.PagedDataLoader
-import ceui.lisa.jcstaff.core.PagedState
+import ceui.lisa.jcstaff.core.PagedViewModel
 import ceui.lisa.jcstaff.network.BookmarkTag
 import ceui.lisa.jcstaff.network.BookmarkTagsResponse
 import ceui.lisa.jcstaff.network.PixivClient
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 /**
  * 收藏标签 ViewModel，支持分页加载
  */
 class BookmarkTagsViewModel(
-    private val userId: Long
-) : ViewModel() {
-
-    private val loader = PagedDataLoader(
-        cacheConfig = CacheConfig(
-            path = "/v1/user/bookmark-tags/illust",
-            queryParams = mapOf("user_id" to userId.toString())
-        ),
-        responseClass = BookmarkTagsResponse::class.java,
-        loadFirstPage = { PixivClient.pixivApi.getUserBookmarkTags(userId) }
-    )
-
-    val state: StateFlow<PagedState<BookmarkTag>> = loader.state
-
-    init {
-        viewModelScope.launch { loader.load() }
-    }
-
-    fun loadMore() {
-        viewModelScope.launch { loader.loadMore() }
-    }
-
-    fun refresh() {
-        viewModelScope.launch { loader.refresh() }
-    }
-
+    userId: Long
+) : PagedViewModel<BookmarkTag, BookmarkTagsResponse>(
+    cacheConfig = CacheConfig(
+        path = "/v1/user/bookmark-tags/illust",
+        queryParams = mapOf("user_id" to userId.toString())
+    ),
+    responseClass = BookmarkTagsResponse::class.java,
+    loadFirstPage = { PixivClient.pixivApi.getUserBookmarkTags(userId) }
+) {
     companion object {
         fun factory(userId: Long) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")

@@ -33,61 +33,40 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.ObjectStore
-import ceui.lisa.jcstaff.core.PagedDataLoader
-import ceui.lisa.jcstaff.core.PagedState
+import ceui.lisa.jcstaff.core.PagedViewModel
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.network.UserPreview
 import ceui.lisa.jcstaff.network.UserPreviewResponse
 import ceui.lisa.jcstaff.components.user.UserPreviewCard
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.launch
 
 class UserFollowingViewModel(
-    private val userId: Long
-) : ViewModel() {
-
-    private val loader = PagedDataLoader(
-        cacheConfig = CacheConfig(
-            path = "/v1/user/following",
-            queryParams = mapOf("user_id" to userId.toString())
-        ),
-        responseClass = UserPreviewResponse::class.java,
-        loadFirstPage = { PixivClient.pixivApi.getUserFollowing(userId) },
-        onItemsLoaded = { previews ->
-            previews.forEach { preview ->
-                preview.user?.let { ObjectStore.put(it) }
-                preview.illusts.forEach { illust ->
-                    ObjectStore.put(illust)
-                    illust.user?.let { ObjectStore.put(it) }
-                }
+    userId: Long
+) : PagedViewModel<UserPreview, UserPreviewResponse>(
+    cacheConfig = CacheConfig(
+        path = "/v1/user/following",
+        queryParams = mapOf("user_id" to userId.toString())
+    ),
+    responseClass = UserPreviewResponse::class.java,
+    loadFirstPage = { PixivClient.pixivApi.getUserFollowing(userId) },
+    onItemsLoaded = { previews ->
+        previews.forEach { preview ->
+            preview.user?.let { ObjectStore.put(it) }
+            preview.illusts.forEach { illust ->
+                ObjectStore.put(illust)
+                illust.user?.let { ObjectStore.put(it) }
             }
         }
-    )
-
-    val state: StateFlow<PagedState<UserPreview>> = loader.state
-
-    init {
-        viewModelScope.launch { loader.load() }
     }
-
-    fun loadMore() {
-        viewModelScope.launch { loader.loadMore() }
-    }
-
-    fun refresh() {
-        viewModelScope.launch { loader.refresh() }
-    }
-
+) {
     companion object {
         fun factory(userId: Long) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
