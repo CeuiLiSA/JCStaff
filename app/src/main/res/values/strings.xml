@@ -203,6 +203,23 @@
     <!-- Floating Top Bar -->
     <string name="report">举报</string>
     <string name="block">屏蔽</string>
+    <string name="block_user">屏蔽用户</string>
+    <string name="block_user_title">屏蔽用户</string>
+    <string name="block_user_message">屏蔽后，该用户的所有作品和评论将从列表中隐藏。\n\n你可以在设置中管理屏蔽列表。</string>
+    <string name="block_work">屏蔽作品</string>
+    <string name="block_work_title">屏蔽作品</string>
+    <string name="block_work_message">屏蔽后，该作品将从所有列表中隐藏。</string>
+    <string name="block_settings">Block Settings</string>
+    <string name="block_settings_desc">Manage blocked users, works and tags</string>
+    <string name="blocked_users">Blocked Users</string>
+    <string name="blocked_works">Blocked Works</string>
+    <string name="blocked_tags">Blocked Tags</string>
+    <string name="unblock">Unblock</string>
+    <string name="unblock_confirm_title">Confirm Unblock</string>
+    <string name="unblock_confirm_message">Are you sure you want to unblock this content? It will appear in lists again.</string>
+    <string name="no_blocked_content">No blocked content</string>
+    <string name="user_id_label">User ID: %1$d</string>
+    <string name="work_id_label">Work ID: %1$d</string>
 
     <!-- Scroll Aware Top Bar -->
     <string name="scroll_to_top">回到顶部</string>

@@ -3,10 +3,13 @@ package ceui.lisa.jcstaff.core
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import ceui.lisa.jcstaff.network.PagedResponse
 import ceui.lisa.jcstaff.network.PixivClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
@@ -102,21 +105,43 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
     private val cacheConfigProvider: () -> CacheConfig?,
     private val responseClass: Class<R>,
     private val loadFirstPage: suspend () -> R,
-    private val onItemsLoaded: (List<T>) -> Unit = {}
+    private val onItemsLoaded: (List<T>) -> Unit = {},
+    private val itemFilter: ((T) -> Boolean)? = null,
+    scope: CoroutineScope? = null
 ) {
     private val _state = MutableStateFlow(PagedState<T>())
     val state: StateFlow<PagedState<T>> = _state.asStateFlow()
+
+    /** 保存未过滤的原始 items，用于取消屏蔽后重新过滤 */
+    private val _rawItems = mutableListOf<T>()
+
+    init {
+        // 当 itemFilter 和 scope 都存在时，自动监听过滤规则变化并从原始数据重新过滤
+        if (itemFilter != null && scope != null) {
+            scope.launch {
+                ContentFilterManager.filterVersion.drop(1).collect {
+                    _state.value = _state.value.copy(items = _rawItems.filter(itemFilter))
+                }
+            }
+        }
+    }
 
     /** 便捷构造器：固定 cacheConfig */
     constructor(
         cacheConfig: CacheConfig?,
         responseClass: Class<R>,
         loadFirstPage: suspend () -> R,
-        onItemsLoaded: (List<T>) -> Unit = {}
-    ) : this({ cacheConfig }, responseClass, loadFirstPage, onItemsLoaded)
+        onItemsLoaded: (List<T>) -> Unit = {},
+        itemFilter: ((T) -> Boolean)? = null,
+        scope: CoroutineScope? = null
+    ) : this({ cacheConfig }, responseClass, loadFirstPage, onItemsLoaded, itemFilter, scope)
+
+    private fun List<T>.applyFilter(): List<T> =
+        itemFilter?.let { predicate -> filter(predicate) } ?: this
 
     /** 重置状态（用于切换筛选条件等场景） */
     fun reset() {
+        _rawItems.clear()
         _state.value = PagedState()
     }
 
@@ -136,9 +161,13 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
         val cacheResult = cacheConfigProvider()?.loadFromCache(responseClass)
 
         if (cacheResult != null) {
-            onItemsLoaded(cacheResult.data.displayList)
+            val rawList = cacheResult.data.displayList
+            _rawItems.clear()
+            _rawItems.addAll(rawList)
+            val filteredItems = rawList.applyFilter()
+            onItemsLoaded(filteredItems)
             _state.value = _state.value.copy(
-                items = cacheResult.data.displayList,
+                items = filteredItems,
                 isLoading = cacheResult.shouldFetch(forceRefresh),
                 nextUrl = cacheResult.data.nextUrl
             )
@@ -152,9 +181,13 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
         // Step 3: 从网络加载
         try {
             val response = loadFirstPage()
-            onItemsLoaded(response.displayList)
+            val rawList = response.displayList
+            _rawItems.clear()
+            _rawItems.addAll(rawList)
+            val filteredItems = rawList.applyFilter()
+            onItemsLoaded(filteredItems)
             _state.value = _state.value.copy(
-                items = response.displayList,
+                items = filteredItems,
                 isLoading = false,
                 nextUrl = response.nextUrl,
                 error = null
@@ -174,9 +207,12 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
         _state.value = _state.value.copy(isLoadingMore = true)
         try {
             val response = PixivClient.getNextPage(nextUrl, responseClass)
-            onItemsLoaded(response.displayList)
+            val rawNewItems = response.displayList
+            _rawItems.addAll(rawNewItems)
+            val filteredNewItems = rawNewItems.applyFilter()
+            onItemsLoaded(filteredNewItems)
             _state.value = _state.value.copy(
-                items = _state.value.items + response.displayList,
+                items = _state.value.items + filteredNewItems,
                 isLoadingMore = false,
                 nextUrl = response.nextUrl
             )

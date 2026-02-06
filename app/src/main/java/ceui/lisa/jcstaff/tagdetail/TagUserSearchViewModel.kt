@@ -3,6 +3,7 @@ package ceui.lisa.jcstaff.tagdetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.PagedDataLoader
 import ceui.lisa.jcstaff.core.PagedState
@@ -64,7 +65,9 @@ class TagUserSearchViewModel(
             loadFirstPage = {
                 PixivClient.pixivApi.searchUsers(word = params.searchWord)
             },
-            onItemsLoaded = { storeUsers(it) }
+            onItemsLoaded = { storeUsers(it) },
+            itemFilter = ContentFilterManager::shouldShow,
+            scope = viewModelScope
         )
         stateCollectionJob = viewModelScope.launch {
             loader!!.state.collect { _pagedState.value = it }

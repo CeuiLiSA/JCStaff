@@ -10,13 +10,6 @@ import retrofit2.http.Url
 
 interface PixivApi {
 
-    @GET("/v1/illust/recommended")
-    suspend fun getRecommendedIllusts(
-        @Query("content_type") contentType: String = "illust",
-        @Query("include_ranking_illusts") includeRankingLabel: Boolean = true,
-        @Query("filter") filter: String = "for_ios"
-    ): HomeIllustResponse
-
     @GET("/v1/{type}/recommended")
     suspend fun getRecommendedContent(
         @Path("type") type: String,

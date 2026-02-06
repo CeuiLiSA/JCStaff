@@ -66,6 +66,7 @@ import ceui.lisa.jcstaff.navigation.NavigationDirection
 import ceui.lisa.jcstaff.navigation.NavigationViewModel
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.screens.AccountManagementScreen
+import ceui.lisa.jcstaff.screens.BlockSettingsScreen
 import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.screens.CacheBrowserScreen
@@ -451,6 +452,10 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                                     }
 
                                     is NavRoute.DemoPage -> {}
+
+                                    is NavRoute.BlockSettings -> {
+                                        BlockSettingsScreen()
+                                    }
 
                                     is NavRoute.AccountManagement -> {
                                         AccountManagementScreen(

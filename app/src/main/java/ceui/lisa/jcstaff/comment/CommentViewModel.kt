@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.CacheConfig
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.PagedDataLoader
 import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.network.Comment
@@ -35,7 +36,9 @@ class CommentViewModel(
                 PixivClient.pixivApi.getIllustComments(objectId)
             else
                 PixivClient.pixivApi.getNovelComments(objectId)
-        }
+        },
+        itemFilter = ContentFilterManager::shouldShow,
+        scope = viewModelScope
     )
 
     val pagedState: StateFlow<PagedState<Comment>> = loader.state

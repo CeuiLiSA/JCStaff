@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -201,6 +202,14 @@ fun SettingsScreen(
                 description = stringResource(R.string.language_desc),
                 value = currentLanguage?.displayName ?: "",
                 onClick = { showLanguageDialog = true }
+            )
+
+            // 屏蔽设置
+            SettingsItemNavigation(
+                icon = Icons.Default.Block,
+                title = stringResource(R.string.block_settings),
+                description = stringResource(R.string.block_settings_desc),
+                onClick = { navViewModel.navigate(NavRoute.BlockSettings) }
             )
 
             SettingsDivider()

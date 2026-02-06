@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff
 
 import android.app.Application
 import ceui.lisa.jcstaff.auth.AccountRegistry
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.network.PixivClient
@@ -21,6 +22,7 @@ class TheApplication : Application() {
         super.onCreate()
 
         AccountRegistry.initialize(this)
+        ContentFilterManager.initialize(this)
 
         // 设置全局 Coil ImageLoader，使用共享的 imageClient（带 Referer 头）
         Coil.setImageLoader(

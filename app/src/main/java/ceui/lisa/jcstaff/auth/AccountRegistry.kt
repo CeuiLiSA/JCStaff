@@ -32,14 +32,14 @@ object AccountRegistry {
     private val MIGRATION_DONE = stringPreferencesKey("migration_done")
 
     private val gson = Gson()
-    private var dataStore: DataStore<Preferences>? = null
+    private lateinit var dataStore: DataStore<Preferences>
 
     fun initialize(context: Context) {
         dataStore = context.accountRegistryDataStore
     }
 
     val allAccounts: Flow<List<AccountEntry>>
-        get() = dataStore!!.data.map { prefs ->
+        get() = dataStore.data.map { prefs ->
             val json = prefs[ACCOUNTS_JSON]
             if (json.isNullOrEmpty()) {
                 emptyList()
@@ -54,7 +54,7 @@ object AccountRegistry {
         }
 
     val activeUserId: Flow<Long?>
-        get() = dataStore!!.data.map { prefs ->
+        get() = dataStore.data.map { prefs ->
             prefs[ACTIVE_USER_ID]
         }
 
@@ -63,7 +63,7 @@ object AccountRegistry {
     suspend fun getActiveUserId(): Long? = activeUserId.first()
 
     suspend fun addAccount(entry: AccountEntry) {
-        dataStore!!.edit { prefs ->
+        dataStore.edit { prefs ->
             val current = getAccountsFromPrefs(prefs).toMutableList()
             current.removeAll { it.userId == entry.userId }
             current.add(entry)
@@ -72,7 +72,7 @@ object AccountRegistry {
     }
 
     suspend fun updateAccount(entry: AccountEntry) {
-        dataStore!!.edit { prefs ->
+        dataStore.edit { prefs ->
             val current = getAccountsFromPrefs(prefs).toMutableList()
             val index = current.indexOfFirst { it.userId == entry.userId }
             if (index >= 0) {
@@ -83,19 +83,19 @@ object AccountRegistry {
     }
 
     suspend fun setActiveAccount(userId: Long) {
-        dataStore!!.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[ACTIVE_USER_ID] = userId
         }
     }
 
     suspend fun clearActiveUser() {
-        dataStore!!.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs.remove(ACTIVE_USER_ID)
         }
     }
 
     suspend fun removeAccount(userId: Long) {
-        dataStore!!.edit { prefs ->
+        dataStore.edit { prefs ->
             val current = getAccountsFromPrefs(prefs).toMutableList()
             current.removeAll { it.userId == userId }
             prefs[ACCOUNTS_JSON] = gson.toJson(current)
@@ -111,11 +111,11 @@ object AccountRegistry {
     }
 
     suspend fun isMigrationDone(): Boolean {
-        return dataStore!!.data.first()[MIGRATION_DONE] != null
+        return dataStore.data.first()[MIGRATION_DONE] != null
     }
 
     suspend fun setMigrationDone() {
-        dataStore!!.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[MIGRATION_DONE] = "true"
         }
     }

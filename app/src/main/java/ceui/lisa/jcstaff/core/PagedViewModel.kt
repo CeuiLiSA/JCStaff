@@ -11,19 +11,25 @@ import kotlinx.coroutines.launch
  *
  * 封装 PagedDataLoader 的标准模式：构造 loader、暴露 state、提供 loadMore/refresh。
  * 子类只需传入 loader 构造参数即可。
+ *
+ * 默认注入 ContentFilterManager 过滤器，自动过滤已删除内容、被屏蔽的用户和标签。
+ * 传入 itemFilter = null 可禁用过滤（如"我的作品"列表）。
  */
 abstract class PagedViewModel<T, R : PagedResponse<T>>(
     cacheConfig: CacheConfig? = null,
     responseClass: Class<R>,
     loadFirstPage: suspend () -> R,
-    onItemsLoaded: (List<T>) -> Unit = {}
+    onItemsLoaded: (List<T>) -> Unit = {},
+    itemFilter: ((T) -> Boolean)? = ContentFilterManager::shouldShow
 ) : ViewModel() {
 
     protected val loader = PagedDataLoader(
         cacheConfig = cacheConfig,
         responseClass = responseClass,
         loadFirstPage = loadFirstPage,
-        onItemsLoaded = onItemsLoaded
+        onItemsLoaded = onItemsLoaded,
+        itemFilter = itemFilter,
+        scope = viewModelScope
     )
 
     val state: StateFlow<PagedState<T>> = loader.state

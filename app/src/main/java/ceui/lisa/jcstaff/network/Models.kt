@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.network
 
+import ceui.lisa.jcstaff.core.Filterable
 import ceui.lisa.jcstaff.core.Storable
 import ceui.lisa.jcstaff.core.StoreKey
 import ceui.lisa.jcstaff.core.StoreType
@@ -78,9 +79,14 @@ data class Illust(
     val user: User? = null,
     val visible: Boolean? = null,
     val x_restrict: Int? = null,
-) : Serializable, Storable {
+) : Serializable, Storable, Filterable {
 
     override val storeKey: StoreKey get() = StoreKey(id, StoreType.ILLUST)
+    override val contentId: Long get() = id
+    override val authorId: Long? get() = user?.id
+    override val contentTags: List<String> get() = tags?.mapNotNull { it.name } ?: emptyList()
+    override val isContentVisible: Boolean get() =
+        visible != false && image_urls?.medium?.contains("/common/images/limit_") != true
 
     fun isGif(): Boolean = type == "ugoira"
 
@@ -145,7 +151,11 @@ data class UserPreview(
     val illusts: List<Illust> = listOf(),
     val is_muted: Boolean? = null,
     val user: User? = null
-) : Serializable
+) : Serializable, Filterable {
+    override val authorId: Long? get() = user?.id
+    override val contentTags: List<String> get() = emptyList()
+    override val isContentVisible: Boolean get() = is_muted != true
+}
 
 data class UserPreviewResponse(
     val user_previews: List<UserPreview> = listOf(),
@@ -177,8 +187,13 @@ data class Novel(
     val user: User? = null,
     val visible: Boolean? = null,
     val x_restrict: Int? = null
-) : Serializable, Storable {
+) : Serializable, Storable, Filterable {
     override val storeKey: StoreKey get() = StoreKey(id, StoreType.NOVEL)
+    override val contentId: Long get() = id
+    override val authorId: Long? get() = user?.id
+    override val contentTags: List<String> get() = tags?.mapNotNull { it.name } ?: emptyList()
+    override val isContentVisible: Boolean get() =
+        visible != false && is_muted != true && image_urls?.medium?.contains("/common/images/limit_") != true
 }
 
 data class NovelSeries(
@@ -295,7 +310,11 @@ data class Comment(
     val id: Long = 0,
     val stamp: Stamp? = null,
     val user: User = User()
-) : Serializable
+) : Serializable, Filterable {
+    override val authorId: Long? get() = user.id.takeIf { it != 0L }
+    override val contentTags: List<String> get() = emptyList()
+    override val isContentVisible: Boolean get() = true
+}
 
 data class Stamp(
     val stamp_id: Long = 0,

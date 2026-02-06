@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.HideSource
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenu
@@ -47,7 +48,8 @@ fun FloatingTopBar(
     shareTitle: String,
     modifier: Modifier = Modifier,
     onReportClick: () -> Unit = {},
-    onBlockClick: () -> Unit = {}
+    onBlockClick: () -> Unit = {},
+    onBlockWorkClick: (() -> Unit)? = null
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val context = LocalContext.current
@@ -146,7 +148,12 @@ fun FloatingTopBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.block)) },
+                            text = {
+                                Text(
+                                    if (onBlockWorkClick != null) stringResource(R.string.block_user)
+                                    else stringResource(R.string.block)
+                                )
+                            },
                             onClick = {
                                 showMoreMenu = false
                                 onBlockClick()
@@ -158,6 +165,21 @@ fun FloatingTopBar(
                                 )
                             }
                         )
+                        if (onBlockWorkClick != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.block_work)) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    onBlockWorkClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.HideSource,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }

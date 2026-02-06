@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +42,10 @@ import ceui.lisa.jcstaff.auth.AccountRegistry
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.components.EmptyState
 import ceui.lisa.jcstaff.components.ErrorRetryState
+import ceui.lisa.jcstaff.components.BlockUserDialog
+import ceui.lisa.jcstaff.components.BlockWorkDialog
 import ceui.lisa.jcstaff.components.FloatingTopBar
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.IllustScrollAwareTopBar
 import ceui.lisa.jcstaff.components.LoadingIndicator
@@ -59,6 +63,7 @@ import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.PixivClient
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -88,6 +93,8 @@ fun IllustDetailScreen(
     val error = detailState.error
     val isBookmarked = detailState.isBookmarked
 
+    Log.d("sadasddsaw", "${Gson().toJson(illust)}")
+
     // 绑定 ViewModel
     LaunchedEffect(illustId) {
         detailViewModel.bind(illustId)
@@ -102,6 +109,10 @@ fun IllustDetailScreen(
 
     // 图片区域展开/收起状态
     var isImagesExpanded by remember { mutableStateOf(false) }
+
+    // 屏蔽确认对话框
+    var showBlockUserDialog by remember { mutableStateOf(false) }
+    var showBlockWorkDialog by remember { mutableStateOf(false) }
 
     // 选择模式
     val selectionManager = LocalSelectionManager.current
@@ -400,7 +411,33 @@ fun IllustDetailScreen(
         if (!showScrollAwareTopBar) {
             FloatingTopBar(
                 shareUrl = "https://www.pixiv.net/artworks/$illustId",
-                shareTitle = title
+                shareTitle = title,
+                onBlockClick = { showBlockUserDialog = true },
+                onBlockWorkClick = { showBlockWorkDialog = true }
+            )
+        }
+
+        // 屏蔽用户确认对话框
+        if (showBlockUserDialog && userId != null) {
+            BlockUserDialog(
+                onDismiss = { showBlockUserDialog = false },
+                onConfirm = {
+                    showBlockUserDialog = false
+                    ContentFilterManager.blockUser(userId)
+                    navViewModel.goBack()
+                }
+            )
+        }
+
+        // 屏蔽作品确认对话框
+        if (showBlockWorkDialog) {
+            BlockWorkDialog(
+                onDismiss = { showBlockWorkDialog = false },
+                onConfirm = {
+                    showBlockWorkDialog = false
+                    ContentFilterManager.blockContent(illustId)
+                    navViewModel.goBack()
+                }
             )
         }
 

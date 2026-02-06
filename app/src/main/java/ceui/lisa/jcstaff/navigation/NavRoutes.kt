@@ -83,6 +83,9 @@ sealed interface NavRoute {
     data class WebTagDetail(val tag: Tag) : NavRoute {
         override val stableKey = "WebTagDetail_${tag.name}"
     }
+    data object BlockSettings : NavRoute {
+        override val stableKey = "BlockSettings"
+    }
     data class CacheBrowser(val initialPath: String? = null) : NavRoute {
         override val stableKey = "CacheBrowser_${initialPath ?: "root"}"
     }
@@ -131,6 +134,7 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.UgoiraRanking -> "动图排行"
     is NavRoute.LatestWorks -> "最新作品"
     is NavRoute.WebTagDetail -> tag.name ?: "标签详情"
+    is NavRoute.BlockSettings -> "屏蔽设置"
     is NavRoute.CacheBrowser -> "缓存浏览"
     is NavRoute.SauceNao -> "以图搜图"
     is NavRoute.UserCreatedIllusts -> if (type == "illust") "插画作品" else "漫画作品"

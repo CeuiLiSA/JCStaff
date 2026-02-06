@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.CacheConfig
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.PagedDataLoader
 import ceui.lisa.jcstaff.core.PagedState
@@ -34,7 +35,9 @@ class RankingViewModel(
         cacheConfigProvider = { buildCacheConfig() },
         responseClass = IllustResponse::class.java,
         loadFirstPage = { PixivClient.pixivApi.getRankingIllusts(mode, _selectedDate.value) },
-        onItemsLoaded = { storeIllusts(it) }
+        onItemsLoaded = { storeIllusts(it) },
+        itemFilter = ContentFilterManager::shouldShow,
+        scope = viewModelScope
     )
 
     val state: StateFlow<RankingUiState> = combine(loader.state, _selectedDate) { pagedState, date ->

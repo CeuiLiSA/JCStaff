@@ -27,7 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import ceui.lisa.jcstaff.components.BlockUserDialog
 import ceui.lisa.jcstaff.components.FloatingTopBar
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.components.UserScrollAwareTopBar
 import ceui.lisa.jcstaff.components.user.IllustPreviewRow
 import ceui.lisa.jcstaff.components.user.NovelPreviewRow
@@ -71,6 +75,9 @@ fun UserProfileScreen(
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 1200
         }
     }
+
+    // 屏蔽确认对话框
+    var showBlockDialog by remember { mutableStateOf(false) }
 
     // 预先记住回调，避免每次重组创建新 lambda
     val onFollowClick = remember { { viewModel.toggleFollow() } }
@@ -227,7 +234,20 @@ fun UserProfileScreen(
         if (!showScrollAwareTopBar) {
             FloatingTopBar(
                 shareUrl = shareUrl,
-                shareTitle = state.user?.name ?: ""
+                shareTitle = state.user?.name ?: "",
+                onBlockClick = { showBlockDialog = true }
+            )
+        }
+
+        // 屏蔽确认对话框
+        if (showBlockDialog) {
+            BlockUserDialog(
+                onDismiss = { showBlockDialog = false },
+                onConfirm = {
+                    showBlockDialog = false
+                    ContentFilterManager.blockUser(userId)
+                    navViewModel.goBack()
+                }
             )
         }
 

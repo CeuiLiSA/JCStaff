@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.core.CacheConfig
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.core.shouldFetch
 import ceui.lisa.jcstaff.network.HomeIllustResponse
@@ -37,6 +38,10 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
     private val _state = MutableStateFlow(RecommendedUiState())
     val state: StateFlow<RecommendedUiState> = _state.asStateFlow()
 
+    /** 保存未过滤的原始数据，用于取消屏蔽后重新过滤 */
+    private val _rawIllusts = mutableListOf<Illust>()
+    private val _rawRankingIllusts = mutableListOf<Illust>()
+
     private val cacheConfig = CacheConfig(
         path = "/v1/$contentType/recommended",
         queryParams = mapOf(
@@ -47,6 +52,12 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
 
     init {
         load(forceRefresh = false)
+        ContentFilterManager.onFilterChanged(viewModelScope) {
+            _state.value = _state.value.copy(
+                illusts = _rawIllusts.filter(ContentFilterManager::shouldShow),
+                rankingIllusts = _rawRankingIllusts.filter(ContentFilterManager::shouldShow)
+            )
+        }
     }
 
     private fun load(forceRefresh: Boolean) {
@@ -58,9 +69,13 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
             if (cacheResult != null) {
                 storeIllusts(cacheResult.data.illusts)
                 storeIllusts(cacheResult.data.ranking_illusts)
+                _rawIllusts.clear()
+                _rawIllusts.addAll(cacheResult.data.illusts)
+                _rawRankingIllusts.clear()
+                _rawRankingIllusts.addAll(cacheResult.data.ranking_illusts)
                 _state.value = _state.value.copy(
-                    illusts = cacheResult.data.illusts,
-                    rankingIllusts = cacheResult.data.ranking_illusts,
+                    illusts = _rawIllusts.filter(ContentFilterManager::shouldShow),
+                    rankingIllusts = _rawRankingIllusts.filter(ContentFilterManager::shouldShow),
                     isLoading = cacheResult.shouldFetch(forceRefresh),
                     nextUrl = cacheResult.data.next_url
                 )
@@ -76,9 +91,13 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
                 val response = PixivClient.pixivApi.getRecommendedContent(contentType)
                 storeIllusts(response.illusts)
                 storeIllusts(response.ranking_illusts)
+                _rawIllusts.clear()
+                _rawIllusts.addAll(response.illusts)
+                _rawRankingIllusts.clear()
+                _rawRankingIllusts.addAll(response.ranking_illusts)
                 _state.value = _state.value.copy(
-                    illusts = response.illusts,
-                    rankingIllusts = response.ranking_illusts,
+                    illusts = _rawIllusts.filter(ContentFilterManager::shouldShow),
+                    rankingIllusts = _rawRankingIllusts.filter(ContentFilterManager::shouldShow),
                     isLoading = false,
                     nextUrl = response.next_url
                 )
@@ -100,8 +119,9 @@ class RecommendedContentViewModel(private val contentType: String) : ViewModel()
             try {
                 val response = PixivClient.getNextPage(nextUrl, HomeIllustResponse::class.java)
                 storeIllusts(response.displayList)
+                _rawIllusts.addAll(response.displayList)
                 _state.value = _state.value.copy(
-                    illusts = _state.value.illusts + response.displayList,
+                    illusts = _state.value.illusts + response.displayList.filter(ContentFilterManager::shouldShow),
                     isLoadingMore = false,
                     nextUrl = response.next_url
                 )

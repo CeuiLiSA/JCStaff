@@ -201,6 +201,23 @@
     <!-- Floating Top Bar -->
     <string name="report">举报</string>
     <string name="block">屏蔽</string>
+    <string name="block_user">屏蔽用户</string>
+    <string name="block_user_title">屏蔽用户</string>
+    <string name="block_user_message">屏蔽后，该用户的所有作品和评论将从列表中隐藏。\n\n你可以在设置中管理屏蔽列表。</string>
+    <string name="block_work">屏蔽作品</string>
+    <string name="block_work_title">屏蔽作品</string>
+    <string name="block_work_message">屏蔽后，该作品将从所有列表中隐藏。</string>
+    <string name="block_settings">屏蔽设置</string>
+    <string name="block_settings_desc">管理已屏蔽的用户、作品和标签</string>
+    <string name="blocked_users">已屏蔽的用户</string>
+    <string name="blocked_works">已屏蔽的作品</string>
+    <string name="blocked_tags">已屏蔽的标签</string>
+    <string name="unblock">取消屏蔽</string>
+    <string name="unblock_confirm_title">确认取消屏蔽</string>
+    <string name="unblock_confirm_message">确定要取消屏蔽吗？取消后该内容将重新出现在列表中。</string>
+    <string name="no_blocked_content">暂无屏蔽内容</string>
+    <string name="user_id_label">用户 ID: %1$d</string>
+    <string name="work_id_label">作品 ID: %1$d</string>
 
     <!-- Selection Top Bar -->
     <string name="downloading">下载中 </string>
