@@ -26,6 +26,7 @@ import ceui.lisa.jcstaff.components.EmptyState
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.network.Comment
+import ceui.lisa.jcstaff.network.CommentResponse
 import ceui.lisa.jcstaff.network.PixivClient
 
 @Composable
@@ -44,9 +45,11 @@ fun CommentPreviewSection(
         isLoading = true
         error = null
 
-        val cached = CommentViewModel.commentsCache[CommentViewModel.cacheKey(objectType, objectId)]
-        if (cached != null && retryTrigger == 0) {
-            comments = cached
+        // 从 API 缓存读取
+        val config = CommentViewModel.cacheConfig(objectType, objectId)
+        val cacheResult = config.loadFromCache(CommentResponse::class.java)
+        if (cacheResult != null && retryTrigger == 0) {
+            comments = cacheResult.data.comments
             isLoading = false
             return@LaunchedEffect
         }
@@ -57,8 +60,6 @@ fun CommentPreviewSection(
             } else {
                 PixivClient.pixivApi.getNovelComments(objectId)
             }
-            CommentViewModel.commentsCache[CommentViewModel.cacheKey(objectType, objectId)] =
-                response.comments
             comments = response.comments
             error = null
         } catch (e: Exception) {

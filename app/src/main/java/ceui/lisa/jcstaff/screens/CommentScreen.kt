@@ -95,10 +95,14 @@ fun CommentScreen(
     objectId: Long,
     objectType: String,
     currentUserId: Long,
-    commentViewModel: CommentViewModel = viewModel(key = "comments_${objectType}_$objectId")
+    commentViewModel: CommentViewModel = viewModel(
+        key = "comments_${objectType}_$objectId",
+        factory = CommentViewModel.factory(objectId, objectType)
+    )
 ) {
     val navViewModel = LocalNavigationViewModel.current
-    val state by commentViewModel.state.collectAsState()
+    val pagedState by commentViewModel.pagedState.collectAsState()
+    val interaction by commentViewModel.interactionState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -110,9 +114,9 @@ fun CommentScreen(
     val listState = rememberLazyListState()
 
     val sendComment = {
-        if (inputText.isNotBlank() && !state.isPosting) {
+        if (inputText.isNotBlank() && !interaction.isPosting) {
             val text = inputText
-            val parentId = state.replyTarget?.id
+            val parentId = interaction.replyTarget?.id
             inputText = ""
             showEmojiPicker = false
             scope.launch {
@@ -126,12 +130,8 @@ fun CommentScreen(
         }
     }
 
-    LaunchedEffect(objectId, objectType) {
-        commentViewModel.loadComments(objectId, objectType)
-    }
-
     // Auto load more when reaching bottom
-    LaunchedEffect(listState, state.nextUrl) {
+    LaunchedEffect(listState) {
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val totalItems = layoutInfo.totalItemsCount
@@ -139,8 +139,12 @@ fun CommentScreen(
             totalItems > 0 && lastVisible >= totalItems - 3
         }
             .distinctUntilChanged()
-            .filter { it && state.nextUrl != null && !state.isLoading }
-            .collect { commentViewModel.loadMore() }
+            .filter { it }
+            .collect {
+                if (pagedState.canLoadMore) {
+                    commentViewModel.loadMore()
+                }
+            }
     }
 
     // Delete confirmation dialog
@@ -225,8 +229,8 @@ fun CommentScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (state.comments.isNotEmpty()) {
-                            "${stringResource(R.string.comments)} (${state.comments.size})"
+                        text = if (pagedState.items.isNotEmpty()) {
+                            "${stringResource(R.string.comments)} (${pagedState.items.size})"
                         } else {
                             stringResource(R.string.comments)
                         }
@@ -249,7 +253,7 @@ fun CommentScreen(
                     .navigationBarsPadding()
             ) {
                 // Reply target indicator
-                state.replyTarget?.let { target ->
+                interaction.replyTarget?.let { target ->
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
@@ -339,8 +343,8 @@ fun CommentScreen(
                             value = inputText,
                             onValueChange = { inputText = it },
                             placeholder = {
-                                val hint = if (state.replyTarget != null) {
-                                    stringResource(R.string.reply_hint, state.replyTarget?.user?.name ?: "")
+                                val hint = if (interaction.replyTarget != null) {
+                                    stringResource(R.string.reply_hint, interaction.replyTarget?.user?.name ?: "")
                                 } else {
                                     stringResource(R.string.comment_hint)
                                 }
@@ -361,9 +365,9 @@ fun CommentScreen(
 
                         IconButton(
                             onClick = { sendComment() },
-                            enabled = inputText.isNotBlank() && !state.isPosting
+                            enabled = inputText.isNotBlank() && !interaction.isPosting
                         ) {
-                            if (state.isPosting) {
+                            if (interaction.isPosting) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
                                     strokeWidth = 2.dp
@@ -384,14 +388,14 @@ fun CommentScreen(
     ) { paddingValues ->
         var userPulled by remember { mutableStateOf(false) }
 
-        LaunchedEffect(state.isLoading) {
-            if (!state.isLoading) userPulled = false
+        LaunchedEffect(pagedState.isLoading) {
+            if (!pagedState.isLoading) userPulled = false
         }
 
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
-            isRefreshing = userPulled && state.isLoading,
+            isRefreshing = userPulled && pagedState.isLoading,
             onRefresh = {
-                if (!state.isLoading) {
+                if (!pagedState.isLoading) {
                     userPulled = true
                     commentViewModel.refresh()
                 }
@@ -401,13 +405,13 @@ fun CommentScreen(
                 .padding(paddingValues)
         ) {
             when {
-                state.error != null && state.comments.isEmpty() -> {
+                pagedState.hasError && pagedState.isEmpty -> {
                     ErrorRetryState(
-                        error = state.error ?: stringResource(R.string.load_error),
+                        error = pagedState.error ?: stringResource(R.string.load_error),
                         onRetry = { commentViewModel.refresh() }
                     )
                 }
-                state.isLoading && state.comments.isEmpty() -> {
+                pagedState.isLoading && pagedState.isEmpty -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -415,7 +419,7 @@ fun CommentScreen(
                         LoadingIndicator()
                     }
                 }
-                state.comments.isEmpty() -> {
+                pagedState.isEmpty -> {
                     EmptyRefreshableState(onRefresh = { commentViewModel.refresh() })
                 }
                 else -> {
@@ -423,9 +427,9 @@ fun CommentScreen(
                         state = listState,
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(state.comments, key = { "comment_${it.id}" }) { comment ->
-                            val isExpanded = state.expandedReplies.containsKey(comment.id)
-                            val isLoadingReplies = state.loadingReplies.contains(comment.id)
+                        items(pagedState.items, key = { "comment_${it.id}" }) { comment ->
+                            val isExpanded = interaction.expandedReplies.containsKey(comment.id)
+                            val isLoadingReplies = interaction.loadingReplies.contains(comment.id)
 
                             CommentCard(
                                 comment = comment,
@@ -444,7 +448,7 @@ fun CommentScreen(
                             )
 
                             // Expanded replies
-                            val replies = state.expandedReplies[comment.id]
+                            val replies = interaction.expandedReplies[comment.id]
                             if (replies != null) {
                                 replies.forEach { reply ->
                                     CommentCard(
@@ -471,7 +475,7 @@ fun CommentScreen(
                         }
 
                         // Loading more indicator
-                        if (state.isLoading && state.comments.isNotEmpty()) {
+                        if (pagedState.isLoadingMore) {
                             item(key = "loading_more") {
                                 Box(
                                     modifier = Modifier

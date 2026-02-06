@@ -120,6 +120,11 @@ class PagedDataLoader<T, R : PagedResponse<T>>(
         _state.value = PagedState()
     }
 
+    /** 更新 items 列表（用于新增/删除场景） */
+    fun updateItems(transform: (List<T>) -> List<T>) {
+        _state.value = _state.value.copy(items = transform(_state.value.items))
+    }
+
     /**
      * 加载数据
      * @param forceRefresh 是否强制刷新（下拉刷新/点击重试时为 true）

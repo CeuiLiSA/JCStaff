@@ -362,7 +362,10 @@ data class UgoiraFrame(
 data class BookmarkTagsResponse(
     val bookmark_tags: List<BookmarkTag> = emptyList(),
     val next_url: String? = null
-) : Serializable
+) : Serializable, PagedResponse<BookmarkTag> {
+    override val displayList: List<BookmarkTag> get() = bookmark_tags
+    override val nextUrl: String? get() = next_url
+}
 
 data class BookmarkTag(
     val name: String? = null,

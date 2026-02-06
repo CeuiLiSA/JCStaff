@@ -40,25 +40,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.core.CacheConfig
+import ceui.lisa.jcstaff.core.PagedDataLoader
+import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.network.BookmarkTag
+import ceui.lisa.jcstaff.network.BookmarkTagsResponse
 import ceui.lisa.jcstaff.network.PixivClient
-import com.google.gson.Gson
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-/**
- * 收藏标签列表状态
- */
-data class BookmarkTagsState(
-    val tags: List<BookmarkTag> = emptyList(),
-    val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val canLoadMore: Boolean = false,
-    val error: String? = null
-)
 
 /**
  * 收藏标签 ViewModel，支持分页加载
@@ -67,67 +56,27 @@ class BookmarkTagsViewModel(
     private val userId: Long
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(BookmarkTagsState())
-    val state: StateFlow<BookmarkTagsState> = _state.asStateFlow()
+    private val loader = PagedDataLoader(
+        cacheConfig = CacheConfig(
+            path = "/v1/user/bookmark-tags/illust",
+            queryParams = mapOf("user_id" to userId.toString())
+        ),
+        responseClass = BookmarkTagsResponse::class.java,
+        loadFirstPage = { PixivClient.pixivApi.getUserBookmarkTags(userId) }
+    )
 
-    private var nextUrl: String? = null
-    private val gson = Gson()
+    val state: StateFlow<PagedState<BookmarkTag>> = loader.state
 
-    fun load() {
-        if (_state.value.isLoading) return
-
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val response = PixivClient.pixivApi.getUserBookmarkTags(userId)
-                nextUrl = response.next_url
-                _state.update {
-                    it.copy(
-                        tags = response.bookmark_tags,
-                        isLoading = false,
-                        canLoadMore = response.next_url != null
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoading = false, error = e.message)
-                }
-            }
-        }
+    init {
+        viewModelScope.launch { loader.load() }
     }
 
     fun loadMore() {
-        val url = nextUrl ?: return
-        if (_state.value.isLoadingMore) return
-
-        viewModelScope.launch {
-            _state.update { it.copy(isLoadingMore = true) }
-            try {
-                val responseBody = PixivClient.pixivApi.getNextPage(url)
-                val response = gson.fromJson(
-                    responseBody.string(),
-                    ceui.lisa.jcstaff.network.BookmarkTagsResponse::class.java
-                )
-                nextUrl = response.next_url
-                _state.update {
-                    it.copy(
-                        tags = it.tags + response.bookmark_tags,
-                        isLoadingMore = false,
-                        canLoadMore = response.next_url != null
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(isLoadingMore = false, error = e.message)
-                }
-            }
-        }
+        viewModelScope.launch { loader.loadMore() }
     }
 
     fun refresh() {
-        nextUrl = null
-        _state.update { it.copy(tags = emptyList()) }
-        load()
+        viewModelScope.launch { loader.refresh() }
     }
 
     companion object {
@@ -203,7 +152,7 @@ fun BookmarkTagDialog(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            if (state.isLoading && state.tags.isEmpty()) {
+            if (state.isLoading && state.isEmpty) {
                 // 首次加载
                 LoadingIndicator()
             } else {
@@ -225,7 +174,7 @@ fun BookmarkTagDialog(
                         )
 
                         // 各个标签
-                        state.tags.forEach { bookmarkTag ->
+                        state.items.forEach { bookmarkTag ->
                             val tagName = bookmarkTag.name ?: return@forEach
                             FilterChip(
                                 selected = selectedTag == tagName,
@@ -252,7 +201,7 @@ fun BookmarkTagDialog(
                     }
 
                     // 无标签提示
-                    if (state.tags.isEmpty() && !state.isLoading) {
+                    if (state.isEmpty && !state.isLoading) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = stringResource(R.string.no_bookmark_tags),

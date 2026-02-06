@@ -24,7 +24,6 @@ class ApiCacheInterceptor : Interceptor {
         // 不缓存的路径
         private val EXCLUDE_PATHS = setOf(
             "/auth/token",
-            "/v1/user/bookmark-tags/illust",
         )
     }
 

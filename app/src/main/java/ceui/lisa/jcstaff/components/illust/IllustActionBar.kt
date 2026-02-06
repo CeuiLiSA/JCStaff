@@ -550,9 +550,9 @@ private fun AddBookmarkDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                if (state.isLoading && state.tags.isEmpty()) {
+                if (state.isLoading && state.isEmpty) {
                     LoadingIndicator()
-                } else if (state.tags.isEmpty()) {
+                } else if (state.isEmpty) {
                     Text(
                         text = stringResource(R.string.no_bookmark_tags),
                         style = MaterialTheme.typography.bodyMedium,
@@ -563,7 +563,7 @@ private fun AddBookmarkDialog(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        state.tags.forEach { bookmarkTag ->
+                        state.items.forEach { bookmarkTag ->
                             val tagName = bookmarkTag.name ?: return@forEach
                             val isSelected = selectedTags.contains(tagName)
                             FilterChip(
