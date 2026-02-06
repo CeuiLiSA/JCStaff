@@ -45,7 +45,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,14 +79,25 @@ fun TagDetailScreen(
     tag: Tag,
     isPremium: Boolean,
     initialTab: Int = 0,
-    illustViewModel: TagIllustSearchViewModel = viewModel(key = "tag_illust_${tag.name}"),
-    novelViewModel: TagNovelSearchViewModel = viewModel(key = "tag_novel_${tag.name}"),
-    userViewModel: TagUserSearchViewModel = viewModel(key = "tag_user_${tag.name}")
+    illustViewModel: TagIllustSearchViewModel = viewModel(
+        key = "tag_illust_${tag.name}",
+        factory = TagIllustSearchViewModel.factory(tag, isPremium)
+    ),
+    novelViewModel: TagNovelSearchViewModel = viewModel(
+        key = "tag_novel_${tag.name}",
+        factory = TagNovelSearchViewModel.factory(tag, isPremium)
+    ),
+    userViewModel: TagUserSearchViewModel = viewModel(
+        key = "tag_user_${tag.name}",
+        factory = TagUserSearchViewModel.factory(tag)
+    )
 ) {
     val navViewModel = LocalNavigationViewModel.current
-    val illustState by illustViewModel.state.collectAsState()
-    val novelState by novelViewModel.state.collectAsState()
-    val userState by userViewModel.state.collectAsState()
+    val illustSearchParams by illustViewModel.searchParams.collectAsState()
+    val illustPagedState by illustViewModel.pagedState.collectAsState()
+    val novelSearchParams by novelViewModel.searchParams.collectAsState()
+    val novelPagedState by novelViewModel.pagedState.collectAsState()
+    val userPagedState by userViewModel.pagedState.collectAsState()
     val selectionManager = LocalSelectionManager.current
     val pagerState = rememberPagerState(initialPage = initialTab, pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -98,13 +108,6 @@ fun TagDetailScreen(
     var tagPendingRemoval by remember { mutableStateOf<Tag?>(null) }
 
     val premiumHint = stringResource(R.string.premium_sort_hint)
-
-    // Initialize all ViewModels with the tag
-    LaunchedEffect(tag) {
-        illustViewModel.init(tag, isPremium)
-        novelViewModel.init(tag, isPremium)
-        userViewModel.init(tag)
-    }
 
     // Back handler for selection mode
     BackHandler(enabled = selectionManager.isSelectionMode) {
@@ -135,8 +138,8 @@ fun TagDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            illustState.tags.forEach { currentTag ->
-                                val canRemove = illustState.tags.size > 1
+                            illustSearchParams.tags.forEach { currentTag ->
+                                val canRemove = illustSearchParams.tags.size > 1
                                 InputChip(
                                     selected = false,
                                     onClick = {
@@ -222,7 +225,7 @@ fun TagDetailScreen(
                     when (page) {
                         0 -> {
                             IllustGrid(
-                                illusts = illustState.illusts,
+                                illusts = illustPagedState.illusts,
                                 onIllustClick = { illust ->
                                     navViewModel.navigate(NavRoute.IllustDetail(
                                         illustId = illust.id,
@@ -232,10 +235,10 @@ fun TagDetailScreen(
                                     ))
                                 },
                                 modifier = Modifier.fillMaxSize(),
-                                isLoading = illustState.isLoading,
-                                isLoadingMore = illustState.isLoadingMore,
-                                canLoadMore = illustState.canLoadMore,
-                                error = illustState.error,
+                                isLoading = illustPagedState.isLoading,
+                                isLoadingMore = illustPagedState.isLoadingMore,
+                                canLoadMore = illustPagedState.canLoadMore,
+                                error = illustPagedState.error,
                                 onRefresh = { illustViewModel.refresh() },
                                 onLoadMore = { illustViewModel.loadMore() },
                                 headerContent = {
@@ -244,8 +247,8 @@ fun TagDetailScreen(
                                         span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine
                                     ) {
                                         SearchFilterBar(
-                                            sort = illustState.sort,
-                                            searchTarget = illustState.searchTarget,
+                                            sort = illustSearchParams.sort,
+                                            searchTarget = illustSearchParams.searchTarget,
                                             isPremium = isPremium,
                                             onSortChanged = { illustViewModel.setSort(it) },
                                             onSearchTargetChanged = { illustViewModel.setSearchTarget(it) },
@@ -263,8 +266,8 @@ fun TagDetailScreen(
                         1 -> {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 SearchFilterBar(
-                                    sort = novelState.sort,
-                                    searchTarget = novelState.searchTarget,
+                                    sort = novelSearchParams.sort,
+                                    searchTarget = novelSearchParams.searchTarget,
                                     isPremium = isPremium,
                                     onSortChanged = { novelViewModel.setSort(it) },
                                     onSearchTargetChanged = { novelViewModel.setSearchTarget(it) },
@@ -276,15 +279,15 @@ fun TagDetailScreen(
                                     }
                                 )
                                 NovelList(
-                                    novels = novelState.novels,
+                                    novels = novelPagedState.novels,
                                     onNovelClick = { novel ->
                                         navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
                                     },
                                     modifier = Modifier.fillMaxSize(),
-                                    isLoading = novelState.isLoading,
-                                    isLoadingMore = novelState.isLoadingMore,
-                                    canLoadMore = novelState.canLoadMore,
-                                    error = novelState.error,
+                                    isLoading = novelPagedState.isLoading,
+                                    isLoadingMore = novelPagedState.isLoadingMore,
+                                    canLoadMore = novelPagedState.canLoadMore,
+                                    error = novelPagedState.error,
                                     onRefresh = { novelViewModel.refresh() },
                                     onLoadMore = { novelViewModel.loadMore() },
                                     listState = novelListState
@@ -293,11 +296,11 @@ fun TagDetailScreen(
                         }
                         2 -> {
                             UserSearchPage(
-                                userPreviews = userState.items,
-                                isLoading = userState.isLoading,
-                                isLoadingMore = userState.isLoadingMore,
-                                canLoadMore = userState.canLoadMore,
-                                error = userState.error,
+                                userPreviews = userPagedState.items,
+                                isLoading = userPagedState.isLoading,
+                                isLoadingMore = userPagedState.isLoadingMore,
+                                canLoadMore = userPagedState.canLoadMore,
+                                error = userPagedState.error,
                                 onRefresh = { userViewModel.refresh() },
                                 onLoadMore = { userViewModel.loadMore() }
                             )
@@ -309,7 +312,7 @@ fun TagDetailScreen(
 
         // Selection top bar overlay
         SelectionTopBar(
-            allIllusts = illustState.illusts
+            allIllusts = illustPagedState.illusts
         )
     }
 

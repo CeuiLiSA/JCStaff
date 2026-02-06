@@ -18,7 +18,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +35,6 @@ import ceui.lisa.jcstaff.components.BookmarkTagDialog
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.IllustListViewModel
-import ceui.lisa.jcstaff.core.IllustLoader
 import ceui.lisa.jcstaff.auth.AccountRegistry
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.network.PixivClient
@@ -56,19 +54,17 @@ fun BookmarksScreen(
     var showTagDialog by remember { mutableStateOf(false) }
 
     // 根据选中的标签创建对应的 ViewModel
-    val viewModel: IllustListViewModel = viewModel(key = "bookmarks_${userId}_${selectedTag ?: "all"}")
+    val viewModel: IllustListViewModel = viewModel(
+        key = "bookmarks_${userId}_${selectedTag ?: "all"}",
+        factory = IllustListViewModel.factory(
+            loadFirstPage = { PixivClient.pixivApi.getUserBookmarks(userId, tag = selectedTag) }
+        )
+    )
     val state by viewModel.state.collectAsState()
 
     // 返回键退出选择模式
     BackHandler(enabled = selectionManager.isSelectionMode) {
         selectionManager.clearSelection()
-    }
-
-    // 绑定加载器
-    LaunchedEffect(userId, selectedTag) {
-        viewModel.bind(IllustLoader {
-            PixivClient.pixivApi.getUserBookmarks(userId, tag = selectedTag)
-        })
     }
 
     Box {

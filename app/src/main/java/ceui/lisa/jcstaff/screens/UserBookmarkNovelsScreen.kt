@@ -11,7 +11,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -21,10 +20,7 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.NovelListViewModel
-import ceui.lisa.jcstaff.core.NovelLoader
-import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
-import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.PixivClient
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,25 +29,21 @@ fun UserBookmarkNovelsScreen(
     userId: Long
 ) {
     val navViewModel = LocalNavigationViewModel.current
-    val viewModel: NovelListViewModel = viewModel(key = "user_bookmark_novels_$userId")
-    val state by viewModel.state.collectAsState()
-
-    LaunchedEffect(userId) {
-        val cacheConfig = CacheConfig(
-            path = "/v1/user/bookmarks/novel",
-            queryParams = mapOf(
-                "user_id" to userId.toString(),
-                "restrict" to "public",
-                "filter" to "for_ios"
+    val viewModel: NovelListViewModel = viewModel(
+        key = "user_bookmark_novels_$userId",
+        factory = NovelListViewModel.factory(
+            loadFirstPage = { PixivClient.pixivApi.getUserBookmarkNovels(userId, restrict = "public") },
+            cacheConfig = CacheConfig(
+                path = "/v1/user/bookmarks/novel",
+                queryParams = mapOf(
+                    "user_id" to userId.toString(),
+                    "restrict" to "public",
+                    "filter" to "for_ios"
+                )
             )
         )
-        viewModel.bind(
-            loader = NovelLoader {
-                PixivClient.pixivApi.getUserBookmarkNovels(userId, restrict = "public")
-            },
-            cacheConfig = cacheConfig
-        )
-    }
+    )
+    val state by viewModel.state.collectAsState()
 
     Scaffold(
         topBar = {
@@ -69,13 +61,7 @@ fun UserBookmarkNovelsScreen(
         }
     ) { paddingValues ->
         NovelList(
-            state = PagedState(
-                items = state.novels,
-                isLoading = state.isLoading,
-                isLoadingMore = state.isLoadingMore,
-                error = state.error,
-                nextUrl = state.nextUrl
-            ),
+            state = state,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),

@@ -21,6 +21,8 @@ data class PagedState<T>(
     val nextUrl: String? = null
 ) {
     val canLoadMore: Boolean get() = nextUrl != null && !isLoadingMore
+    val isEmpty: Boolean get() = items.isEmpty()
+    val hasError: Boolean get() = error != null
 
     // 兼容属性，方便各类型使用
     val illusts: List<T> get() = items

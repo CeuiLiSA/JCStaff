@@ -54,7 +54,6 @@ import ceui.lisa.jcstaff.components.illust.IllustCaption
 import ceui.lisa.jcstaff.components.illust.IllustMetaInfo
 import ceui.lisa.jcstaff.components.illust.IllustTags
 import ceui.lisa.jcstaff.core.IllustListViewModel
-import ceui.lisa.jcstaff.core.IllustLoader
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
@@ -72,7 +71,12 @@ fun IllustDetailScreen(
     previewUrl: String,
     aspectRatio: Float,
     detailViewModel: IllustDetailViewModel = viewModel(key = "detail_$illustId"),
-    relatedViewModel: IllustListViewModel = viewModel(key = "related_$illustId")
+    relatedViewModel: IllustListViewModel = viewModel(
+        key = "related_$illustId",
+        factory = IllustListViewModel.factory(
+            loadFirstPage = { PixivClient.pixivApi.getRelatedIllusts(illustId) }
+        )
+    )
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val currentUserId by AccountRegistry.activeUserId.collectAsState(initial = null)
@@ -372,9 +376,6 @@ fun IllustDetailScreen(
                     .collect {
                         if (!detailViewModel.state.value.relatedLoadTriggered) {
                             detailViewModel.markRelatedLoadTriggered()
-                            relatedViewModel.bind(IllustLoader {
-                                PixivClient.pixivApi.getRelatedIllusts(illustId)
-                            })
                         }
                     }
             }

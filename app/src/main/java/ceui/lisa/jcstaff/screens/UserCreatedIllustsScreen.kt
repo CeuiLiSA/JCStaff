@@ -13,7 +13,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -24,7 +23,6 @@ import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.CacheConfig
 import ceui.lisa.jcstaff.core.IllustListViewModel
-import ceui.lisa.jcstaff.core.IllustLoader
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -38,24 +36,20 @@ fun UserCreatedIllustsScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val selectionManager = LocalSelectionManager.current
-    val viewModel: IllustListViewModel = viewModel(key = "user_created_${type}_$userId")
+    val viewModel: IllustListViewModel = viewModel(
+        key = "user_created_${type}_$userId",
+        factory = IllustListViewModel.factory(
+            loadFirstPage = { PixivClient.pixivApi.getUserIllusts(userId, type = type) },
+            cacheConfig = CacheConfig(
+                path = "/v1/user/illusts",
+                queryParams = mapOf("user_id" to userId.toString(), "type" to type, "filter" to "for_ios")
+            )
+        )
+    )
     val state by viewModel.state.collectAsState()
 
     BackHandler(enabled = selectionManager.isSelectionMode) {
         selectionManager.clearSelection()
-    }
-
-    LaunchedEffect(userId, type) {
-        val cacheConfig = CacheConfig(
-            path = "/v1/user/illusts",
-            queryParams = mapOf("user_id" to userId.toString(), "type" to type, "filter" to "for_ios")
-        )
-        viewModel.bind(
-            loader = IllustLoader {
-                PixivClient.pixivApi.getUserIllusts(userId, type = type)
-            },
-            cacheConfig = cacheConfig
-        )
     }
 
     val title = if (type == "illust") {
