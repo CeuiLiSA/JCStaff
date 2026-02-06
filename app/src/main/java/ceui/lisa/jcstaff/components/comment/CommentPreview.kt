@@ -9,25 +9,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.comment.CommentViewModel
 import ceui.lisa.jcstaff.components.EmptyState
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.LoadingIndicator
-import ceui.lisa.jcstaff.network.Comment
-import ceui.lisa.jcstaff.network.CommentResponse
-import ceui.lisa.jcstaff.network.PixivClient
 
 @Composable
 fun CommentPreviewSection(
@@ -36,39 +30,11 @@ fun CommentPreviewSection(
     onViewAll: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var comments by remember { mutableStateOf<List<Comment>?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var retryTrigger by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(objectId, objectType, retryTrigger) {
-        isLoading = true
-        error = null
-
-        // 从 API 缓存读取
-        val config = CommentViewModel.cacheConfig(objectType, objectId)
-        val cacheResult = config.loadFromCache(CommentResponse::class.java)
-        if (cacheResult != null && retryTrigger == 0) {
-            comments = cacheResult.data.comments
-            isLoading = false
-            return@LaunchedEffect
-        }
-
-        try {
-            val response = if (objectType == "illust") {
-                PixivClient.pixivApi.getIllustComments(objectId)
-            } else {
-                PixivClient.pixivApi.getNovelComments(objectId)
-            }
-            comments = response.comments
-            error = null
-        } catch (e: Exception) {
-            comments = null
-            error = e.message
-        } finally {
-            isLoading = false
-        }
-    }
+    val viewModel: CommentViewModel = viewModel(
+        key = "comments_${objectType}_$objectId",
+        factory = CommentViewModel.factory(objectId, objectType)
+    )
+    val state by viewModel.pagedState.collectAsState()
 
     Column(modifier = modifier.fillMaxWidth()) {
         HorizontalDivider(
@@ -99,27 +65,27 @@ fun CommentPreviewSection(
         }
 
         when {
-            isLoading -> {
+            state.isLoading && state.isEmpty -> {
                 LoadingIndicator()
             }
 
-            error != null -> {
+            state.hasError && state.isEmpty -> {
                 ErrorRetryState(
-                    error = error ?: stringResource(R.string.load_error),
-                    onRetry = { retryTrigger++ },
+                    error = state.error ?: stringResource(R.string.load_error),
+                    onRetry = { viewModel.refresh() },
                     scrollable = false,
                     showPullToRefreshHint = false
                 )
             }
 
-            comments.isNullOrEmpty() -> {
+            state.isEmpty -> {
                 EmptyState(
                     text = stringResource(R.string.no_comments)
                 )
             }
 
             else -> {
-                comments!!.take(3).forEach { comment ->
+                state.items.take(3).forEach { comment ->
                     CompactCommentCard(
                         comment = comment,
                         onClick = onViewAll
