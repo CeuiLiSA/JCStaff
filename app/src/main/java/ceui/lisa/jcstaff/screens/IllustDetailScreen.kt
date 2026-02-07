@@ -33,6 +33,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -149,22 +150,40 @@ fun IllustDetailScreen(
             val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
             val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
             val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
-            val gridSpacing = if (gridSpacingEnabled) 8.dp else 1.dp
+            val gridSpacing = if (gridSpacingEnabled) 8.dp else 0.dp
+            val gridPaddingHorizontal = if (gridSpacingEnabled) 8.dp else 0.dp
+
+            // 抵消 grid contentPadding 的 modifier，让 FullLine item 占满全宽
+            val fullWidthModifier = if (gridPaddingHorizontal > 0.dp) {
+                Modifier.layout { measurable, constraints ->
+                    val padPx = gridPaddingHorizontal.roundToPx()
+                    val placeable = measurable.measure(
+                        constraints.copy(maxWidth = constraints.maxWidth + padPx * 2)
+                    )
+                    layout(placeable.width, placeable.height) {
+                        placeable.place(-padPx, 0)
+                    }
+                }
+            } else {
+                Modifier
+            }
 
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
                 contentPadding = PaddingValues(
-                    start = if (gridSpacingEnabled) 8.dp else 0.dp,
-                    end = if (gridSpacingEnabled) 8.dp else 0.dp,
+                    start = gridPaddingHorizontal,
+                    end = gridPaddingHorizontal,
                     top = 0.dp,
                     bottom = paddingValues.calculateBottomPadding() + 16.dp
                 ),
                 horizontalArrangement = Arrangement.spacedBy(gridSpacing),
-                verticalItemSpacing = gridSpacing,
+                verticalItemSpacing = 0.dp,
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 图片区域 - 可折叠
+                // ══════════════════════════════════════════════════════
+                // 图片区域（始终全宽）
+                // ══════════════════════════════════════════════════════
                 item(key = "images_section", span = StaggeredGridItemSpan.FullLine) {
                     CollapsibleImageSection(
                         illustId = illustId,
@@ -182,15 +201,20 @@ fun IllustDetailScreen(
                                     sharedElementKey = ""
                                 )
                             )
-                        }
+                        },
+                        modifier = fullWidthModifier
                     )
                 }
+
+                // ══════════════════════════════════════════════════════
+                // 中间详情区域（全宽，自行管理内边距，无额外间距）
+                // ══════════════════════════════════════════════════════
 
                 // 加载状态
                 if (isLoading) {
                     item(key = "loading", span = StaggeredGridItemSpan.FullLine) {
                         Box(
-                            modifier = Modifier
+                            modifier = fullWidthModifier
                                 .fillMaxWidth()
                                 .padding(32.dp),
                             contentAlignment = Alignment.Center
@@ -201,7 +225,7 @@ fun IllustDetailScreen(
                 } else if (error != null && illust == null) {
                     item(key = "error", span = StaggeredGridItemSpan.FullLine) {
                         Box(
-                            modifier = Modifier
+                            modifier = fullWidthModifier
                                 .fillMaxWidth()
                                 .padding(32.dp),
                             contentAlignment = Alignment.Center
@@ -223,77 +247,93 @@ fun IllustDetailScreen(
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                            modifier = fullWidthModifier
+                                .padding(horizontal = 16.dp, vertical = 16.dp)
                         )
                     }
 
                     // 作者信息区域
                     item(key = "author", span = StaggeredGridItemSpan.FullLine) {
-                        IllustAuthorRow(
-                            user = loadedIllust.user,
-                            isFollowed = isFollowed,
-                            onFollowStateChanged = { },
-                            onUserClick = { userId ->
-                                navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                            }
-                        )
+                        Box(modifier = fullWidthModifier) {
+                            IllustAuthorRow(
+                                user = loadedIllust.user,
+                                isFollowed = isFollowed,
+                                onFollowStateChanged = { },
+                                onUserClick = { userId ->
+                                    navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                                }
+                            )
+                        }
                     }
 
                     // 操作按钮行
                     item(key = "actions", span = StaggeredGridItemSpan.FullLine) {
-                        IllustActionBar(
-                            illust = loadedIllust,
-                            isBookmarked = isBookmarked,
-                            downloadUrl = firstOriginalUrl ?: previewUrl,
-                            onBookmarkStateChanged = { newState, updatedIllust ->
-                                detailViewModel.updateBookmarkState(newState, updatedIllust)
-                            },
-                            currentUserId = currentUserId ?: 0L
-                        )
+                        Box(modifier = fullWidthModifier) {
+                            IllustActionBar(
+                                illust = loadedIllust,
+                                isBookmarked = isBookmarked,
+                                downloadUrl = firstOriginalUrl ?: previewUrl,
+                                onBookmarkStateChanged = { newState, updatedIllust ->
+                                    detailViewModel.updateBookmarkState(newState, updatedIllust)
+                                },
+                                currentUserId = currentUserId ?: 0L
+                            )
+                        }
                     }
 
                     // 标签
                     if (!loadedIllust.tags.isNullOrEmpty()) {
                         item(key = "tags", span = StaggeredGridItemSpan.FullLine) {
-                            IllustTags(
-                                tags = loadedIllust.tags,
-                                onTagClick = { tag ->
-                                    BrowseHistoryRepository.recordSearch(tag)
-                                    navViewModel.navigate(NavRoute.TagDetail(tag = tag))
-                                }
-                            )
+                            Box(modifier = fullWidthModifier) {
+                                IllustTags(
+                                    tags = loadedIllust.tags,
+                                    onTagClick = { tag ->
+                                        BrowseHistoryRepository.recordSearch(tag)
+                                        navViewModel.navigate(NavRoute.TagDetail(tag = tag))
+                                    }
+                                )
+                            }
                         }
                     }
 
                     // 作品简介
                     if (!loadedIllust.caption.isNullOrBlank()) {
                         item(key = "caption", span = StaggeredGridItemSpan.FullLine) {
-                            IllustCaption(caption = loadedIllust.caption)
+                            Box(modifier = fullWidthModifier) {
+                                IllustCaption(caption = loadedIllust.caption)
+                            }
                         }
                     }
 
-
                     // 元信息区域
                     item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
-                        IllustMetaInfo(illust = loadedIllust)
+                        Box(modifier = fullWidthModifier) {
+                            IllustMetaInfo(illust = loadedIllust)
+                        }
                     }
 
                     // 评论预览
                     item(key = "comment_preview", span = StaggeredGridItemSpan.FullLine) {
-                        CommentPreviewSection(
-                            objectId = illustId,
-                            objectType = "illust",
-                            onViewAll = {
-                                navViewModel.navigate(
-                                    NavRoute.CommentDetail(
-                                        objectId = illustId,
-                                        objectType = "illust"
+                        Box(modifier = fullWidthModifier) {
+                            CommentPreviewSection(
+                                objectId = illustId,
+                                objectType = "illust",
+                                onViewAll = {
+                                    navViewModel.navigate(
+                                        NavRoute.CommentDetail(
+                                            objectId = illustId,
+                                            objectType = "illust"
+                                        )
                                     )
-                                )
-                            }
-                        )
+                                }
+                            )
+                        }
                     }
                 }
+
+                // ══════════════════════════════════════════════════════
+                // 相关作品区域（保留 grid 的 contentPadding 和间距）
+                // ══════════════════════════════════════════════════════
 
                 // 相关作品区域占位符 - 用于检测滚动位置
                 item(key = "related_trigger", span = StaggeredGridItemSpan.FullLine) {
@@ -337,21 +377,23 @@ fun IllustDetailScreen(
 
                 // 相关作品瀑布流
                 items(relatedState.illusts, key = { "related_${it.id}" }) { relatedIllust ->
-                    IllustCard(
-                        illust = relatedIllust,
-                        onClick = {
-                            navViewModel.navigate(
-                                NavRoute.IllustDetail(
-                                    illustId = relatedIllust.id,
-                                    title = relatedIllust.title ?: "",
-                                    previewUrl = relatedIllust.previewUrl(),
-                                    aspectRatio = relatedIllust.aspectRatio()
+                    Box(modifier = Modifier.padding(bottom = gridSpacing)) {
+                        IllustCard(
+                            illust = relatedIllust,
+                            onClick = {
+                                navViewModel.navigate(
+                                    NavRoute.IllustDetail(
+                                        illustId = relatedIllust.id,
+                                        title = relatedIllust.title ?: "",
+                                        previewUrl = relatedIllust.previewUrl(),
+                                        aspectRatio = relatedIllust.aspectRatio()
+                                    )
                                 )
-                            )
-                        },
-                        showIllustInfo = showIllustInfo,
-                        cornerRadius = illustCornerRadius
-                    )
+                            },
+                            showIllustInfo = showIllustInfo,
+                            cornerRadius = illustCornerRadius
+                        )
+                    }
                 }
 
                 // 加载更多指示器

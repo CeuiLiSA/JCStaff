@@ -317,7 +317,7 @@ fun HomeScreen(
                             onClick = {
                                 coroutineScope.launch { pagerState.animateScrollToPage(2) }
                             },
-                            icon = { Icon(Icons.Default.FiberNew, contentDescription = null) },
+                            icon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
                             label = { Text(stringResource(R.string.tab_general)) }
                         )
                         NavigationBarItem(
@@ -325,7 +325,7 @@ fun HomeScreen(
                             onClick = {
                                 coroutineScope.launch { pagerState.animateScrollToPage(3) }
                             },
-                            icon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                            icon = { Icon(Icons.Default.FiberNew, contentDescription = null) },
                             label = { Text(stringResource(R.string.tab_new_works)) }
                         )
                     }
