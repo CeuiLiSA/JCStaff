@@ -1,6 +1,5 @@
 package ceui.lisa.jcstaff.home
 
-import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,14 +35,12 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
-import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.IllustCard
@@ -64,7 +61,6 @@ fun ForYouFeedPage() {
     val vm: HomeAllViewModel = viewModel()
     val state by vm.state.collectAsState()
     val navViewModel = LocalNavigationViewModel.current
-    val context = LocalContext.current
     val listState = rememberLazyListState()
 
     // Infinite scroll trigger
@@ -150,28 +146,6 @@ fun ForYouFeedPage() {
                                                     previewUrl = item.illust.previewUrl(),
                                                     aspectRatio = item.illust.aspectRatio()
                                                 )
-                                            )
-                                        },
-                                        onUserClick = {
-                                            item.illust.user?.id?.let { userId ->
-                                                navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                                            }
-                                        },
-                                        onTagClick = { tag ->
-                                            BrowseHistoryRepository.recordSearch(tag)
-                                            navViewModel.navigate(NavRoute.TagDetail(tag = tag))
-                                        },
-                                        onBookmarkClick = { vm.toggleBookmark(item.illust) },
-                                        onShareClick = {
-                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                                type = "text/plain"
-                                                putExtra(
-                                                    Intent.EXTRA_TEXT,
-                                                    "https://www.pixiv.net/artworks/${item.illust.id}"
-                                                )
-                                            }
-                                            context.startActivity(
-                                                Intent.createChooser(shareIntent, null)
                                             )
                                         }
                                     )

@@ -172,6 +172,7 @@
     <string name="unfollow_failed">取消关注失败</string>
     <string name="follow_private">悄悄关注</string>
     <string name="scroll_to_top">回到顶部</string>
+    <string name="related_articles">相关文章</string>
 
     <!-- User Profile -->
     <string name="works">作品</string>

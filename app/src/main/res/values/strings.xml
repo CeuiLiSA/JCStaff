@@ -383,4 +383,5 @@
     <!-- SauceNao -->
     <string name="sauce_nao">以图搜源</string>
     <string name="sauce_nao_open_in_app">在应用内打开</string>
+    <string name="related_articles">相关文章</string>
 </resources>

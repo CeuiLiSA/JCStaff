@@ -27,7 +27,7 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Tag
 
 // 16 组优雅的标签渐变色
-private val tagGradients = listOf(
+internal val tagGradients = listOf(
     // 经典优雅系列
     listOf(Color(0xFF667EEA), Color(0xFF764BA2)),  // 紫蓝梦幻
     listOf(Color(0xFFFF6B6B), Color(0xFFFF8E53)),  // 珊瑚日落

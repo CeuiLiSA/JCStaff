@@ -172,6 +172,7 @@
     <string name="unfollow_failed">팔로우 해제 실패</string>
     <string name="follow_private">비공개 팔로우</string>
     <string name="scroll_to_top">맨 위로</string>
+    <string name="related_articles">관련 기사</string>
 
     <!-- User Profile -->
     <string name="works">작품</string>

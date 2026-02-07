@@ -6,7 +6,8 @@ data class AmWork(
     val artworkLink: String,
     val userLink: String,
     val userImage: String,
-    val showImage: String
+    val showImage: String,
+    val pageCount: Int = 1
 ) {
     /**
      * Extract illust ID from artwork link
@@ -14,7 +15,8 @@ data class AmWork(
      */
     fun getIllustId(): Long? {
         return try {
-            val segments = artworkLink.split("/")
+            val cleaned = artworkLink.substringBefore("?").substringBefore("#")
+            val segments = cleaned.split("/")
             val artworksIndex = segments.indexOf("artworks")
             if (artworksIndex >= 0 && artworksIndex < segments.size - 1) {
                 segments[artworksIndex + 1].toLongOrNull()
@@ -32,7 +34,8 @@ data class AmWork(
      */
     fun getUserId(): Long? {
         return try {
-            val segments = userLink.split("/")
+            val cleaned = userLink.substringBefore("?").substringBefore("#")
+            val segments = cleaned.split("/")
             val usersIndex = segments.indexOf("users")
             if (usersIndex >= 0 && usersIndex < segments.size - 1) {
                 segments[usersIndex + 1].toLongOrNull()
@@ -43,4 +46,14 @@ data class AmWork(
             null
         }
     }
+}
+
+sealed interface ArticleContent {
+    data class Paragraph(val text: String) : ArticleContent
+    data class Work(val amWork: AmWork) : ArticleContent
+    data class RelatedArticle(
+        val title: String,
+        val url: String,
+        val thumbnailUrl: String?
+    ) : ArticleContent
 }

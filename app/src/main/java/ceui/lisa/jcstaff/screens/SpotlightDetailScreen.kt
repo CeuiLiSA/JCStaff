@@ -1,7 +1,7 @@
 package ceui.lisa.jcstaff.screens
 
-import android.content.Intent
 import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,11 +23,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.CircularProgressIndicator
 import ceui.lisa.jcstaff.components.CircleAvatar
@@ -53,12 +55,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.home.SpotlightDetailViewModel
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.AmWork
+import ceui.lisa.jcstaff.network.ArticleContent
 import ceui.lisa.jcstaff.network.SpotlightArticle
 import ceui.lisa.jcstaff.utils.formatRelativeDate
 import coil.compose.AsyncImage
@@ -78,7 +82,7 @@ fun SpotlightDetailScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
-            state.isLoading && state.amWorks.isEmpty() -> {
+            state.isLoading && state.contentBlocks.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -86,7 +90,7 @@ fun SpotlightDetailScreen(
                     LoadingIndicator()
                 }
             }
-            state.error != null && state.amWorks.isEmpty() -> {
+            state.error != null && state.contentBlocks.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -132,7 +136,6 @@ fun SpotlightDetailScreen(
                                 modifier = Modifier.fillMaxSize()
                             )
 
-                            // 顶部渐变（为了按钮可见）
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -148,7 +151,6 @@ fun SpotlightDetailScreen(
                                     )
                             )
 
-                            // 底部渐变
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -164,7 +166,6 @@ fun SpotlightDetailScreen(
                                     )
                             )
 
-                            // 分类标签
                             if (article.subcategory_label != null) {
                                 Surface(
                                     modifier = Modifier
@@ -185,14 +186,13 @@ fun SpotlightDetailScreen(
                         }
                     }
 
-                    // 文章信息
+                    // Article info
                     item {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 16.dp)
                         ) {
-                            // 标题
                             Text(
                                 text = article.pure_title ?: article.title ?: "",
                                 style = MaterialTheme.typography.headlineSmall,
@@ -202,7 +202,6 @@ fun SpotlightDetailScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // 日期
                             if (article.publish_date != null) {
                                 formatRelativeDate(article.publish_date)?.let { dateText ->
                                     Row(
@@ -226,7 +225,7 @@ fun SpotlightDetailScreen(
                         }
                     }
 
-                    // 描述
+                    // Description (for non-feature articles)
                     if (state.description.isNotBlank()) {
                         item {
                             Text(
@@ -240,16 +239,77 @@ fun SpotlightDetailScreen(
                         }
                     }
 
-                    // 分隔线 + 作品数量
-                    if (state.amWorks.isNotEmpty()) {
+                    // Divider
+                    if (state.contentBlocks.isNotEmpty()) {
                         item {
                             HorizontalDivider(
                                 modifier = Modifier.padding(horizontal = 16.dp),
                                 color = MaterialTheme.colorScheme.outlineVariant
                             )
                             Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+
+                    // Mixed content blocks (paragraphs + works interleaved)
+                    itemsIndexed(
+                        items = state.contentBlocks,
+                        key = { index, block ->
+                            when (block) {
+                                is ArticleContent.Work -> block.amWork.artworkLink
+                                is ArticleContent.Paragraph -> "paragraph_$index"
+                                is ArticleContent.RelatedArticle -> "related_${block.url}"
+                            }
+                        }
+                    ) { _, block ->
+                        when (block) {
+                            is ArticleContent.Paragraph -> {
+                                Text(
+                                    text = block.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.5f,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
+                            }
+                            is ArticleContent.Work -> {
+                                SpotlightArtworkItem(
+                                    amWork = block.amWork,
+                                    onClick = {
+                                        block.amWork.getIllustId()?.let { illustId ->
+                                            navViewModel.navigate(
+                                                NavRoute.IllustDetail(
+                                                    illustId = illustId,
+                                                    title = block.amWork.title,
+                                                    previewUrl = block.amWork.showImage,
+                                                    aspectRatio = 1f
+                                                )
+                                            )
+                                        }
+                                    },
+                                    onUserClick = {
+                                        block.amWork.getUserId()?.let { userId ->
+                                            navViewModel.navigate(NavRoute.UserProfile(userId = userId))
+                                        }
+                                    }
+                                )
+                            }
+                            is ArticleContent.RelatedArticle -> {
+                                // Should not appear in contentBlocks, handled separately below
+                            }
+                        }
+                    }
+
+                    // Related articles section
+                    if (state.relatedArticles.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "收录作品",
+                                text = stringResource(R.string.related_articles),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -257,39 +317,19 @@ fun SpotlightDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                         }
-                    }
 
-                    // 作品列表
-                    items(
-                        items = state.amWorks,
-                        key = { it.artworkLink }
-                    ) { amWork ->
-                        SpotlightArtworkItem(
-                            amWork = amWork,
-                            onClick = {
-                                amWork.getIllustId()?.let { illustId ->
-                                    navViewModel.navigate(
-                                        NavRoute.IllustDetail(
-                                            illustId = illustId,
-                                            title = amWork.title,
-                                            previewUrl = amWork.showImage,
-                                            aspectRatio = 1f
-                                        )
-                                    )
-                                }
-                            },
-                            onUserClick = {
-                                amWork.getUserId()?.let { userId ->
-                                    navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                                }
-                            }
-                        )
+                        items(
+                            items = state.relatedArticles,
+                            key = { it.url }
+                        ) { relatedArticle ->
+                            RelatedArticleItem(relatedArticle = relatedArticle)
+                        }
                     }
                 }
             }
         }
 
-        // 顶部悬浮导航栏
+        // Floating navigation bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -314,8 +354,8 @@ fun SpotlightDetailScreen(
             IconButton(
                 onClick = {
                     article.article_url?.let { url ->
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        context.startActivity(intent)
+                        CustomTabsIntent.Builder().setShowTitle(true).build()
+                            .launchUrl(context, Uri.parse(url))
                     }
                 },
                 colors = IconButtonDefaults.iconButtonColors(
@@ -345,7 +385,7 @@ private fun SpotlightArtworkItem(
             .fillMaxWidth()
             .clickable(onClick = onClick)
     ) {
-        // 用户信息
+        // User info
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -374,23 +414,55 @@ private fun SpotlightArtworkItem(
             }
         }
 
-        // 作品图片
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(amWork.showImage)
-                .crossfade(true)
-                .build(),
-            contentDescription = amWork.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 10f)
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
+        // Artwork image with optional page count badge
+        Box {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(amWork.showImage)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = amWork.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 10f)
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
 
-        // 作品标题
+            if (amWork.pageCount > 1) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 8.dp, end = 24.dp),
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color.Black.copy(alpha = 0.7f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GridView,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "${amWork.pageCount}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        // Title
         Text(
             text = amWork.title,
             style = MaterialTheme.typography.bodyMedium,
@@ -403,7 +475,7 @@ private fun SpotlightArtworkItem(
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         )
 
-        // 分隔线
+        // Divider
         HorizontalDivider(
             modifier = Modifier.padding(horizontal = 16.dp),
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
@@ -413,3 +485,45 @@ private fun SpotlightArtworkItem(
     }
 }
 
+@Composable
+private fun RelatedArticleItem(
+    relatedArticle: ArticleContent.RelatedArticle
+) {
+    val context = LocalContext.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                CustomTabsIntent.Builder().setShowTitle(true).build()
+                    .launchUrl(context, Uri.parse(relatedArticle.url))
+            }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (relatedArticle.thumbnailUrl != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(relatedArticle.thumbnailUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = relatedArticle.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+
+        Text(
+            text = relatedArticle.title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}

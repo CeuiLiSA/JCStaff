@@ -172,6 +172,7 @@
     <string name="unfollow_failed">Failed to unfollow</string>
     <string name="follow_private">Follow Privately</string>
     <string name="scroll_to_top">Back to Top</string>
+    <string name="related_articles">Related Articles</string>
 
     <!-- User Profile -->
     <string name="works">Works</string>

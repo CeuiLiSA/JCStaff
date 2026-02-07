@@ -26,12 +26,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
 import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
-import ceui.lisa.jcstaff.network.Tag
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
@@ -46,8 +44,6 @@ fun IllustFeed(
     modifier: Modifier = Modifier,
     onRefresh: (() -> Unit)? = null,
     onLoadMore: (() -> Unit)? = null,
-    onBookmarkClick: ((Illust) -> Unit)? = null,
-    onShareClick: ((Illust) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
@@ -123,21 +119,6 @@ fun IllustFeed(
                                         aspectRatio = illust.aspectRatio()
                                     )
                                 )
-                            },
-                            onUserClick = {
-                                illust.user?.id?.let { userId ->
-                                    navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                                }
-                            },
-                            onTagClick = { tag ->
-                                BrowseHistoryRepository.recordSearch(tag)
-                                navViewModel.navigate(NavRoute.TagDetail(tag = tag))
-                            },
-                            onBookmarkClick = {
-                                onBookmarkClick?.invoke(illust)
-                            },
-                            onShareClick = {
-                                onShareClick?.invoke(illust)
                             }
                         )
                     }
