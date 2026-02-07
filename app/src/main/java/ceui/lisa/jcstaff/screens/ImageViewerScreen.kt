@@ -1,8 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
-import android.app.WallpaperManager
 import android.content.Intent
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -253,12 +251,21 @@ fun ImageViewerScreen(
                                         "${context.packageName}.fileprovider",
                                         imageFile
                                     )
-                                    val intent = WallpaperManager.getInstance(context)
-                                        .getCropAndSetWallpaperIntent(uri)
-                                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    context.startActivity(intent)
+                                    val mimeType = when {
+                                        imageFile.name.endsWith(".png", true) -> "image/png"
+                                        imageFile.name.endsWith(".webp", true) -> "image/webp"
+                                        imageFile.name.endsWith(".gif", true) -> "image/gif"
+                                        else -> "image/jpeg"
+                                    }
+                                    val intent = Intent(Intent.ACTION_ATTACH_DATA).apply {
+                                        addCategory(Intent.CATEGORY_DEFAULT)
+                                        setDataAndType(uri, mimeType)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(
+                                        Intent.createChooser(intent, context.getString(R.string.set_as_wallpaper))
+                                    )
                                 } catch (e: Exception) {
-                                    Log.e("ImageViewerScreen", "wallpaper_set_failed", e)
                                     Toast.makeText(
                                         context,
                                         context.getString(R.string.wallpaper_set_failed),
