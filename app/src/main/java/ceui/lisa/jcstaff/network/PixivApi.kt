@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.network
 
+import retrofit2.http.Body
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
@@ -9,6 +10,9 @@ import retrofit2.http.Query
 import retrofit2.http.Url
 
 interface PixivApi {
+
+    @POST("/v1/home/all")
+    suspend fun getHomeAll(@Body request: HomeAllReq): HomeAllResponse
 
     @GET("/v1/{type}/recommended")
     suspend fun getRecommendedContent(

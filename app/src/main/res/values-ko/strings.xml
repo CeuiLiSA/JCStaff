@@ -306,6 +306,8 @@
     <!-- General Tab -->
     <string name="tab_general">종합</string>
     <string name="tab_spotlight">스포트라이트</string>
+    <string name="tab_for_you">추천</string>
+    <string name="pickup_more_comments">댓글 %1$d개</string>
     <string name="spotlight_empty">스포트라이트 기사가 없습니다</string>
 
     <!-- Cache Browser -->

@@ -1943,7 +1943,7 @@ private fun GeneralTabPage() {
 
     val tabs = listOf(
         stringResource(R.string.tab_spotlight),
-        stringResource(R.string.coming_soon)
+        stringResource(R.string.tab_for_you)
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1979,7 +1979,7 @@ private fun GeneralTabPage() {
         ) { innerPage ->
             when (innerPage) {
                 0 -> SpotlightPage()
-                1 -> EmptyPlaceholderPage()
+                1 -> ForYouFeedPage()
             }
         }
     }

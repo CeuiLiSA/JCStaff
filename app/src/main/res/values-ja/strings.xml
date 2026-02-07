@@ -306,6 +306,8 @@
     <!-- General Tab -->
     <string name="tab_general">総合</string>
     <string name="tab_spotlight">スポットライト</string>
+    <string name="tab_for_you">おすすめ</string>
+    <string name="pickup_more_comments">%1$d件のコメント</string>
     <string name="spotlight_empty">スポットライト記事がありません</string>
 
     <!-- Cache Browser -->
