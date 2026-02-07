@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff.screens
 
 import android.app.WallpaperManager
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -246,7 +247,7 @@ fun ImageViewerScreen(
                             isSaving = true
                             coroutineScope.launch {
                                 try {
-                                    val imageFile = ensureLocalFile(context, effectiveUrl)
+                                    val imageFile = prepareShareableImageFile(context, effectiveUrl)
                                     val uri = FileProvider.getUriForFile(
                                         context,
                                         "${context.packageName}.fileprovider",
@@ -257,6 +258,7 @@ fun ImageViewerScreen(
                                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
+                                    Log.e("ImageViewerScreen", "wallpaper_set_failed", e)
                                     Toast.makeText(
                                         context,
                                         context.getString(R.string.wallpaper_set_failed),
@@ -274,29 +276,44 @@ fun ImageViewerScreen(
 }
 
 /**
- * 确保图片有本地文件可用（优先使用缓存，否则下载到临时文件）
+ * 准备可供 FileProvider 共享的图片文件（带正确的图片扩展名）。
+ * WallpaperManager.getCropAndSetWallpaperIntent 会通过 ContentResolver.getType()
+ * 检查 MIME 类型，FileProvider 根据文件扩展名推断 MIME，所以必须保证扩展名正确。
  */
-private suspend fun ensureLocalFile(
+private suspend fun prepareShareableImageFile(
     context: android.content.Context,
     imageUrl: String
 ): File = withContext(Dispatchers.IO) {
+    val shareDir = File(context.cacheDir, "wallpaper_share").apply { mkdirs() }
+    // 清理旧文件
+    shareDir.listFiles()?.forEach { it.delete() }
+
+    // 从 URL 推断扩展名，回退到 jpg
+    val extension = imageUrl.substringAfterLast('.', "jpg")
+        .substringBefore('?')
+        .substringBefore('/')
+        .lowercase()
+        .let { ext -> if (ext in listOf("jpg", "jpeg", "png", "webp", "gif")) ext else "jpg" }
+
+    val destFile = File(shareDir, "wallpaper.$extension")
+
     // 优先使用 LoadTaskManager 的缓存
     val cached = LoadTaskManager.getCachedFilePath(imageUrl)
     if (cached != null) {
-        return@withContext File(cached)
+        File(cached).copyTo(destFile, overwrite = true)
+        return@withContext destFile
     }
 
-    // 没有缓存，下载到临时文件
-    val tempFile = File(context.cacheDir, "wallpaper_temp_${System.currentTimeMillis()}")
+    // 没有缓存，下载到目标文件
     val request = Request.Builder().url(imageUrl).build()
     PixivClient.imageClient.newCall(request).execute().use { response ->
         if (!response.isSuccessful) throw Exception("HTTP ${response.code}")
         val body = response.body ?: throw Exception("Empty body")
-        tempFile.sink().buffer().use { sink ->
+        destFile.sink().buffer().use { sink ->
             body.source().use { source ->
                 sink.writeAll(source)
             }
         }
     }
-    tempFile
+    destFile
 }
