@@ -211,12 +211,6 @@ fun IllustCard(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Gif,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(12.dp)
-                                )
                                 Text(
                                     text = "GIF",
                                     style = MaterialTheme.typography.labelSmall,

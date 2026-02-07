@@ -429,22 +429,22 @@ fun IllustFeedCard(
                     if (illust.illust_ai_type == 2) {
                         BadgeChip(
                             text = stringResource(R.string.ai),
-                            containerColor = Color(0xFF9C27B0).copy(alpha = 0.9f),
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.9f),
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                         )
                     }
                     if (illust.isGif()) {
                         BadgeChip(
                             text = "GIF",
-                            containerColor = Color(0xFF00BCD4).copy(alpha = 0.9f),
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                     if (illust.isManga()) {
                         BadgeChip(
                             text = stringResource(R.string.manga),
-                            containerColor = Color(0xFFFF9800).copy(alpha = 0.9f),
-                            contentColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -145,6 +146,14 @@ object SettingsStore {
         globalDataStore?.edit { preferences ->
             preferences[SELECTED_LANGUAGE] = tag
         }
+    }
+
+    /**
+     * 直接从 DataStore 读取语言设置，绕过 StateFlow 的初始值。
+     * 用于 Application.onCreate() 中同步读取，避免和 startSync() 的竞态。
+     */
+    suspend fun readSelectedLanguageDirectly(): String? {
+        return globalDataStore?.data?.first()?.get(SELECTED_LANGUAGE)
     }
 
 }

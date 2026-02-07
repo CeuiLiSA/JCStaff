@@ -9,7 +9,6 @@ import ceui.lisa.jcstaff.network.PixivClient
 import coil.Coil
 import coil.ImageLoader
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
 class TheApplication : Application() {
@@ -29,8 +28,9 @@ class TheApplication : Application() {
         SettingsStore.initialize(this)
 
         // Initialize language synchronously to avoid flash of default language
+        // 直接从 DataStore 读取，不用 StateFlow（startSync 是异步的，StateFlow 初始值为 null）
         val savedTag = runBlocking(Dispatchers.IO) {
-            SettingsStore.selectedLanguage.first()
+            SettingsStore.readSelectedLanguageDirectly()
         }
         LanguageManager.initialize(savedTag)
 
