@@ -92,6 +92,13 @@ fun SauceNaoScreen() {
 
     var state by remember { mutableStateOf<SauceNaoState>(SauceNaoState.Idle) }
     var webView by remember { mutableStateOf<WebView?>(null) }
+    // Clean up WebView native resources when leaving composition
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose {
+            webView?.destroy()
+            webView = null
+        }
+    }
     var canGoBack by remember { mutableStateOf(false) }
     var pageTitle by remember { mutableStateOf(context.getString(R.string.sauce_nao)) }
     var loadingProgress by remember { mutableFloatStateOf(0f) }

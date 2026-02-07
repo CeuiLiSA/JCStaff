@@ -51,17 +51,30 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+        private var currentUserId: Long? = null
 
         fun getInstanceForUser(context: Context, userId: Long): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+            return synchronized(this) {
+                val existing = INSTANCE
+                if (existing != null && currentUserId == userId) {
+                    return existing
+                }
+                // Close previous instance if switching users
+                if (existing != null && currentUserId != userId) {
+                    existing.close()
+                    INSTANCE = null
+                }
+                Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "jcstaff_db_$userId"
                 )
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
-                    .also { INSTANCE = it }
+                    .also {
+                        INSTANCE = it
+                        currentUserId = userId
+                    }
             }
         }
 
@@ -69,6 +82,7 @@ abstract class AppDatabase : RoomDatabase() {
             synchronized(this) {
                 INSTANCE?.close()
                 INSTANCE = null
+                currentUserId = null
             }
         }
     }

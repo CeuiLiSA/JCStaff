@@ -28,6 +28,7 @@ object AccountSessionManager {
 
     private const val TAG = "AccountSession"
 
+    @Volatile
     private var currentAuthRepository: AuthRepository? = null
 
     fun getCurrentAuthRepository(): AuthRepository? = currentAuthRepository

@@ -97,8 +97,10 @@ fun UserInfoCard(
                     labelWidth = 48.dp,
                     isLink = true,
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(profile?.webpage))
-                        context.startActivity(intent)
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(profile?.webpage))
+                            context.startActivity(intent)
+                        } catch (_: Exception) { }
                     }
                 )
             }
@@ -112,9 +114,11 @@ fun UserInfoCard(
                     labelWidth = 48.dp,
                     isLink = true,
                     onClick = {
-                        val url = profile?.twitter_url ?: "https://twitter.com/${profile?.twitter_account}"
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        context.startActivity(intent)
+                        try {
+                            val url = profile?.twitter_url ?: "https://twitter.com/${profile?.twitter_account}"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            context.startActivity(intent)
+                        } catch (_: Exception) { }
                     }
                 )
             }

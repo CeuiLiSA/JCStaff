@@ -129,7 +129,7 @@ class CommentViewModel(
                 }
             } catch (e: Exception) {
                 _interactionState.value = _interactionState.value.copy(isPosting = false)
-                throw e
+                e.printStackTrace()
             }
         }
     }
@@ -150,7 +150,7 @@ class CommentViewModel(
                 )
             } catch (e: Exception) {
                 _interactionState.value = _interactionState.value.copy(isDeleting = false)
-                throw e
+                e.printStackTrace()
             }
         }
     }

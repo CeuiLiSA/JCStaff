@@ -1,6 +1,6 @@
 package ceui.lisa.jcstaff.network
 
-import android.util.Log
+import ceui.lisa.jcstaff.BuildConfig
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.Strictness
@@ -56,6 +56,7 @@ object PixivClient {
             .build()
     }
 
+    @Volatile
     private var _pixivApi: PixivApi? = null
     private var currentPkce: PKCEItem? = null
     private val gson: Gson = GsonBuilder()
@@ -67,24 +68,10 @@ object PixivClient {
 
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
             cookieStore[url.host] = cookies.toMutableList()
-            Log.d("CookieJar", "saveFromResponse [${url.host}] cookies:")
-            cookies.forEach { cookie ->
-                Log.d(
-                    "CookieJar", "  ${cookie.name}=${cookie.value} " +
-                            "(domain=${cookie.domain}, path=${cookie.path}, " +
-                            "secure=${cookie.secure}, httpOnly=${cookie.httpOnly}, " +
-                            "expiresAt=${cookie.expiresAt})"
-                )
-            }
         }
 
         override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            val cookies = cookieStore[url.host] ?: emptyList()
-            Log.d("CookieJar", "loadForRequest [${url.host}] sending ${cookies.size} cookies:")
-            cookies.forEach { cookie ->
-                Log.d("CookieJar", "  ${cookie.name}=${cookie.value}")
-            }
-            return cookies
+            return cookieStore[url.host] ?: emptyList()
         }
     }
 
@@ -94,8 +81,10 @@ object PixivClient {
 
     val pixivApi: PixivApi
         get() {
-            return _pixivApi ?: createAppClient().create(PixivApi::class.java).also {
-                _pixivApi = it
+            return _pixivApi ?: synchronized(this) {
+                _pixivApi ?: createAppClient().create(PixivApi::class.java).also {
+                    _pixivApi = it
+                }
             }
         }
 
@@ -175,9 +164,13 @@ object PixivClient {
             .protocols(listOf(Protocol.HTTP_1_1))
             .cookieJar(cookieJar)
             .addInterceptor(HeaderInterceptor())
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(HttpLoggingInterceptor().apply {
+                        level = HttpLoggingInterceptor.Level.BODY
+                    })
+                }
+            }
             .build()
 
         return Retrofit.Builder()
@@ -197,9 +190,13 @@ object PixivClient {
             .addInterceptor(ApiCacheInterceptor())
             .addInterceptor(TokenRefreshInterceptor())
             .addInterceptor(HeaderInterceptor { TokenManager.getAccessToken() })
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(HttpLoggingInterceptor().apply {
+                        level = HttpLoggingInterceptor.Level.BODY
+                    })
+                }
+            }
             .build()
 
         return Retrofit.Builder()

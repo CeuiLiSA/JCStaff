@@ -90,6 +90,7 @@ import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.ErrorRetryState
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.components.LoadingIndicator
+import ceui.lisa.jcstaff.components.NovelCard
 import ceui.lisa.jcstaff.home.WebTagDetailUiState
 import ceui.lisa.jcstaff.home.WebTagDetailViewModel
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
@@ -98,6 +99,7 @@ import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Novel
 import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.network.WebTagTranslation
+import ceui.lisa.jcstaff.utils.formatCount
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.launch
@@ -789,110 +791,6 @@ private fun NovelPage(
     }
 }
 
-@Composable
-private fun NovelCard(
-    novel: Novel,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            // 封面
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(novel.image_urls?.medium)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = novel.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(72.dp, 100.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                // 标题
-                Text(
-                    text = novel.title ?: "",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // 作者
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircleAvatar(
-                        imageUrl = novel.user?.profile_image_urls?.medium,
-                        size = 18.dp,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = novel.user?.name ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 统计信息
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "${novel.text_length ?: 0} 字",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    novel.total_bookmarks?.let { bookmarks ->
-                        Text(
-                            text = "♥ ${formatCount(bookmarks)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                // 简介
-                novel.caption?.takeIf { it.isNotBlank() }?.let { caption ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = caption.replace(Regex("<[^>]*>"), "").trim(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-    }
-}
-
 // ==================== Common Components ====================
 
 @Composable
@@ -952,13 +850,3 @@ private fun TagChip(
     )
 }
 
-// ==================== Utils ====================
-
-private fun formatCount(count: Int): String {
-    return when {
-        count >= 1_000_000 -> String.format("%.1fM", count / 1_000_000.0)
-        count >= 10_000 -> String.format("%.1fW", count / 10_000.0)
-        count >= 1_000 -> String.format("%.1fK", count / 1_000.0)
-        else -> count.toString()
-    }
-}

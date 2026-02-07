@@ -68,11 +68,13 @@ class ApiCacheInterceptor : Interceptor {
     }
 
     private fun cacheAndRebuildResponse(cacheKey: String, response: Response): Response {
-        return try {
-            val bodyBytes = response.body?.bytes() ?: return response
-            val contentType = response.body?.contentType()?.toString()
+        // Read body bytes and content type BEFORE consuming the body
+        val bodyBytes = response.body?.bytes() ?: return response
+        val contentType = response.body?.contentType()?.toString()
+        val mediaType = contentType?.toMediaType()
 
-            // 存入缓存
+        // Try to cache, but always rebuild the response with the saved bytes
+        try {
             ApiCacheManager.putSync(
                 key = cacheKey,
                 responseBody = bodyBytes,
@@ -81,21 +83,19 @@ class ApiCacheInterceptor : Interceptor {
                 httpMessage = response.message
             )
 
-            Log.d(TAG, "💾 STORED ${response.request.url.encodedPath}")
-
-            // 重建响应（因为 body 只能读一次）
-            val mediaType = contentType?.toMediaType()
-            Response.Builder()
-                .request(response.request)
-                .protocol(response.protocol)
-                .code(response.code)
-                .message(response.message)
-                .headers(response.headers)
-                .body(bodyBytes.toResponseBody(mediaType))
-                .build()
+            Log.d(TAG, "STORED ${response.request.url.encodedPath}")
         } catch (e: Exception) {
-            Log.e(TAG, "❗ Cache write failed: ${e.message}")
-            response
+            Log.e(TAG, "Cache write failed: ${e.message}")
         }
+
+        // Always rebuild response with the bytes we read (body was consumed)
+        return Response.Builder()
+            .request(response.request)
+            .protocol(response.protocol)
+            .code(response.code)
+            .message(response.message)
+            .headers(response.headers)
+            .body(bodyBytes.toResponseBody(mediaType))
+            .build()
     }
 }

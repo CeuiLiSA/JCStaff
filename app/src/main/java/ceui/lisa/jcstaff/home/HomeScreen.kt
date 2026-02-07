@@ -127,6 +127,7 @@ import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.utils.formatCount
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Tag
 import ceui.lisa.jcstaff.network.TrendingTag
@@ -1371,13 +1372,6 @@ private fun RankingCard(
     }
 }
 
-private fun formatCount(count: Int): String {
-    return when {
-        count >= 10000 -> String.format("%.1fK", count / 1000.0)
-        count >= 1000 -> String.format("%.1fK", count / 1000.0)
-        else -> count.toString()
-    }
-}
 
 // ==================== Section Header (App Store Style) ====================
 

@@ -48,7 +48,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
@@ -92,7 +94,6 @@ import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -107,22 +108,24 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            authViewModel.authState.collect { authState ->
-                when (authState) {
-                    is AuthState.Authenticated -> {
-                        val stack = navViewModel.backStack.value
-                        if (stack.isEmpty() || stack.first().route == NavRoute.Landing) {
-                            navViewModel.clearAndNavigate(NavRoute.Home)
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                authViewModel.authState.collect { authState ->
+                    when (authState) {
+                        is AuthState.Authenticated -> {
+                            val stack = navViewModel.backStack.value
+                            if (stack.isEmpty() || stack.first().route == NavRoute.Landing) {
+                                navViewModel.clearAndNavigate(NavRoute.Home)
+                            }
                         }
-                    }
 
-                    is AuthState.NotAuthenticated -> {
-                        navViewModel.clearAndNavigate(NavRoute.Landing)
-                    }
+                        is AuthState.NotAuthenticated -> {
+                            navViewModel.clearAndNavigate(NavRoute.Landing)
+                        }
 
-                    is AuthState.Loading -> {
-                        // 保持当前状态，等待加载完成
+                        is AuthState.Loading -> {
+                            // 保持当前状态，等待加载完成
+                        }
                     }
                 }
             }
@@ -275,8 +278,9 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
 
             // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
             key(activeUserId) {
+                val entry = currentEntry ?: return@key
                 AnimatedContent(
-                    targetState = requireNotNull(currentEntry),
+                    targetState = entry,
                     transitionSpec = {
                         if (skipNextTransition) {
                             skipNextTransition = false

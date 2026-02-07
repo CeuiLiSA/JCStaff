@@ -4,8 +4,8 @@ import ceui.lisa.jcstaff.core.LanguageManager
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.security.MessageDigest
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class HeaderInterceptor(
@@ -44,11 +44,11 @@ data class RequestNonce(
     val xClientHash: String,
 ) {
     companion object {
-        private val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZZZ", Locale.US)
+        private val format: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXXXX", Locale.US)
         private const val HASH_SECRET = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
 
         fun build(): RequestNonce {
-            val time = format.format(Date())
+            val time = ZonedDateTime.now().format(format)
             val hash = md5("$time$HASH_SECRET")
             return RequestNonce(time, hash)
         }

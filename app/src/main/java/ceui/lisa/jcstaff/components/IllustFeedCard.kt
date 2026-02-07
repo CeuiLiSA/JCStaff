@@ -63,10 +63,10 @@ import androidx.compose.ui.unit.sp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.Tag
+import ceui.lisa.jcstaff.utils.formatCount
 import ceui.lisa.jcstaff.utils.formatRelativeDate
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import java.util.Locale
 
 /**
  * 社交信息流风格的插画卡片
@@ -504,7 +504,7 @@ private fun BookmarkButton(
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (isBookmarked) 1f else 1f,
+        targetValue = if (isBookmarked) 1.15f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
@@ -530,15 +530,4 @@ private fun BookmarkButton(
     }
 }
 
-/**
- * 格式化数字（K/M 单位）
- */
-private fun formatCount(count: Int): String {
-    return when {
-        count >= 1_000_000 -> String.format(Locale.US, "%.1fM", count / 1_000_000.0)
-        count >= 10_000 -> String.format(Locale.US, "%.1fK", count / 1_000.0)
-        count >= 1_000 -> String.format(Locale.US, "%.1fK", count / 1_000.0)
-        else -> count.toString()
-    }
-}
 

@@ -2,7 +2,6 @@ package ceui.lisa.jcstaff.core
 
 import android.content.ContentValues
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -28,7 +27,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import java.io.File
-import java.io.FileOutputStream
 
 /**
  * 下载任务管理器
@@ -92,7 +90,7 @@ object DownloadTaskManager {
         val dao = dao ?: return
         scope.launch {
             runCatching {
-                val pageCount = illust.page_count ?: illust.meta_pages?.size ?: 1
+                val pageCount = illust.page_count.takeIf { it > 0 } ?: illust.meta_pages?.size ?: 1
                 val entity = DownloadTaskEntity(
                     illustId = illust.id,
                     title = illust.title ?: "",
@@ -135,7 +133,7 @@ object DownloadTaskManager {
     private suspend fun addTaskInternal(illust: Illust) {
         val dao = dao ?: return
         runCatching {
-            val pageCount = illust.page_count ?: illust.meta_pages?.size ?: 1
+            val pageCount = illust.page_count.takeIf { it > 0 } ?: illust.meta_pages?.size ?: 1
             val entity = DownloadTaskEntity(
                 illustId = illust.id,
                 title = illust.title ?: "",
@@ -318,6 +316,9 @@ object DownloadTaskManager {
             dao.markCompleted(task.illustId, DownloadStatus.COMPLETED, downloadedPages)
             Log.d(TAG, "Completed download: ${task.illustId}")
 
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Re-throw CancellationException to properly support coroutine cancellation
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download ${task.illustId}: ${e.message}")
             dao.updateStatus(task.illustId, DownloadStatus.FAILED, e.message)
@@ -345,118 +346,96 @@ object DownloadTaskManager {
         fileName: String,
         onProgress: (Int) -> Unit
     ): Result<Unit> = withContext(Dispatchers.IO) {
+        var tempFile: File? = null
         try {
             val request = Request.Builder()
                 .url(imageUrl)
-                .addHeader("User-Agent", "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)")
                 .build()
 
             val response = PixivClient.imageClient.newCall(request).execute()
 
-            if (!response.isSuccessful) {
-                return@withContext Result.failure(Exception("HTTP ${response.code}"))
-            }
+            response.use { resp ->
+                if (!resp.isSuccessful) {
+                    return@withContext Result.failure(Exception("HTTP ${resp.code}"))
+                }
 
-            val body = response.body
-                ?: return@withContext Result.failure(Exception("Empty response body"))
+                val body = resp.body
+                    ?: return@withContext Result.failure(Exception("Empty response body"))
 
-            val contentLength = body.contentLength()
-            val inputStream = body.byteStream()
+                val contentLength = body.contentLength()
+                val mimeType = body.contentType()?.toString() ?: "image/jpeg"
 
-            // 读取到临时文件并跟踪进度
-            val tempFile = File.createTempFile("download_", ".tmp", context.cacheDir)
-            var totalBytesRead = 0L
-            var lastProgress = 0
+                // 读取到临时文件并跟踪进度
+                tempFile = File.createTempFile("download_", ".tmp", context.cacheDir)
+                var totalBytesRead = 0L
+                var lastProgress = 0
 
-            tempFile.outputStream().use { outputStream ->
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
+                body.byteStream().use { inputStream ->
+                    tempFile!!.outputStream().use { outputStream ->
+                        val buffer = ByteArray(8192)
+                        var bytesRead: Int
 
-                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                    outputStream.write(buffer, 0, bytesRead)
-                    totalBytesRead += bytesRead
+                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                            outputStream.write(buffer, 0, bytesRead)
+                            totalBytesRead += bytesRead
 
-                    // 计算并报告进度
-                    if (contentLength > 0) {
-                        val progress = ((totalBytesRead * 100) / contentLength).toInt()
-                        if (progress != lastProgress) {
-                            lastProgress = progress
-                            onProgress(progress)
+                            if (contentLength > 0) {
+                                val progress = ((totalBytesRead * 100) / contentLength).toInt()
+                                if (progress != lastProgress) {
+                                    lastProgress = progress
+                                    onProgress(progress)
+                                }
+                            }
                         }
                     }
                 }
+
+                // 直接将临时文件写入相册，避免 Bitmap 解码-重编码
+                val extension = when {
+                    mimeType.contains("png") -> ".png"
+                    mimeType.contains("webp") -> ".webp"
+                    mimeType.contains("gif") -> ".gif"
+                    else -> ".jpg"
+                }
+                val finalFileName = if (fileName.contains(".")) fileName else "$fileName$extension"
+                saveFileToGalleryDirect(context, tempFile!!, finalFileName, mimeType)
             }
-
-            inputStream.close()
-            response.close()
-
-            // 解码图片
-            val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath)
-            tempFile.delete()
-
-            if (bitmap == null) {
-                return@withContext Result.failure(Exception("Failed to decode image"))
-            }
-
-            saveToGallery(context, bitmap, fileName)
-            bitmap.recycle()
 
             onProgress(100)
             Result.success(Unit)
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)
+        } finally {
+            tempFile?.delete()
         }
     }
 
-    private fun saveToGallery(context: Context, bitmap: android.graphics.Bitmap, fileName: String) {
-        val format = if (fileName.endsWith(".png", ignoreCase = true)) {
-            android.graphics.Bitmap.CompressFormat.PNG
-        } else {
-            android.graphics.Bitmap.CompressFormat.JPEG
-        }
-
-        val mimeType = if (format == android.graphics.Bitmap.CompressFormat.PNG) "image/png" else "image/jpeg"
-        val extension = if (format == android.graphics.Bitmap.CompressFormat.PNG) ".png" else ".jpg"
-        val finalFileName = if (fileName.contains(".")) fileName else "$fileName$extension"
-
+    private fun saveFileToGalleryDirect(context: Context, sourceFile: File, fileName: String, mimeType: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, finalFileName)
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
                 put(MediaStore.Images.Media.MIME_TYPE, mimeType)
                 put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/JCStaff")
                 put(MediaStore.Images.Media.IS_PENDING, 1)
             }
-
             val resolver = context.contentResolver
             val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
                 ?: throw Exception("Failed to create MediaStore entry")
-
             resolver.openOutputStream(uri)?.use { outputStream ->
-                bitmap.compress(format, 100, outputStream)
+                sourceFile.inputStream().use { it.copyTo(outputStream) }
             }
-
             contentValues.clear()
             contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
             resolver.update(uri, contentValues, null, null)
         } else {
             val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
             val appDir = File(picturesDir, "JCStaff")
-            if (!appDir.exists()) {
-                appDir.mkdirs()
-            }
-
-            val file = File(appDir, finalFileName)
-            FileOutputStream(file).use { outputStream ->
-                bitmap.compress(format, 100, outputStream)
-            }
-
-            android.media.MediaScannerConnection.scanFile(
-                context,
-                arrayOf(file.absolutePath),
-                arrayOf(mimeType),
-                null
-            )
+            if (!appDir.exists()) appDir.mkdirs()
+            val destFile = File(appDir, fileName)
+            sourceFile.copyTo(destFile, overwrite = true)
+            android.media.MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), arrayOf(mimeType), null)
         }
     }
+
 }

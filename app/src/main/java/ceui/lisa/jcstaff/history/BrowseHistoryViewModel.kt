@@ -111,15 +111,17 @@ class BrowseHistoryViewModel : ViewModel() {
             runCatching {
                 val newIllusts = BrowseHistoryRepository.getIllustHistoryPage(illustPage)
                 storeIllusts(newIllusts)
-                val allIllusts = state.illusts + newIllusts
-                _illustState.value = state.copy(
+                // Re-read current state to avoid overwriting concurrent updates
+                val current = _illustState.value
+                val allIllusts = current.illusts + newIllusts
+                _illustState.value = current.copy(
                     illusts = allIllusts,
                     isLoadingMore = false,
-                    canLoadMore = allIllusts.size < state.totalCount
+                    canLoadMore = allIllusts.size < current.totalCount
                 )
                 illustPage++
             }.onFailure {
-                _illustState.value = state.copy(isLoadingMore = false)
+                _illustState.value = _illustState.value.copy(isLoadingMore = false)
             }
         }
     }
@@ -155,15 +157,16 @@ class BrowseHistoryViewModel : ViewModel() {
             runCatching {
                 val newNovels = BrowseHistoryRepository.getNovelHistoryPage(novelPage)
                 storeNovels(newNovels)
-                val allNovels = state.novels + newNovels
-                _novelState.value = state.copy(
+                val current = _novelState.value
+                val allNovels = current.novels + newNovels
+                _novelState.value = current.copy(
                     novels = allNovels,
                     isLoadingMore = false,
-                    canLoadMore = allNovels.size < state.totalCount
+                    canLoadMore = allNovels.size < current.totalCount
                 )
                 novelPage++
             }.onFailure {
-                _novelState.value = state.copy(isLoadingMore = false)
+                _novelState.value = _novelState.value.copy(isLoadingMore = false)
             }
         }
     }

@@ -229,8 +229,9 @@ fun DownloadHistoryScreen(
         )
     }
 
-    if (menuTask != null) {
-        val task = menuTask!!
+    val currentMenuTask = menuTask
+    if (currentMenuTask != null) {
+        val task = currentMenuTask
         val menuItems = mutableListOf<ActionMenuItem>()
 
         if (task.isFailed) {

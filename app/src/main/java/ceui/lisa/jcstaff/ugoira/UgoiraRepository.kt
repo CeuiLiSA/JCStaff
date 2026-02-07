@@ -47,7 +47,7 @@ object UgoiraRepository {
     private const val TAG = "UgoiraRepository"
     private const val UGOIRA_DIR = "ugoira"
 
-    private val gifCache = mutableMapOf<Long, UgoiraData>()
+    private val gifCache = java.util.concurrent.ConcurrentHashMap<Long, UgoiraData>()
 
     suspend fun getOrCreateGif(
         context: Context,
@@ -207,6 +207,10 @@ object UgoiraRepository {
         ZipFile(zipFile).use { zip ->
             zip.entries().asSequence().forEach { entry ->
                 val outputFile = File(outputDir, entry.name)
+                // Validate against zip path traversal attacks
+                if (!outputFile.canonicalPath.startsWith(outputDir.canonicalPath + File.separator)) {
+                    throw SecurityException("Zip entry attempts path traversal: ${entry.name}")
+                }
                 zip.getInputStream(entry).use { input ->
                     FileOutputStream(outputFile).use { output ->
                         input.copyTo(output)

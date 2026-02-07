@@ -20,7 +20,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -68,7 +71,10 @@ fun RankingDetailScreen(
     val modes = if (objectType == "manga") mangaRankingModes else illustRankingModes
     val pagerState = rememberPagerState(pageCount = { modes.size })
     val coroutineScope = rememberCoroutineScope()
-    val selectionManager = LocalSelectionManager.current
+    // Track selected date to pass to each pager's ViewModel
+    var selectedDate by remember { mutableStateOf<String?>(null) }
+    // Track ViewModel references for the current page to apply date changes
+    val rankingViewModels = remember { mutableMapOf<Int, RankingViewModel>() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -90,8 +96,9 @@ fun RankingDetailScreen(
                         context,
                         { _, year, month, dayOfMonth ->
                             val date = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                            // 通知所有可见的 RankingViewModel 更新日期
-                            // 通过重建 pager 实现
+                            selectedDate = date
+                            // Apply date to all loaded ViewModels
+                            rankingViewModels.values.forEach { it.setDate(date) }
                         },
                         calendar.get(Calendar.YEAR),
                         calendar.get(Calendar.MONTH),
@@ -144,6 +151,7 @@ fun RankingDetailScreen(
                 key = "ranking_${mode.mode}",
                 factory = RankingViewModel.factory(mode.mode)
             )
+            rankingViewModels[page] = rankingViewModel
             val rankingState by rankingViewModel.state.collectAsState()
 
             IllustGrid(

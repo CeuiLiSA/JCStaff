@@ -20,6 +20,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +51,7 @@ private val ugoiraRankingModes = listOf(
 fun UgoiraRankingScreen() {
     val navViewModel = LocalNavigationViewModel.current
     val context = LocalContext.current
+    val ugoiraViewModels = remember { mutableMapOf<Int, UgoiraRankingViewModel>() }
     val pagerState = rememberPagerState(pageCount = { ugoiraRankingModes.size })
     val coroutineScope = rememberCoroutineScope()
 
@@ -72,7 +74,7 @@ fun UgoiraRankingScreen() {
                         context,
                         { _, year, month, dayOfMonth ->
                             val date = String.format("%04d%02d%02d", year, month + 1, dayOfMonth)
-                            // TODO: 传递日期到当前 tab 的 ViewModel
+                            ugoiraViewModels.values.forEach { it.setDate(date) }
                         },
                         calendar.get(Calendar.YEAR),
                         calendar.get(Calendar.MONTH),
@@ -123,6 +125,7 @@ fun UgoiraRankingScreen() {
                 key = "ugoira_ranking_${mode.mode}",
                 factory = UgoiraRankingViewModel.factory(mode.mode)
             )
+            ugoiraViewModels[page] = viewModel
             val state by viewModel.state.collectAsState()
 
             IllustGrid(

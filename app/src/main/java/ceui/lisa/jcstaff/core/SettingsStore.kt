@@ -36,6 +36,7 @@ object SettingsStore {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
+    private var globalSyncJob: Job? = null
 
     /**
      * Per-user DataStore 单例缓存：每个文件名只创建一个实例
@@ -70,15 +71,14 @@ object SettingsStore {
     private fun startSync() {
         syncJob?.cancel()
         syncJob = scope.launch {
-            // 同步 per-user 设置
             dataStore?.data?.collect { preferences ->
                 _showIllustInfo.value = preferences[SHOW_ILLUST_INFO] ?: true
                 _illustCardCornerRadius.value = preferences[ILLUST_CARD_CORNER_RADIUS] ?: 8
                 _gridSpacingEnabled.value = preferences[GRID_SPACING_ENABLED] ?: true
             }
         }
-        // 同步全局语言设置
-        scope.launch {
+        globalSyncJob?.cancel()
+        globalSyncJob = scope.launch {
             globalDataStore?.data?.collect { preferences ->
                 _selectedLanguage.value = preferences[SELECTED_LANGUAGE]
             }

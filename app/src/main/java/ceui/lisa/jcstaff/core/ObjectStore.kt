@@ -48,7 +48,11 @@ enum class StoreType {
  */
 object ObjectStore {
 
+    private const val MAX_STORE_SIZE = 2000
+
     private val store = ConcurrentHashMap<StoreKey, MutableStateFlow<Storable>>()
+    // Track access order for LRU eviction
+    private val accessOrder = java.util.concurrent.ConcurrentLinkedDeque<StoreKey>()
 
     /**
      * 获取指定对象的 StateFlow
@@ -87,14 +91,19 @@ object ObjectStore {
     /**
      * 存储或更新对象
      * 如果对象已存在，更新其值；否则创建新的 StateFlow
+     * 使用 compute 保证原子性
      */
     fun <T : Storable> put(obj: T) {
         val key = obj.storeKey
-        val existing = store[key]
-        if (existing != null) {
-            existing.update { obj }
-        } else {
-            store[key] = MutableStateFlow(obj)
+        store.compute(key) { _, existing ->
+            if (existing != null) {
+                existing.update { obj }
+                existing
+            } else {
+                accessOrder.addFirst(key)
+                evictIfNeeded()
+                MutableStateFlow(obj)
+            }
         }
     }
 
@@ -140,6 +149,17 @@ object ObjectStore {
      */
     fun clear() {
         store.clear()
+        accessOrder.clear()
+    }
+
+    /**
+     * LRU 淘汰：当存储超过阈值时移除最旧的条目
+     */
+    private fun evictIfNeeded() {
+        while (store.size > MAX_STORE_SIZE) {
+            val oldest = accessOrder.pollLast() ?: break
+            store.remove(oldest)
+        }
     }
 
     /**
@@ -164,5 +184,6 @@ fun <T : Storable> ObjectStore.getOrPut(key: StoreKey, default: () -> T): StateF
 
     val obj = default()
     put(obj)
-    return get<T>(key)!!
+    // put() is atomic, so the value will always be present
+    return get<T>(key) ?: throw IllegalStateException("ObjectStore.put failed for key $key")
 }

@@ -208,11 +208,10 @@ object LoadTaskManager {
      */
     private fun startDownload(taskId: String) {
         val job = scope.launch {
+            val cacheFile = getCacheFile(taskId)
+            val tempFile = File(cacheFile.parent, "${cacheFile.name}.tmp")
             try {
                 updateState(taskId) { it.copy(state = LoadTaskState.LOADING) }
-
-                val cacheFile = getCacheFile(taskId)
-                val tempFile = File(cacheFile.parent, "${cacheFile.name}.tmp")
 
                 val request = Request.Builder()
                     .url(taskId)
@@ -220,33 +219,30 @@ object LoadTaskManager {
 
                 val response = PixivClient.imageClient.newCall(request).execute()
 
-                if (!response.isSuccessful) {
-                    throw Exception("HTTP ${response.code}")
-                }
+                response.use { resp ->
+                    if (!resp.isSuccessful) {
+                        throw Exception("HTTP ${resp.code}")
+                    }
 
-                val body = response.body ?: throw Exception("Empty response body")
-                val contentLength = body.contentLength()
+                    val body = resp.body ?: throw Exception("Empty response body")
+                    val contentLength = body.contentLength()
 
-                // 写入临时文件并追踪进度
-                body.source().use { source ->
-                    tempFile.sink().buffer().use { sink ->
-                        var totalBytesRead = 0L
-                        var bytesRead: Long
+                    body.source().use { source ->
+                        tempFile.sink().buffer().use { sink ->
+                            var totalBytesRead = 0L
+                            var bytesRead: Long
 
-                        while (source.read(sink.buffer, 8192).also { bytesRead = it } != -1L) {
-                            totalBytesRead += bytesRead
-                            sink.emitCompleteSegments()
-
-                            // 更新进度
-                            updateProgress(taskId, totalBytesRead, contentLength)
+                            while (source.read(sink.buffer, 8192).also { bytesRead = it } != -1L) {
+                                totalBytesRead += bytesRead
+                                sink.emitCompleteSegments()
+                                updateProgress(taskId, totalBytesRead, contentLength)
+                            }
                         }
                     }
                 }
 
-                // 下载完成，重命名为正式文件
                 tempFile.renameTo(cacheFile)
 
-                // 标记完成
                 updateState(taskId) {
                     it.copy(
                         state = LoadTaskState.COMPLETED,
@@ -256,7 +252,11 @@ object LoadTaskManager {
                     )
                 }
 
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                tempFile.delete()
+                throw e
             } catch (e: Exception) {
+                tempFile.delete()
                 updateState(taskId) {
                     it.copy(
                         state = LoadTaskState.FAILED,
@@ -268,7 +268,7 @@ object LoadTaskManager {
                 downloadJobs.remove(taskId)
             }
         }
-
+        // Store job BEFORE it starts executing by using the already-created reference
         downloadJobs[taskId] = job
     }
 

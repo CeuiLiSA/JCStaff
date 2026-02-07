@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -91,38 +92,38 @@ object ContentFilterManager {
     }
 
     fun blockUser(userId: Long) {
-        _blockedUserIds.value = _blockedUserIds.value + userId
-        _filterVersion.value++
+        _blockedUserIds.update { it + userId }
+        _filterVersion.update { it + 1 }
         persistUserIds()
     }
 
     fun unblockUser(userId: Long) {
-        _blockedUserIds.value = _blockedUserIds.value - userId
-        _filterVersion.value++
+        _blockedUserIds.update { it - userId }
+        _filterVersion.update { it + 1 }
         persistUserIds()
     }
 
     fun blockContent(contentId: Long) {
-        _blockedContentIds.value = _blockedContentIds.value + contentId
-        _filterVersion.value++
+        _blockedContentIds.update { it + contentId }
+        _filterVersion.update { it + 1 }
         persistContentIds()
     }
 
     fun unblockContent(contentId: Long) {
-        _blockedContentIds.value = _blockedContentIds.value - contentId
-        _filterVersion.value++
+        _blockedContentIds.update { it - contentId }
+        _filterVersion.update { it + 1 }
         persistContentIds()
     }
 
     fun blockTag(tag: String) {
-        _blockedTags.value = _blockedTags.value + tag
-        _filterVersion.value++
+        _blockedTags.update { it + tag }
+        _filterVersion.update { it + 1 }
         persistTags()
     }
 
     fun unblockTag(tag: String) {
-        _blockedTags.value = _blockedTags.value - tag
-        _filterVersion.value++
+        _blockedTags.update { it - tag }
+        _filterVersion.update { it + 1 }
         persistTags()
     }
 

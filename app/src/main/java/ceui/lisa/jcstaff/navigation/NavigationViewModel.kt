@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 enum class NavigationDirection { FORWARD, BACKWARD }
 
@@ -35,7 +36,7 @@ class NavigationViewModel : ViewModel() {
     private val _backStack = MutableStateFlow<List<BackStackEntry>>(emptyList())
     val backStack: StateFlow<List<BackStackEntry>> = _backStack.asStateFlow()
 
-    private var nextEntryId = 0
+    private val nextEntryId = AtomicInteger(0)
 
     /** 导航是否就绪（用于 SplashScreen 条件判断，StateFlow 线程安全） */
     private val _isReady = MutableStateFlow(false)
@@ -85,7 +86,7 @@ class NavigationViewModel : ViewModel() {
                 screenshotStore.captureOne(current.screenshotKey)
             }
         }
-        _backStack.value = _backStack.value + BackStackEntry(nextEntryId++, route)
+        _backStack.value = _backStack.value + BackStackEntry(nextEntryId.getAndIncrement(), route)
         updateDerivedState()
     }
 
@@ -104,7 +105,7 @@ class NavigationViewModel : ViewModel() {
         _navigationDirection.value = NavigationDirection.FORWARD
         // Clear all screenshots when resetting navigation
         _backStack.value.forEach { screenshotStore.remove(it.screenshotKey) }
-        _backStack.value = listOf(BackStackEntry(nextEntryId++, route))
+        _backStack.value = listOf(BackStackEntry(nextEntryId.getAndIncrement(), route))
         updateDerivedState()
         _isReady.value = true
     }

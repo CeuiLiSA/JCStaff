@@ -93,7 +93,7 @@ fun IllustDetailScreen(
     val error = detailState.error
     val isBookmarked = detailState.isBookmarked
 
-    Log.d("sadasddsaw", "${Gson().toJson(illust)}")
+    // Debug logging removed
 
     // 绑定 ViewModel
     LaunchedEffect(illustId) {

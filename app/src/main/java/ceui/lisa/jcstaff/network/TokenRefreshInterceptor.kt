@@ -37,14 +37,15 @@ class TokenRefreshInterceptor : Interceptor {
                 return response
             }
 
-            // 读取响应体检查是否是 token 过期错误
-            val responseBody = response.peekBody(Long.MAX_VALUE).string()
+            // 读取响应体检查是否是 token 过期错误（限制 1MB 防止 OOM）
+            val responseBody = response.peekBody(1024 * 1024).string()
+            val contentType = response.body?.contentType()
 
             if (!TokenManager.isTokenExpiredError(responseBody)) {
                 return response
             }
 
-            Log.d(TAG, "🔄 Token expired, attempting refresh (retry $retryCount)")
+            Log.d(TAG, "Token expired, attempting refresh (retry $retryCount)")
 
             // 关闭原响应
             response.close()
@@ -53,14 +54,14 @@ class TokenRefreshInterceptor : Interceptor {
             val newToken = runBlocking { TokenManager.refreshTokenSuspend() }
 
             if (newToken == null) {
-                Log.e(TAG, "❌ Token refresh failed")
-                // 刷新失败，返回原始错误响应
+                Log.e(TAG, "Token refresh failed")
+                // 刷新失败，用保存的 body 和 contentType 构建新响应
                 return response.newBuilder()
-                    .body(responseBody.toResponseBody(response.body?.contentType()))
+                    .body(responseBody.toResponseBody(contentType))
                     .build()
             }
 
-            Log.d(TAG, "✅ Token refreshed, retrying request: ${originalRequest.url.encodedPath}")
+            Log.d(TAG, "Token refreshed, retrying request: ${originalRequest.url.encodedPath}")
 
             // 重试原始请求
             // HeaderInterceptor 会调用 TokenManager.getAccessToken() 获取新 token

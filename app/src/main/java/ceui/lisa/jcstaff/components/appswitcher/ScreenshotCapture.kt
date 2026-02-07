@@ -16,8 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class ScreenshotStore {
-    // Live GraphicsLayer references (only the currently composed page has one)
-    private val layers = mutableMapOf<String, GraphicsLayer>()
+    // Live GraphicsLayer references — use synchronized map for thread safety
+    private val layers = java.util.concurrent.ConcurrentHashMap<String, GraphicsLayer>()
 
     // Cached bitmaps for the app switcher
     private val screenshots: SnapshotStateMap<String, ImageBitmap?> = mutableStateMapOf()
@@ -38,7 +38,8 @@ class ScreenshotStore {
                     layer.toImageBitmap()
                 }
                 screenshots[key] = bitmap
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.w("ScreenshotStore", "Failed to capture layer $key", e)
             }
         }
     }
@@ -51,7 +52,8 @@ class ScreenshotStore {
                 layer.toImageBitmap()
             }
             screenshots[key] = bitmap
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w("ScreenshotStore", "Failed to capture layer $key", e)
         }
     }
 

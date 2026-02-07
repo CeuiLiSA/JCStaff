@@ -77,13 +77,8 @@ object TokenManager {
      * 刷新 token（挂起版本）
      */
     suspend fun refreshTokenSuspend(): String? {
-        // 快速路径：检查是否有正在进行的刷新
-        pendingRefresh?.let { pending ->
-            return pending.await()
-        }
-
         return mutex.withLock {
-            // 双重检查：获取锁后再次检查
+            // 检查是否有正在进行的刷新
             pendingRefresh?.let { pending ->
                 return@withLock pending.await()
             }
@@ -111,14 +106,15 @@ object TokenManager {
                     }
                 } catch (e: Exception) {
                     null
-                } finally {
-                    // 刷新完成后清除 pending 状态
-                    pendingRefresh = null
                 }
             }
 
             pendingRefresh = deferred
-            deferred.await()
+            try {
+                deferred.await()
+            } finally {
+                pendingRefresh = null
+            }
         }
     }
 
