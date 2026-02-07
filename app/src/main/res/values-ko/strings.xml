@@ -319,6 +319,8 @@
     <string name="cache_browser_delete_title">삭제 확인</string>
     <string name="cache_browser_delete_file_message">「%1$s」 파일을 삭제하시겠습니까?</string>
     <string name="cache_browser_delete_folder_message">「%1$s」 폴더와 모든 내용을 삭제하시겠습니까?</string>
+    <string name="image_cache_limit_title">이미지 캐시 제한</string>
+    <string name="image_cache_limit_desc">이미지 로딩 캐시의 최대 용량 설정</string>
 
     <!-- Folder Descriptions -->
     <string name="folder_desc_files">앱 파일 저장소</string>

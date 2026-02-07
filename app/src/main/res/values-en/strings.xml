@@ -319,6 +319,8 @@
     <string name="cache_browser_delete_title">Confirm Delete</string>
     <string name="cache_browser_delete_file_message">Delete file \"%1$s\"?</string>
     <string name="cache_browser_delete_folder_message">Delete folder \"%1$s\" and all its contents?</string>
+    <string name="image_cache_limit_title">Image Cache Limit</string>
+    <string name="image_cache_limit_desc">Set maximum storage for image loading cache</string>
 
     <!-- Folder Descriptions -->
     <string name="folder_desc_files">App file storage</string>

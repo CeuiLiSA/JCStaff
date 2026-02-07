@@ -31,6 +31,7 @@ object SettingsStore {
     private val ILLUST_CARD_CORNER_RADIUS = intPreferencesKey("illust_card_corner_radius")
     private val GRID_SPACING_ENABLED = booleanPreferencesKey("grid_spacing_enabled")
     private val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
+    private val IMAGE_CACHE_LIMIT_MB = intPreferencesKey("image_cache_limit_mb")
 
     private var dataStore: DataStore<Preferences>? = null
     private var globalDataStore: DataStore<Preferences>? = null
@@ -57,6 +58,13 @@ object SettingsStore {
     private val _selectedLanguage = MutableStateFlow<String?>(null)
     val selectedLanguage: StateFlow<String?> = _selectedLanguage.asStateFlow()
 
+    private val _imageCacheLimitMb = MutableStateFlow(DEFAULT_IMAGE_CACHE_LIMIT_MB)
+    val imageCacheLimitMb: StateFlow<Int> = _imageCacheLimitMb.asStateFlow()
+
+    const val MIN_IMAGE_CACHE_LIMIT_MB = 256
+    const val MAX_IMAGE_CACHE_LIMIT_MB = 4096
+    const val DEFAULT_IMAGE_CACHE_LIMIT_MB = 512
+
     @Synchronized
     private fun getOrCreateDataStore(context: Context, name: String): DataStore<Preferences> {
         return dataStoreCache.getOrPut(name) {
@@ -76,6 +84,7 @@ object SettingsStore {
                 _showIllustInfo.value = preferences[SHOW_ILLUST_INFO] ?: true
                 _illustCardCornerRadius.value = preferences[ILLUST_CARD_CORNER_RADIUS] ?: 8
                 _gridSpacingEnabled.value = preferences[GRID_SPACING_ENABLED] ?: true
+                _imageCacheLimitMb.value = preferences[IMAGE_CACHE_LIMIT_MB] ?: DEFAULT_IMAGE_CACHE_LIMIT_MB
             }
         }
         globalSyncJob?.cancel()
@@ -116,6 +125,7 @@ object SettingsStore {
         _showIllustInfo.value = true
         _illustCardCornerRadius.value = 8
         _gridSpacingEnabled.value = true
+        _imageCacheLimitMb.value = DEFAULT_IMAGE_CACHE_LIMIT_MB
         startSync()
     }
 
@@ -138,6 +148,14 @@ object SettingsStore {
         _gridSpacingEnabled.value = enabled
         dataStore?.edit { preferences ->
             preferences[GRID_SPACING_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setImageCacheLimitMb(limitMb: Int) {
+        val clamped = limitMb.coerceIn(MIN_IMAGE_CACHE_LIMIT_MB, MAX_IMAGE_CACHE_LIMIT_MB)
+        _imageCacheLimitMb.value = clamped
+        dataStore?.edit { preferences ->
+            preferences[IMAGE_CACHE_LIMIT_MB] = clamped
         }
     }
 

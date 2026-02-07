@@ -319,6 +319,8 @@
     <string name="cache_browser_delete_title">刪除確認</string>
     <string name="cache_browser_delete_file_message">確定要刪除檔案「%1$s」嗎？</string>
     <string name="cache_browser_delete_folder_message">確定要刪除資料夾「%1$s」及其所有內容嗎？</string>
+    <string name="image_cache_limit_title">圖片快取上限</string>
+    <string name="image_cache_limit_desc">設定圖片載入快取的最大佔用空間</string>
 
     <!-- Folder Descriptions -->
     <string name="folder_desc_files">應用程式檔案儲存目錄</string>

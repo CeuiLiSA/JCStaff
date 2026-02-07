@@ -319,6 +319,8 @@
     <string name="cache_browser_delete_title">削除の確認</string>
     <string name="cache_browser_delete_file_message">ファイル「%1$s」を削除しますか？</string>
     <string name="cache_browser_delete_folder_message">フォルダ「%1$s」とその内容をすべて削除しますか？</string>
+    <string name="image_cache_limit_title">画像キャッシュ上限</string>
+    <string name="image_cache_limit_desc">画像読み込みキャッシュの最大容量を設定</string>
 
     <!-- Folder Descriptions -->
     <string name="folder_desc_files">アプリファイル保存先</string>

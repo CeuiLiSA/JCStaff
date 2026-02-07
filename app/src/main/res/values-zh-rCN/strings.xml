@@ -336,6 +336,8 @@
     <string name="cache_browser_delete_title">删除确认</string>
     <string name="cache_browser_delete_file_message">确定要删除文件「%1$s」吗？</string>
     <string name="cache_browser_delete_folder_message">确定要删除文件夹「%1$s」及其所有内容吗？</string>
+    <string name="image_cache_limit_title">图片缓存上限</string>
+    <string name="image_cache_limit_desc">设置图片加载缓存的最大占用空间</string>
 
     <!-- Folder Descriptions -->
     <string name="folder_desc_files">应用文件存储目录</string>

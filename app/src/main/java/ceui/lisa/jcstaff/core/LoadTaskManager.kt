@@ -252,6 +252,8 @@ object LoadTaskManager {
                     )
                 }
 
+                evictIfNeeded()
+
             } catch (e: kotlinx.coroutines.CancellationException) {
                 tempFile.delete()
                 throw e
@@ -479,6 +481,28 @@ object LoadTaskManager {
      */
     fun getCacheSize(): Long {
         return getCacheDir().listFiles()?.sumOf { it.length() } ?: 0L
+    }
+
+    /**
+     * 按缓存大小上限淘汰最旧的文件
+     */
+    private fun evictIfNeeded() {
+        val limitBytes = SettingsStore.imageCacheLimitMb.value.toLong() * 1024L * 1024L
+        val dir = getCacheDir()
+        val files = dir.listFiles() ?: return
+
+        var totalSize = files.sumOf { it.length() }
+        if (totalSize <= limitBytes) return
+
+        // 按最后修改时间升序排列，优先删除最旧的
+        val sorted = files.sortedBy { it.lastModified() }
+        for (file in sorted) {
+            if (totalSize <= limitBytes) break
+            val fileSize = file.length()
+            if (file.delete()) {
+                totalSize -= fileSize
+            }
+        }
     }
 
     /**

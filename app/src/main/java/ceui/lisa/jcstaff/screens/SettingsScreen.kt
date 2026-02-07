@@ -32,6 +32,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.SpaceBar
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.SwitchAccount
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,6 +86,7 @@ fun SettingsScreen(
     val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
     val cornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
     val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
+    val imageCacheLimitMb by SettingsStore.imageCacheLimitMb.collectAsState()
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -223,6 +225,26 @@ fun SettingsScreen(
                 title = stringResource(R.string.cache_browser),
                 description = stringResource(R.string.cache_browser_desc),
                 onClick = { navViewModel.navigate(NavRoute.CacheBrowser()) }
+            )
+
+            // 图片缓存上限
+            SettingsItemSlider(
+                icon = Icons.Default.Storage,
+                title = stringResource(R.string.image_cache_limit_title),
+                description = stringResource(R.string.image_cache_limit_desc),
+                value = imageCacheLimitMb.toFloat(),
+                valueLabel = if (imageCacheLimitMb >= 1024) {
+                    "${"%.1f".format(imageCacheLimitMb / 1024f)}GB"
+                } else {
+                    "${imageCacheLimitMb}MB"
+                },
+                valueRange = SettingsStore.MIN_IMAGE_CACHE_LIMIT_MB.toFloat()..SettingsStore.MAX_IMAGE_CACHE_LIMIT_MB.toFloat(),
+                steps = (SettingsStore.MAX_IMAGE_CACHE_LIMIT_MB - SettingsStore.MIN_IMAGE_CACHE_LIMIT_MB) / 256 - 1,
+                onValueChange = { value ->
+                    coroutineScope.launch {
+                        SettingsStore.setImageCacheLimitMb(value.roundToInt())
+                    }
+                }
             )
 
             SettingsDivider()
