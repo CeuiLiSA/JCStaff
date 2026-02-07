@@ -1,6 +1,8 @@
 package ceui.lisa.jcstaff
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -59,6 +61,7 @@ import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherDemoScreen
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherFab
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherOverlay
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotCapture
+import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.SelectionManager
 import ceui.lisa.jcstaff.home.HomeScreen
@@ -93,6 +96,7 @@ import ceui.lisa.jcstaff.screens.UserCreatedNovelsScreen
 import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
+import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -142,8 +146,10 @@ class MainActivity : AppCompatActivity() {
         handleDeepLink(intent)
 
         setContent {
-            JCStaffTheme {
-                AppNavigation(authViewModel, navViewModel)
+            LocalizedContent {
+                JCStaffTheme {
+                    AppNavigation(authViewModel, navViewModel)
+                }
             }
         }
     }
@@ -162,6 +168,42 @@ class MainActivity : AppCompatActivity() {
                 authViewModel.handleCallback(callbackUri)
             }
         }
+    }
+}
+
+/**
+ * 保留 Activity 的全部能力（startActivity 等），只覆盖 resources 返回本地化资源。
+ */
+private class LocaleContextWrapper(
+    base: Context,
+    locale: Locale
+) : android.content.ContextWrapper(base) {
+    private val localizedResources: android.content.res.Resources =
+        base.createConfigurationContext(
+            Configuration(base.resources.configuration).apply { setLocale(locale) }
+        ).resources
+
+    override fun getResources(): android.content.res.Resources = localizedResources
+}
+
+/**
+ * 用 Compose 的 Context 包装实现即时语言切换，不需要 Activity 重建。
+ * 当 LanguageManager.currentLanguage 变化时，提供带新 Locale 的 Context，
+ * 所有 stringResource() 自动返回新语言的文本。
+ */
+@Composable
+fun LocalizedContent(content: @Composable () -> Unit) {
+    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+    val baseContext = LocalContext.current
+
+    val localizedContext = remember(currentLanguage, baseContext) {
+        val language = currentLanguage ?: return@remember baseContext
+        val locale = Locale.forLanguageTag(language.tag)
+        LocaleContextWrapper(baseContext, locale)
+    }
+
+    CompositionLocalProvider(LocalContext provides localizedContext) {
+        content()
     }
 }
 

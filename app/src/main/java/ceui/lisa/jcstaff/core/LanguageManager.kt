@@ -65,6 +65,16 @@ object LanguageManager {
             )
         )
         _isLanguageSelected.value = true
+        // 不在运行时调 setApplicationLocales()，避免 Activity 重建。
+        // 语言切换通过 Compose 的 LocalizedContext 即时生效。
+        // 系统级 locale 在下次冷启动时由 applySystemLocale() 同步。
+    }
+
+    /**
+     * 同步系统级 per-app locale。仅在 Application.onCreate() 中调用，
+     * 此时 Activity 尚未创建，不会触发重建。
+     */
+    fun applySystemLocale(language: AppLanguage) {
         val localeList = LocaleListCompat.forLanguageTags(language.tag)
         AppCompatDelegate.setApplicationLocales(localeList)
     }

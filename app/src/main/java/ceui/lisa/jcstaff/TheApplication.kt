@@ -33,5 +33,11 @@ class TheApplication : Application() {
             SettingsStore.selectedLanguage.first()
         }
         LanguageManager.initialize(savedTag)
+
+        // 在 Activity 创建前同步系统 locale，不会触发重建
+        val language = LanguageManager.currentLanguage.value
+        if (language != null) {
+            LanguageManager.applySystemLocale(language)
+        }
     }
 }
