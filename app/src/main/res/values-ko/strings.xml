@@ -215,6 +215,9 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">갤러리에 저장됨</string>
     <string name="save_failed">저장 실패</string>
+    <string name="save_to_gallery">갤러리에 저장</string>
+    <string name="set_as_wallpaper">배경화면으로 설정</string>
+    <string name="wallpaper_set_failed">배경화면 설정 실패</string>
     <string name="save_gif">GIF 저장</string>
     <string name="bookmark_options">북마크 옵션</string>
     <string name="bookmark_public">공개 북마크</string>

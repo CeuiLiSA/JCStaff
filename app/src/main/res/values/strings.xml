@@ -236,6 +236,9 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">已保存到相册</string>
     <string name="save_failed">保存失败</string>
+    <string name="save_to_gallery">保存到相册</string>
+    <string name="set_as_wallpaper">设为壁纸</string>
+    <string name="wallpaper_set_failed">设置壁纸失败</string>
     <string name="save_gif">保存 GIF</string>
     <string name="bookmark_options">收藏选项</string>
     <string name="bookmark_public">公开收藏</string>

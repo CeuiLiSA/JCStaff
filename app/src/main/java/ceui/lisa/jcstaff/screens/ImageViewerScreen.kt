@@ -1,25 +1,38 @@
 package ceui.lisa.jcstaff.screens
 
+import android.app.WallpaperManager
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,17 +45,23 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.downloadToGallery
 import ceui.lisa.jcstaff.core.saveFromCacheToGallery
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
-import androidx.compose.runtime.collectAsState
-import ceui.lisa.jcstaff.core.LoadTaskManager
+import ceui.lisa.jcstaff.network.PixivClient
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.saket.telephoto.zoomable.coil.ZoomableAsyncImage
 import me.saket.telephoto.zoomable.rememberZoomableImageState
+import okhttp3.Request
+import okio.buffer
+import okio.sink
 import java.io.File
 
 /**
@@ -52,6 +71,7 @@ import java.io.File
  * - 退出再进入时，续上上一个请求而不是新发请求
  * - 下载完成后直接使用缓存文件，点击下载按钮瞬间完成
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImageViewerScreen(
     imageUrl: String,
@@ -63,21 +83,19 @@ fun ImageViewerScreen(
     val coroutineScope = rememberCoroutineScope()
     val effectiveUrl = originalUrl ?: imageUrl
     var isSaving by remember { mutableStateOf(false) }
+    var showBottomSheet by remember { mutableStateOf(false) }
 
     // 使用 LoadTaskManager 管理加载任务（与一级详情页共享）
-    // registerListener 会自动启动下载任务
     val loadTaskFlow = remember(effectiveUrl) {
         LoadTaskManager.registerListener(effectiveUrl)
     }
     val loadTask by loadTaskFlow.collectAsState()
 
-    // 从任务状态中获取进度
     val downloadProgress = loadTask.progress
     val isTaskLoading = loadTask.isLoading
     val isTaskCompleted = loadTask.isCompleted
     val cachedFilePath = loadTask.cachedFilePath
 
-    // 页面退出时取消监听（但不取消下载任务本身）
     DisposableEffect(effectiveUrl) {
         onDispose {
             LoadTaskManager.unregisterListener(effectiveUrl)
@@ -86,28 +104,7 @@ fun ImageViewerScreen(
 
     val zoomableState = rememberZoomableImageState()
 
-    // 长按保存
-    val saveToGallery: () -> Unit = {
-        if (!isSaving) {
-            isSaving = true
-            coroutineScope.launch {
-                val fileName = "pixiv_${System.currentTimeMillis()}"
-                val cached = LoadTaskManager.getCachedFilePath(effectiveUrl)
-                val result = if (cached != null) {
-                    saveFromCacheToGallery(context, cached, fileName)
-                } else {
-                    downloadToGallery(context, effectiveUrl, fileName)
-                }
-                isSaving = false
-                val message = if (result.isSuccess) {
-                    context.getString(R.string.saved_to_gallery)
-                } else {
-                    context.getString(R.string.save_failed)
-                }
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+    val onLongPress: () -> Unit = { showBottomSheet = true }
 
     Box(
         modifier = Modifier
@@ -125,7 +122,7 @@ fun ImageViewerScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(Unit) {
-                        detectTapGestures(onLongPress = { saveToGallery() })
+                        detectTapGestures(onLongPress = { onLongPress() })
                     }
             )
 
@@ -138,7 +135,7 @@ fun ImageViewerScreen(
                     contentDescription = null,
                     state = zoomableState,
                     modifier = Modifier.fillMaxSize(),
-                    onLongClick = { saveToGallery() }
+                    onLongClick = { onLongPress() }
                 )
             }
         }
@@ -155,7 +152,6 @@ fun ImageViewerScreen(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                // 背景圆环
                 CircularProgressIndicator(
                     progress = { 1f },
                     modifier = Modifier.size(56.dp),
@@ -163,7 +159,6 @@ fun ImageViewerScreen(
                     color = Color.White.copy(alpha = 0.3f),
                     trackColor = Color.Transparent
                 )
-                // 进度圆环
                 CircularProgressIndicator(
                     progress = { downloadProgress },
                     modifier = Modifier.size(56.dp),
@@ -171,7 +166,6 @@ fun ImageViewerScreen(
                     color = Color.White,
                     trackColor = Color.Transparent
                 )
-                // 百分比文字
                 Text(
                     text = "${(downloadProgress * 100).toInt()}%",
                     color = Color.White,
@@ -198,4 +192,111 @@ fun ImageViewerScreen(
             )
         }
     }
+
+    // 长按操作菜单
+    if (showBottomSheet) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false },
+            sheetState = sheetState
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // 保存到相册
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.save_to_gallery)) },
+                    leadingContent = {
+                        Icon(Icons.Default.Image, contentDescription = null)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isSaving) {
+                            showBottomSheet = false
+                            isSaving = true
+                            coroutineScope.launch {
+                                val fileName = "pixiv_${System.currentTimeMillis()}"
+                                val cached = LoadTaskManager.getCachedFilePath(effectiveUrl)
+                                val result = if (cached != null) {
+                                    saveFromCacheToGallery(context, cached, fileName)
+                                } else {
+                                    downloadToGallery(context, effectiveUrl, fileName)
+                                }
+                                isSaving = false
+                                val message = if (result.isSuccess) {
+                                    context.getString(R.string.saved_to_gallery)
+                                } else {
+                                    context.getString(R.string.save_failed)
+                                }
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                )
+
+                // 设为壁纸
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.set_as_wallpaper)) },
+                    leadingContent = {
+                        Icon(Icons.Default.Wallpaper, contentDescription = null)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isSaving) {
+                            showBottomSheet = false
+                            isSaving = true
+                            coroutineScope.launch {
+                                try {
+                                    val imageFile = ensureLocalFile(context, effectiveUrl)
+                                    val uri = FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        imageFile
+                                    )
+                                    val intent = WallpaperManager.getInstance(context)
+                                        .getCropAndSetWallpaperIntent(uri)
+                                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.wallpaper_set_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } finally {
+                                    isSaving = false
+                                }
+                            }
+                        }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 确保图片有本地文件可用（优先使用缓存，否则下载到临时文件）
+ */
+private suspend fun ensureLocalFile(
+    context: android.content.Context,
+    imageUrl: String
+): File = withContext(Dispatchers.IO) {
+    // 优先使用 LoadTaskManager 的缓存
+    val cached = LoadTaskManager.getCachedFilePath(imageUrl)
+    if (cached != null) {
+        return@withContext File(cached)
+    }
+
+    // 没有缓存，下载到临时文件
+    val tempFile = File(context.cacheDir, "wallpaper_temp_${System.currentTimeMillis()}")
+    val request = Request.Builder().url(imageUrl).build()
+    PixivClient.imageClient.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) throw Exception("HTTP ${response.code}")
+        val body = response.body ?: throw Exception("Empty body")
+        tempFile.sink().buffer().use { sink ->
+            body.source().use { source ->
+                sink.writeAll(source)
+            }
+        }
+    }
+    tempFile
 }

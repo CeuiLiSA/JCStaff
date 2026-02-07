@@ -215,6 +215,9 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">Saved to gallery</string>
     <string name="save_failed">Save failed</string>
+    <string name="save_to_gallery">Save to Gallery</string>
+    <string name="set_as_wallpaper">Set as Wallpaper</string>
+    <string name="wallpaper_set_failed">Failed to set wallpaper</string>
     <string name="save_gif">Save GIF</string>
     <string name="bookmark_options">Bookmark Options</string>
     <string name="bookmark_public">Public Bookmark</string>

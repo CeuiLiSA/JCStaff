@@ -215,6 +215,9 @@
     <!-- Illust Action Bar -->
     <string name="saved_to_gallery">アルバムに保存しました</string>
     <string name="save_failed">保存に失敗しました</string>
+    <string name="save_to_gallery">アルバムに保存</string>
+    <string name="set_as_wallpaper">壁紙に設定</string>
+    <string name="wallpaper_set_failed">壁紙の設定に失敗しました</string>
     <string name="save_gif">GIF を保存</string>
     <string name="bookmark_options">ブックマークオプション</string>
     <string name="bookmark_public">公開ブックマーク</string>
