@@ -1,6 +1,8 @@
 package ceui.lisa.jcstaff.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -19,19 +21,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
+import ceui.lisa.jcstaff.core.downloadToGallery
+import ceui.lisa.jcstaff.core.saveFromCacheToGallery
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import androidx.compose.runtime.collectAsState
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import kotlinx.coroutines.launch
 import me.saket.telephoto.zoomable.coil.ZoomableAsyncImage
 import me.saket.telephoto.zoomable.rememberZoomableImageState
 import java.io.File
@@ -51,7 +60,9 @@ fun ImageViewerScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val effectiveUrl = originalUrl ?: imageUrl
+    var isSaving by remember { mutableStateOf(false) }
 
     // 使用 LoadTaskManager 管理加载任务（与一级详情页共享）
     // registerListener 会自动启动下载任务
@@ -75,6 +86,29 @@ fun ImageViewerScreen(
 
     val zoomableState = rememberZoomableImageState()
 
+    // 长按保存
+    val saveToGallery: () -> Unit = {
+        if (!isSaving) {
+            isSaving = true
+            coroutineScope.launch {
+                val fileName = "pixiv_${System.currentTimeMillis()}"
+                val cached = LoadTaskManager.getCachedFilePath(effectiveUrl)
+                val result = if (cached != null) {
+                    saveFromCacheToGallery(context, cached, fileName)
+                } else {
+                    downloadToGallery(context, effectiveUrl, fileName)
+                }
+                isSaving = false
+                val message = if (result.isSuccess) {
+                    context.getString(R.string.saved_to_gallery)
+                } else {
+                    context.getString(R.string.save_failed)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -88,7 +122,11 @@ fun ImageViewerScreen(
                     .data(imageUrl)
                     .build(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(onLongPress = { saveToGallery() })
+                    }
             )
 
             // 原图（当下载完成后，使用缓存文件加载可缩放图片）
@@ -99,7 +137,8 @@ fun ImageViewerScreen(
                         .build(),
                     contentDescription = null,
                     state = zoomableState,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    onLongClick = { saveToGallery() }
                 )
             }
         }
