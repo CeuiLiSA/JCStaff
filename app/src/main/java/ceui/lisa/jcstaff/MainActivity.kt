@@ -278,7 +278,8 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
 
             // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
             key(activeUserId) {
-                val entry = currentEntry ?: return@key
+                val entry = currentEntry
+                if (entry != null) {
                 AnimatedContent(
                     targetState = entry,
                     transitionSpec = {
@@ -556,6 +557,7 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                             }
                         }
                     }
+                }
                 }
             }
 

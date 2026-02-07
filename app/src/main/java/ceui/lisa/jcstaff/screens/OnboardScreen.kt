@@ -53,21 +53,21 @@ import kotlin.random.Random
 // region — JSON parsing helpers
 
 internal fun extractOriginalUrl(illust: JsonObject): String? {
-    illust.getAsJsonObject("meta_single_page")
+    val singlePage = illust.getAsJsonObject("meta_single_page")
         ?.get("original_image_url")
         ?.takeIf { !it.isJsonNull }
         ?.asString
         ?.takeIf { it.isNotBlank() }
-        ?.let { return it }
+    if (singlePage != null) return singlePage
 
-    illust.getAsJsonArray("meta_pages")
+    val metaPage = illust.getAsJsonArray("meta_pages")
         ?.takeIf { it.size() > 0 }
         ?.get(0)?.asJsonObject
         ?.getAsJsonObject("image_urls")
         ?.get("original")
         ?.asString
         ?.takeIf { it.isNotBlank() }
-        ?.let { return it }
+    if (metaPage != null) return metaPage
 
     return illust.getAsJsonObject("image_urls")
         ?.get("large")

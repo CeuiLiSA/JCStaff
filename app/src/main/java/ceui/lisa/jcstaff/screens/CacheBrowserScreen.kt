@@ -415,7 +415,8 @@ private fun getFolderDescriptionResId(name: String): Int? {
         "lib" to R.string.folder_desc_lib
     )
 
-    exactMatch[name]?.let { return it }
+    val matched = exactMatch[name]
+    if (matched != null) return matched
 
     // 前缀匹配
     return when {
