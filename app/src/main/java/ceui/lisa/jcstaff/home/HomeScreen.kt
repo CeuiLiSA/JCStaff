@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -92,6 +94,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -102,11 +105,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -135,6 +145,7 @@ import ceui.lisa.jcstaff.network.User
 import ceui.lisa.jcstaff.network.UserPreview
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -157,6 +168,43 @@ fun HomeScreen(
 
     BackHandler(enabled = selectionManager.isSelectionMode) {
         selectionManager.clearSelection()
+    }
+
+    var isBarVisible by remember { mutableStateOf(true) }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (available.y > 1f) isBarVisible = true
+                else if (available.y < -1f) isBarVisible = false
+                return Offset.Zero
+            }
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage) {
+        isBarVisible = true
+    }
+
+    var topBarHeightPx by remember { mutableFloatStateOf(0f) }
+    var bottomBarHeightPx by remember { mutableFloatStateOf(0f) }
+
+    val hideProgress = remember { Animatable(0f) }
+    // Controls content measurement size. Expands BEFORE hide animation,
+    // shrinks AFTER show animation, so re-measurement never happens mid-animation.
+    var contentExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isBarVisible) {
+        if (!isBarVisible) {
+            contentExpanded = true
+        }
+        hideProgress.animateTo(
+            targetValue = if (isBarVisible) 0f else 1f,
+            animationSpec = tween(300)
+        )
+        if (isBarVisible) {
+            contentExpanded = false
+        }
     }
 
     ModalNavigationDrawer(
@@ -252,6 +300,9 @@ fun HomeScreen(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = {
                     TopAppBar(
+                        modifier = Modifier
+                            .onSizeChanged { topBarHeightPx = it.height.toFloat() }
+                            .offset { IntOffset(0, (-topBarHeightPx * hideProgress.value).roundToInt()) },
                         title = {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -295,7 +346,11 @@ fun HomeScreen(
                     )
                 },
                 bottomBar = {
-                    NavigationBar {
+                    NavigationBar(
+                        modifier = Modifier
+                            .onSizeChanged { bottomBarHeightPx = it.height.toFloat() }
+                            .offset { IntOffset(0, (bottomBarHeightPx * hideProgress.value).roundToInt()) }
+                    ) {
                         NavigationBarItem(
                             selected = pagerState.currentPage == 0,
                             onClick = {
@@ -330,12 +385,38 @@ fun HomeScreen(
                         )
                     }
                 }
-            ) { innerPadding ->
+            ) { _ ->
+                val statusBarTopPx = with(LocalDensity.current) {
+                    WindowInsets.statusBars.asPaddingValues().calculateTopPadding().toPx()
+                }
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
+                        .layout { measurable, constraints ->
+                            // contentExpanded snaps once per toggle (not per frame),
+                            // so constraints change only twice per cycle → no mid-animation re-measurement.
+                            val contentHeight = if (contentExpanded) {
+                                constraints.maxHeight - statusBarTopPx.roundToInt()
+                            } else {
+                                constraints.maxHeight - topBarHeightPx.roundToInt() - bottomBarHeightPx.roundToInt()
+                            }.coerceAtLeast(0)
+                            val placeable = measurable.measure(
+                                constraints.copy(
+                                    minHeight = constraints.minHeight.coerceAtMost(contentHeight),
+                                    maxHeight = contentHeight
+                                )
+                            )
+                            val progress = hideProgress.value
+                            val topPx = maxOf(
+                                topBarHeightPx * (1f - progress),
+                                statusBarTopPx
+                            ).roundToInt()
+                            layout(constraints.maxWidth, constraints.maxHeight) {
+                                placeable.place(0, topPx)
+                            }
+                        }
+                        .nestedScroll(nestedScrollConnection),
                     userScrollEnabled = false
                 ) { page ->
                     when (page) {
@@ -837,7 +918,7 @@ private fun DrawerContent(
                         }
 
                         if (allAccounts.isNotEmpty()) {
-                            val rotation by animateFloatAsState(
+                            val rotationState = animateFloatAsState(
                                 targetValue = if (accountListExpanded) 180f else 0f,
                                 animationSpec = tween(300),
                                 label = "arrow_rotation"
@@ -859,7 +940,7 @@ private fun DrawerContent(
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier
                                             .size(20.dp)
-                                            .graphicsLayer { rotationZ = rotation }
+                                            .graphicsLayer { rotationZ = rotationState.value }
                                     )
                                 }
                             }
