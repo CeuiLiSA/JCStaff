@@ -1,6 +1,8 @@
 package ceui.lisa.jcstaff.navigation
 
+import android.util.Log
 import androidx.compose.runtime.compositionLocalOf
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotStore
@@ -30,7 +32,9 @@ data class BackStackEntry(
     val screenshotKey: String get() = "${id}_${route.stableKey}"
 }
 
-class NavigationViewModel : ViewModel() {
+class NavigationViewModel(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
 
     // 使用 StateFlow 替代 SnapshotStateList，确保线程安全
     private val _backStack = MutableStateFlow<List<BackStackEntry>>(emptyList())
@@ -72,10 +76,35 @@ class NavigationViewModel : ViewModel() {
     val navigationDepth: Int
         get() = (_backStack.value.size - 1).coerceAtLeast(0)
 
+    init {
+        restoreBackStack()
+    }
+
     private fun updateDerivedState() {
         val stack = _backStack.value
         _canGoBack.value = stack.size > 1
         _currentEntry.value = stack.lastOrNull()
+    }
+
+    private fun restoreBackStack() {
+        try {
+            @Suppress("UNCHECKED_CAST")
+            val savedRoutes = savedStateHandle.get<ArrayList<NavRoute>>(KEY_BACK_STACK)
+            if (!savedRoutes.isNullOrEmpty()) {
+                _backStack.value = savedRoutes.map {
+                    BackStackEntry(nextEntryId.getAndIncrement(), it)
+                }
+                updateDerivedState()
+                _isReady.value = true
+            }
+        } catch (e: Exception) {
+            Log.w("NavigationViewModel", "Failed to restore back stack", e)
+        }
+    }
+
+    private fun saveBackStack() {
+        val routes = _backStack.value.map { it.route }
+        savedStateHandle[KEY_BACK_STACK] = ArrayList(routes)
     }
 
     fun navigate(route: NavRoute) {
@@ -88,6 +117,7 @@ class NavigationViewModel : ViewModel() {
         }
         _backStack.value = _backStack.value + BackStackEntry(nextEntryId.getAndIncrement(), route)
         updateDerivedState()
+        saveBackStack()
     }
 
     fun goBack() {
@@ -98,6 +128,7 @@ class NavigationViewModel : ViewModel() {
             _backStack.value = stack.dropLast(1)
             screenshotStore.remove(removed.screenshotKey)
             updateDerivedState()
+            saveBackStack()
         }
     }
 
@@ -107,6 +138,7 @@ class NavigationViewModel : ViewModel() {
         _backStack.value.forEach { screenshotStore.remove(it.screenshotKey) }
         _backStack.value = listOf(BackStackEntry(nextEntryId.getAndIncrement(), route))
         updateDerivedState()
+        saveBackStack()
         _isReady.value = true
     }
 
@@ -142,6 +174,7 @@ class NavigationViewModel : ViewModel() {
         toRemove.forEach { screenshotStore.remove(it.screenshotKey) }
         _backStack.value = stack.take(index + 1)
         updateDerivedState()
+        saveBackStack()
     }
 
     /** Remove the page at the given index (swipe-up delete) */
@@ -152,6 +185,7 @@ class NavigationViewModel : ViewModel() {
         _backStack.value = stack.filterIndexed { i, _ -> i != index }
         screenshotStore.remove(removed.screenshotKey)
         updateDerivedState()
+        saveBackStack()
         // Adjust selected index
         val newIndex = (index - 1).coerceAtLeast(0)
         updateSelectedIndex(newIndex)
@@ -159,6 +193,10 @@ class NavigationViewModel : ViewModel() {
         if (_backStack.value.size <= 1) {
             hideAppSwitcher()
         }
+    }
+
+    companion object {
+        private const val KEY_BACK_STACK = "nav_back_stack"
     }
 
 }

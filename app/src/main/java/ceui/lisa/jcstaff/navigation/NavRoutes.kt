@@ -3,7 +3,7 @@ package ceui.lisa.jcstaff.navigation
 import ceui.lisa.jcstaff.network.SpotlightArticle
 import ceui.lisa.jcstaff.network.Tag
 
-sealed interface NavRoute {
+sealed interface NavRoute : java.io.Serializable {
     /** Bundle-compatible key for SaveableStateProvider */
     val stableKey: String
 
