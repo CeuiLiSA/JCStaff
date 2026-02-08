@@ -354,7 +354,6 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                     label = "navigation",
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
                         .then(
                             if (isPredictiveBack && Build.VERSION.SDK_INT >= 34) {
                                 val cornerRadius =
