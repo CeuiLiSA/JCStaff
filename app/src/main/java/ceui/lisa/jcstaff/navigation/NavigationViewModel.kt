@@ -1,15 +1,22 @@
 package ceui.lisa.jcstaff.navigation
 
+import android.app.Application
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ceui.lisa.jcstaff.components.appswitcher.ScreenshotStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
 enum class NavigationDirection { FORWARD, BACKWARD }
@@ -33,8 +40,9 @@ data class BackStackEntry(
 }
 
 class NavigationViewModel(
+    application: Application,
     private val savedStateHandle: SavedStateHandle
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     // 使用 StateFlow 替代 SnapshotStateList，确保线程安全
     private val _backStack = MutableStateFlow<List<BackStackEntry>>(emptyList())
@@ -45,6 +53,8 @@ class NavigationViewModel(
     /** 导航是否就绪（用于 SplashScreen 条件判断，StateFlow 线程安全） */
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+
+    private val screenshotDir = File(application.cacheDir, "nav_screenshots").also { it.mkdirs() }
 
     /** 是否可以返回（StateFlow 线程安全） */
     val canGoBack: StateFlow<Boolean> = MutableStateFlow(false)
@@ -96,9 +106,18 @@ class NavigationViewModel(
                 }
                 updateDerivedState()
                 _isReady.value = true
+                // Load screenshots from disk on IO thread
+                val entries = _backStack.value
+                viewModelScope.launch {
+                    for (entry in entries.dropLast(1)) {
+                        loadBitmapFromDisk(entry.route.stableKey)?.let { bitmap ->
+                            screenshotStore.putScreenshot(entry.screenshotKey, bitmap)
+                        }
+                    }
+                }
             }
         } catch (e: Exception) {
-            Log.w("NavigationViewModel", "Failed to restore back stack", e)
+            Log.w(TAG, "Failed to restore back stack", e)
         }
     }
 
@@ -107,12 +126,53 @@ class NavigationViewModel(
         savedStateHandle[KEY_BACK_STACK] = ArrayList(routes)
     }
 
+    private fun diskFile(stableKey: String): File {
+        val safeName = java.net.URLEncoder.encode(stableKey, "UTF-8")
+        return File(screenshotDir, "$safeName.jpg")
+    }
+
+    private suspend fun saveBitmapToDisk(stableKey: String, bitmap: androidx.compose.ui.graphics.ImageBitmap) {
+        withContext(Dispatchers.IO) {
+            try {
+                diskFile(stableKey).outputStream().use { out ->
+                    bitmap.asAndroidBitmap()
+                        .compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to save screenshot to disk", e)
+            }
+        }
+    }
+
+    private suspend fun loadBitmapFromDisk(stableKey: String): androidx.compose.ui.graphics.ImageBitmap? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val file = diskFile(stableKey)
+                if (file.exists()) {
+                    BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+                } else null
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load screenshot from disk", e)
+                null
+            }
+        }
+    }
+
+    private fun clearScreenshotDir() {
+        viewModelScope.launch(Dispatchers.IO) {
+            screenshotDir.listFiles()?.forEach { it.delete() }
+        }
+    }
+
     fun navigate(route: NavRoute) {
         _navigationDirection.value = NavigationDirection.FORWARD
         // Capture current page screenshot before navigating away
         _currentEntry.value?.let { current ->
             viewModelScope.launch {
                 screenshotStore.captureOne(current.screenshotKey)
+                screenshotStore.getScreenshot(current.screenshotKey)?.let { bitmap ->
+                    saveBitmapToDisk(current.route.stableKey, bitmap)
+                }
             }
         }
         _backStack.value = _backStack.value + BackStackEntry(nextEntryId.getAndIncrement(), route)
@@ -136,6 +196,7 @@ class NavigationViewModel(
         _navigationDirection.value = NavigationDirection.FORWARD
         // Clear all screenshots when resetting navigation
         _backStack.value.forEach { screenshotStore.remove(it.screenshotKey) }
+        clearScreenshotDir()
         _backStack.value = listOf(BackStackEntry(nextEntryId.getAndIncrement(), route))
         updateDerivedState()
         saveBackStack()
@@ -196,6 +257,7 @@ class NavigationViewModel(
     }
 
     companion object {
+        private const val TAG = "NavigationViewModel"
         private const val KEY_BACK_STACK = "nav_back_stack"
     }
 
