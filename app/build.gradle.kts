@@ -22,8 +22,27 @@ android {
         resourceConfigurations += listOf("zh-rCN", "zh-rTW", "ja", "en", "ko")
     }
 
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("../keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+        create("release") {
+            storeFile = file("../keystore/release.keystore")
+            storePassword = "jcstaff"
+            keyAlias = "jcstaff"
+            keyPassword = "jcstaff"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
