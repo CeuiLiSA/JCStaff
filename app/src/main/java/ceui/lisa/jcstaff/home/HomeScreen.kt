@@ -291,6 +291,12 @@ fun HomeScreen(
                         drawerState.close()
                         navViewModel.navigate(NavRoute.AppSwitcherDemo)
                     }
+                },
+                onCollectionDebugClick = {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        navViewModel.navigate(NavRoute.CollectionDiscovery)
+                    }
                 }
             )
         }
@@ -814,7 +820,8 @@ private fun DrawerContent(
     onSauceNaoClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onShaderDemoClick: () -> Unit,
-    onAppSwitcherDemoClick: () -> Unit
+    onAppSwitcherDemoClick: () -> Unit,
+    onCollectionDebugClick: () -> Unit
 ) {
     var accountListExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -1113,6 +1120,11 @@ private fun DrawerContent(
                 icon = Icons.Default.Explore,
                 label = "App Switcher Demo",
                 onClick = onAppSwitcherDemoClick
+            )
+            DrawerMenuItem(
+                icon = Icons.Default.Favorite,
+                label = "珍藏册 Debug",
+                onClick = onCollectionDebugClick
             )
             Spacer(
                 modifier = Modifier.height(

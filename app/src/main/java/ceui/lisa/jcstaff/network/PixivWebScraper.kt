@@ -4,6 +4,7 @@ import android.util.Log
 import ceui.lisa.jcstaff.cache.ApiCacheManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
 import com.google.gson.Strictness
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -303,6 +304,397 @@ object PixivWebScraper {
             }
         }
         return null
+    }
+
+    // ==================== 珍藏册 API ====================
+
+    /**
+     * 获取珍藏册详情
+     * API: /ajax/collection/{collectionId}
+     *
+     * @param collectionId 珍藏册 ID
+     * @param lang 语言
+     * @param forceRefresh 是否强制刷新
+     */
+    suspend fun getCollection(
+        collectionId: String,
+        lang: String = "zh",
+        forceRefresh: Boolean = false
+    ): Result<CollectionResponse> = withContext(Dispatchers.IO) {
+        val url = "$WEB_BASE_URL/ajax/collection/$collectionId?lang=$lang"
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
+
+        if (!forceRefresh) {
+            val cached = ApiCacheManager.get(cacheKey)
+            if (cached != null) {
+                try {
+                    val json = String(cached.responseBody, Charsets.UTF_8)
+                    val response = gson.fromJson(json, CollectionResponse::class.java)
+                    if (response.error == false && response.body != null) {
+                        return@withContext Result.success(response)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Cache parse failed: ${e.message}")
+                }
+            }
+        }
+
+        try {
+            Log.d(TAG, "Fetching collection: $url")
+
+            val request = Request.Builder()
+                .url(url)
+                .get()
+                .build()
+
+            val response = ajaxClient.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                Log.e(TAG, "Collection request failed: ${response.code}")
+                return@withContext tryStaleCache(cacheKey, CollectionResponse::class.java)
+                    ?: Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
+            }
+
+            val json = response.body?.string()
+            if (json.isNullOrEmpty()) {
+                return@withContext Result.failure(Exception("Empty response"))
+            }
+
+            val collectionResponse = gson.fromJson(json, CollectionResponse::class.java)
+
+            if (collectionResponse.error == true) {
+                Log.e(TAG, "API error: ${collectionResponse.message}")
+                return@withContext Result.failure(Exception(collectionResponse.message ?: "API error"))
+            }
+
+            ApiCacheManager.put(
+                key = cacheKey,
+                responseBody = json.toByteArray(Charsets.UTF_8),
+                contentType = "application/json",
+                httpCode = response.code,
+                httpMessage = response.message
+            )
+
+            Log.d(TAG, "Collection success: ${collectionResponse.body?.data?.detail?.tiles?.size ?: 0} tiles")
+            Result.success(collectionResponse)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get collection", e)
+            tryStaleCache(cacheKey, CollectionResponse::class.java)
+                ?: Result.failure(e)
+        }
+    }
+
+    /**
+     * 获取用户的珍藏册 ID 列表
+     * API: /ajax/user/{userId}/profile/all
+     *
+     * @param userId 用户 ID
+     * @param lang 语言
+     */
+    suspend fun getUserCollectionIds(
+        userId: String,
+        lang: String = "zh"
+    ): Result<List<String>> = withContext(Dispatchers.IO) {
+        val url = "$WEB_BASE_URL/ajax/user/$userId/profile/all?lang=$lang"
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
+
+        val cached = ApiCacheManager.get(cacheKey)
+        if (cached != null) {
+            try {
+                val json = String(cached.responseBody, Charsets.UTF_8)
+                val response = gson.fromJson(json, UserProfileAllResponse::class.java)
+                if (response.error == false) {
+                    val ids = response.body?.collectionIds ?: emptyList()
+                    return@withContext Result.success(ids)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Cache parse failed: ${e.message}")
+            }
+        }
+
+        try {
+            Log.d(TAG, "Fetching user collection ids: $url")
+
+            val request = Request.Builder()
+                .url(url)
+                .get()
+                .build()
+
+            val response = ajaxClient.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                return@withContext Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
+            }
+
+            val json = response.body?.string()
+            if (json.isNullOrEmpty()) {
+                return@withContext Result.failure(Exception("Empty response"))
+            }
+
+            val profileResponse = gson.fromJson(json, UserProfileAllResponse::class.java)
+
+            if (profileResponse.error == true) {
+                return@withContext Result.failure(Exception(profileResponse.message ?: "API error"))
+            }
+
+            ApiCacheManager.put(
+                key = cacheKey,
+                responseBody = json.toByteArray(Charsets.UTF_8),
+                contentType = "application/json",
+                httpCode = response.code,
+                httpMessage = response.message
+            )
+
+            val ids = profileResponse.body?.collectionIds ?: emptyList()
+            Log.d(TAG, "User has ${ids.size} collections")
+            Result.success(ids)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get user collection ids", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 获取珍藏册推荐标签列表
+     * API: /ajax/collections/search/recommended_tags
+     */
+    suspend fun getCollectionRecommendedTags(
+        lang: String = "zh"
+    ): Result<CollectionRecommendedTagsResponse> = withContext(Dispatchers.IO) {
+        val url = "$WEB_BASE_URL/ajax/collections/search/recommended_tags?lang=$lang"
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
+
+        val cached = ApiCacheManager.get(cacheKey)
+        if (cached != null) {
+            try {
+                val json = String(cached.responseBody, Charsets.UTF_8)
+                val response = gson.fromJson(json, CollectionRecommendedTagsResponse::class.java)
+                if (response.error == false && response.body != null) {
+                    return@withContext Result.success(response)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Cache parse failed: ${e.message}")
+            }
+        }
+
+        try {
+            Log.d(TAG, "Fetching collection recommended tags: $url")
+            val request = Request.Builder().url(url).get().build()
+            val response = ajaxClient.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                return@withContext tryStaleCache(cacheKey, CollectionRecommendedTagsResponse::class.java)
+                    ?: Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
+            }
+
+            val json = response.body?.string() ?: return@withContext Result.failure(Exception("Empty response"))
+            val result = gson.fromJson(json, CollectionRecommendedTagsResponse::class.java)
+
+            if (result.error == true) {
+                return@withContext Result.failure(Exception(result.message ?: "API error"))
+            }
+
+            ApiCacheManager.put(
+                key = cacheKey,
+                responseBody = json.toByteArray(Charsets.UTF_8),
+                contentType = "application/json",
+                httpCode = response.code,
+                httpMessage = response.message
+            )
+
+            Log.d(TAG, "Recommended tags: ${result.body?.recommendedTags?.size ?: 0}")
+            Result.success(result)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get recommended tags", e)
+            tryStaleCache(cacheKey, CollectionRecommendedTagsResponse::class.java)
+                ?: Result.failure(e)
+        }
+    }
+
+    /**
+     * 搜索珍藏册
+     * API: /ajax/collections/search
+     *
+     * @param word 搜索关键词（标签名）
+     * @param order 排序：date_d（最新）, date_a（最早）
+     * @param mode 模式：all, safe, r18
+     * @param sMode 搜索模式：s_tag（标签匹配）
+     * @param page 页码，从 1 开始
+     * @param lang 语言
+     */
+    suspend fun searchCollections(
+        word: String = "",
+        order: String = "date_d",
+        mode: String = "all",
+        sMode: String = "s_tag",
+        page: Int = 1,
+        lang: String = "zh",
+        forceRefresh: Boolean = false
+    ): Result<CollectionSearchResponse> = withContext(Dispatchers.IO) {
+        val encodedWord = URLEncoder.encode(word, "UTF-8")
+        val url = "$WEB_BASE_URL/ajax/collections/search?word=$encodedWord&order=$order&mode=$mode&sMode=$sMode&lang=$lang&p=$page"
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", url)
+
+        if (!forceRefresh) {
+            val cached = ApiCacheManager.get(cacheKey)
+            if (cached != null) {
+                try {
+                    val json = String(cached.responseBody, Charsets.UTF_8)
+                    val response = gson.fromJson(json, CollectionSearchResponse::class.java)
+                    if (response.error == false && response.body != null) {
+                        return@withContext Result.success(response)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Cache parse failed: ${e.message}")
+                }
+            }
+        }
+
+        try {
+            Log.d(TAG, "Searching collections: $url")
+            val request = Request.Builder().url(url).get().build()
+            val response = ajaxClient.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                return@withContext tryStaleCache(cacheKey, CollectionSearchResponse::class.java)
+                    ?: Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
+            }
+
+            val json = response.body?.string() ?: return@withContext Result.failure(Exception("Empty response"))
+            val result = gson.fromJson(json, CollectionSearchResponse::class.java)
+
+            if (result.error == true) {
+                return@withContext Result.failure(Exception(result.message ?: "API error"))
+            }
+
+            ApiCacheManager.put(
+                key = cacheKey,
+                responseBody = json.toByteArray(Charsets.UTF_8),
+                contentType = "application/json",
+                httpCode = response.code,
+                httpMessage = response.message
+            )
+
+            val collections = result.body?.thumbnails?.collection ?: emptyList()
+            val total = result.body?.data?.total ?: 0
+            Log.d(TAG, "Collection search: ${collections.size} results, $total total")
+            Result.success(result)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to search collections", e)
+            tryStaleCache(cacheKey, CollectionSearchResponse::class.java)
+                ?: Result.failure(e)
+        }
+    }
+
+    /**
+     * 获取推荐珍藏册（编辑精选）
+     * 从 /collection 页面的 __NEXT_DATA__ 中提取 recommendCollectionIds
+     * 及 serverSerializedPreloadedState 中的珍藏册元数据
+     */
+    suspend fun getRecommendedCollections(
+        forceRefresh: Boolean = false
+    ): Result<List<CollectionSummary>> = withContext(Dispatchers.IO) {
+        val url = "$WEB_BASE_URL/collection"
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", "$url#recommended")
+
+        if (!forceRefresh) {
+            val cached = ApiCacheManager.get(cacheKey)
+            if (cached != null) {
+                try {
+                    val html = String(cached.responseBody, Charsets.UTF_8)
+                    val result = parseRecommendedCollections(html)
+                    if (result.isNotEmpty()) {
+                        return@withContext Result.success(result)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Cache parse failed: ${e.message}")
+                }
+            }
+        }
+
+        try {
+            Log.d(TAG, "Fetching recommended collections from: $url")
+            val request = Request.Builder().url(url).get().build()
+            val response = webClient.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                val staleCache = ApiCacheManager.getStale(cacheKey)
+                if (staleCache != null) {
+                    val html = String(staleCache.responseBody, Charsets.UTF_8)
+                    val result = parseRecommendedCollections(html)
+                    if (result.isNotEmpty()) return@withContext Result.success(result)
+                }
+                return@withContext Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
+            }
+
+            val html = response.body?.string()
+            if (html.isNullOrEmpty()) {
+                return@withContext Result.failure(Exception("Empty response"))
+            }
+
+            val result = parseRecommendedCollections(html)
+            if (result.isNotEmpty()) {
+                ApiCacheManager.put(
+                    key = cacheKey,
+                    responseBody = html.toByteArray(Charsets.UTF_8),
+                    contentType = "text/html",
+                    httpCode = response.code,
+                    httpMessage = response.message
+                )
+            }
+            Log.d(TAG, "Recommended collections: ${result.size}")
+            Result.success(result)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get recommended collections", e)
+            val staleCache = ApiCacheManager.getStale(cacheKey)
+            if (staleCache != null) {
+                val html = String(staleCache.responseBody, Charsets.UTF_8)
+                val result = parseRecommendedCollections(html)
+                if (result.isNotEmpty()) return@withContext Result.success(result)
+            }
+            Result.failure(e)
+        }
+    }
+
+    private fun parseRecommendedCollections(html: String): List<CollectionSummary> {
+        val matcher = nextDataPattern.matcher(html)
+        if (!matcher.find()) return emptyList()
+
+        val jsonString = matcher.group(1) ?: return emptyList()
+
+        return try {
+            val root = gson.fromJson(jsonString, JsonObject::class.java)
+            val pageProps = root
+                .getAsJsonObject("props")
+                ?.getAsJsonObject("pageProps") ?: return emptyList()
+
+            val page = pageProps.getAsJsonObject("page")
+            val recommendIds = page?.getAsJsonArray("recommendCollectionIds")
+                ?.map { it.asString } ?: emptyList()
+
+            if (recommendIds.isEmpty()) return emptyList()
+
+            // Parse serverSerializedPreloadedState for collection metadata
+            val preloadedStateStr = pageProps.get("serverSerializedPreloadedState")?.asString
+                ?: return emptyList()
+            val preloadedState = gson.fromJson(preloadedStateStr, JsonObject::class.java)
+            val thumbnailCollection = preloadedState
+                ?.getAsJsonObject("thumbnail")
+                ?.getAsJsonObject("collection") ?: return emptyList()
+
+            recommendIds.mapNotNull { id ->
+                thumbnailCollection.get(id)?.let { element ->
+                    try {
+                        gson.fromJson(element, CollectionSummary::class.java)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse recommended collections", e)
+            emptyList()
+        }
     }
 
     // ==================== 排行榜 API ====================

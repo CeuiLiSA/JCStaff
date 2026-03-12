@@ -72,6 +72,7 @@ import ceui.lisa.jcstaff.navigation.NavigationViewModel
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.screens.AccountManagementScreen
 import ceui.lisa.jcstaff.screens.BlockSettingsScreen
+import ceui.lisa.jcstaff.screens.CollectionDiscoveryScreen
 import ceui.lisa.jcstaff.screens.BookmarksScreen
 import ceui.lisa.jcstaff.screens.BrowseHistoryScreen
 import ceui.lisa.jcstaff.screens.CacheBrowserScreen
@@ -93,6 +94,7 @@ import ceui.lisa.jcstaff.screens.UgoiraRankingScreen
 import ceui.lisa.jcstaff.screens.UserBookmarkNovelsScreen
 import ceui.lisa.jcstaff.screens.UserCreatedIllustsScreen
 import ceui.lisa.jcstaff.screens.UserCreatedNovelsScreen
+import ceui.lisa.jcstaff.screens.CollectionDetailScreen
 import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
@@ -593,6 +595,16 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                                         UserFollowingScreen(
                                             userId = route.userId
                                         )
+                                    }
+
+                                    is NavRoute.CollectionDetail -> {
+                                        CollectionDetailScreen(
+                                            collectionId = route.collectionId
+                                        )
+                                    }
+
+                                    is NavRoute.CollectionDiscovery -> {
+                                        CollectionDiscoveryScreen()
                                     }
                                 }
                             }

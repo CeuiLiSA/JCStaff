@@ -110,6 +110,12 @@ sealed interface NavRoute : java.io.Serializable {
     data class UserFollowing(val userId: Long) : NavRoute {
         override val stableKey = "UserFollowing_$userId"
     }
+    data class CollectionDetail(val collectionId: String) : NavRoute {
+        override val stableKey = "CollectionDetail_$collectionId"
+    }
+    data object CollectionDiscovery : NavRoute {
+        override val stableKey = "CollectionDiscovery"
+    }
 }
 
 /** Get a human-readable title for the route (used in app switcher) */
@@ -143,4 +149,6 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.UserFollowing -> "关注用户"
     is NavRoute.AppSwitcherDemo -> "页面切换演示"
     is NavRoute.DemoPage -> title
+    is NavRoute.CollectionDetail -> "珍藏册"
+    is NavRoute.CollectionDiscovery -> "珍藏册发现"
 }
