@@ -19,6 +19,7 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bookmarks
@@ -142,9 +143,20 @@ fun UserProfileScreen(
                 state = listState,
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 沉浸式头部
+                // 沉浸式头部 with parallax
                 item(key = "header", contentType = CONTENT_TYPE_HEADER) {
+                    val scrollOffset by remember {
+                        derivedStateOf {
+                            if (listState.firstVisibleItemIndex == 0) {
+                                listState.firstVisibleItemScrollOffset.toFloat()
+                            } else 0f
+                        }
+                    }
                     UserProfileHeader(
+                        modifier = Modifier.graphicsLayer {
+                            translationY = scrollOffset * 0.5f
+                            alpha = (1f - scrollOffset / 600f).coerceIn(0f, 1f)
+                        },
                         user = state.user,
                         profile = state.profile,
                         workspace = state.workspace,

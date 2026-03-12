@@ -2,8 +2,14 @@ package ceui.lisa.jcstaff.screens
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,8 +37,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,8 +48,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -49,8 +60,11 @@ import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.downloadToGallery
 import ceui.lisa.jcstaff.core.saveFromCacheToGallery
+import ceui.lisa.jcstaff.components.animations.LocalSharedTransitionScope
+import ceui.lisa.jcstaff.components.animations.LocalAnimatedVisibilityScope
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.network.PixivClient
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
@@ -70,7 +84,7 @@ import java.io.File
  * - 退出再进入时，续上上一个请求而不是新发请求
  * - 下载完成后直接使用缓存文件，点击下载按钮瞬间完成
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ImageViewerScreen(
     imageUrl: String,
@@ -103,16 +117,148 @@ fun ImageViewerScreen(
 
     val zoomableState = rememberZoomableImageState()
 
+    // Shared element transition scopes
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     val onLongPress: () -> Unit = { showBottomSheet = true }
+
+    // 入场动画：0→1，背景渐入 + 图片从底部滑入
+    val enterProgress = remember { Animatable(0f) }
+    val isEntering = enterProgress.value < 1f
+    LaunchedEffect(Unit) {
+        enterProgress.animateTo(
+            1f,
+            animationSpec = tween(300, easing = FastOutSlowInEasing)
+        )
+    }
+
+    // Drag-to-dismiss — 小红书风格：大幅缩放 + 背景渐隐 + 飞出动画
+    var dragOffsetX by remember { mutableFloatStateOf(0f) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    // 按压点像素坐标（容器内），用于补偿缩放偏移
+    var pressPxX by remember { mutableFloatStateOf(0f) }
+    var pressPxY by remember { mutableFloatStateOf(0f) }
+    val springBackX = remember { Animatable(0f) }
+    val springBackY = remember { Animatable(0f) }
+    // dismiss 飞出动画进度 0→1
+    val dismissAnimProgress = remember { Animatable(0f) }
+    var dismissStartX by remember { mutableFloatStateOf(0f) }
+    var dismissStartY by remember { mutableFloatStateOf(0f) }
+    var dismissStartScale by remember { mutableFloatStateOf(1f) }
+    val isDismissing = dismissAnimProgress.isRunning
+
+    val dismissThreshold = 400f
+    val screenHeightPx = with(LocalDensity.current) {
+        LocalConfiguration.current.screenHeightDp.dp.toPx()
+    }
+
+    // 飞出目标：屏幕底部再远一点，缩到 0
+    val dismissTargetY = screenHeightPx * 0.8f
+    val dismissTargetScale = 0f
+
+    val effectiveOffsetX: Float
+    val effectiveOffsetY: Float
+    val contentScale: Float
+    val bgAlpha: Float
+
+    if (isDismissing) {
+        val t = dismissAnimProgress.value
+        effectiveOffsetX = dismissStartX
+        effectiveOffsetY = dismissStartY + (dismissTargetY - dismissStartY) * t
+        contentScale = dismissStartScale + (dismissTargetScale - dismissStartScale) * t
+        bgAlpha = ((1f - t) * (1f - (kotlin.math.abs(dismissStartY) / (screenHeightPx * 0.5f)).coerceIn(0f, 1f))).coerceIn(0f, 1f)
+    } else if (isEntering) {
+        // 入场：只渐入背景，图片保持原位不动（底下详情页的图片提供视觉连续性）
+        effectiveOffsetX = 0f
+        effectiveOffsetY = 0f
+        contentScale = 1f
+        bgAlpha = enterProgress.value
+    } else {
+        effectiveOffsetX = if (springBackX.isRunning) springBackX.value else dragOffsetX
+        effectiveOffsetY = if (springBackY.isRunning) springBackY.value else dragOffsetY
+        val dragProgress = (kotlin.math.abs(effectiveOffsetY) / (screenHeightPx * 0.5f)).coerceIn(0f, 1f)
+        bgAlpha = (1f - dragProgress).coerceIn(0f, 1f)
+        contentScale = (1f - dragProgress * 0.5f).coerceIn(0.5f, 1f)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.Black.copy(alpha = bgAlpha))
     ) {
-        // 图片容器
-        Box(modifier = Modifier.fillMaxSize()) {
+        // 图片容器 — 缩放中心在容器中心，通过补偿偏移让按压点跟手
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    // 在 graphicsLayer 内部用实际 layer 尺寸计算补偿
+                    val layerCenterX = size.width / 2f
+                    val layerCenterY = size.height / 2f
+                    val compX = (pressPxX - layerCenterX) * (1f - contentScale)
+                    val compY = (pressPxY - layerCenterY) * (1f - contentScale)
+                    translationX = effectiveOffsetX + compX
+                    translationY = effectiveOffsetY + compY
+                    scaleX = contentScale
+                    scaleY = contentScale
+                }
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            // 记录按压点像素坐标
+                            pressPxX = offset.x
+                            pressPxY = offset.y
+                        },
+                        onDragEnd = {
+                            coroutineScope.launch {
+                                if (kotlin.math.abs(dragOffsetY) > dismissThreshold) {
+                                    // 记录 dismiss 起始状态
+                                    val curProgress = (kotlin.math.abs(dragOffsetY) / (screenHeightPx * 0.5f)).coerceIn(0f, 1f)
+                                    dismissStartX = dragOffsetX
+                                    dismissStartY = dragOffsetY
+                                    dismissStartScale = (1f - curProgress * 0.5f).coerceIn(0.5f, 1f)
+                                    // 清除拖拽状态，由 dismissAnimProgress 接管
+                                    dragOffsetX = 0f
+                                    dragOffsetY = 0f
+                                    // 播放飞出动画
+                                    dismissAnimProgress.snapTo(0f)
+                                    dismissAnimProgress.animateTo(
+                                        1f,
+                                        animationSpec = tween(250, easing = FastOutSlowInEasing)
+                                    )
+                                    navViewModel.goBack()
+                                } else if (dragOffsetX != 0f || dragOffsetY != 0f) {
+                                    springBackX.snapTo(dragOffsetX)
+                                    springBackY.snapTo(dragOffsetY)
+                                    dragOffsetX = 0f
+                                    dragOffsetY = 0f
+                                    val easeBack = tween<Float>(250, easing = FastOutSlowInEasing)
+                                    launch { springBackX.animateTo(0f, animationSpec = easeBack) }
+                                    launch { springBackY.animateTo(0f, animationSpec = easeBack) }
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            coroutineScope.launch {
+                                if (dragOffsetX != 0f || dragOffsetY != 0f) {
+                                    springBackX.snapTo(dragOffsetX)
+                                    springBackY.snapTo(dragOffsetY)
+                                    dragOffsetX = 0f
+                                    dragOffsetY = 0f
+                                    launch { springBackX.animateTo(0f) }
+                                    launch { springBackY.animateTo(0f) }
+                                }
+                            }
+                        },
+                        onDrag = { _, dragAmount ->
+                            dragOffsetX += dragAmount.x
+                            dragOffsetY += dragAmount.y
+                        }
+                    )
+                }
+        ) {
             // 预览图（作为底层，在原图加载完成前显示）
+            @OptIn(ExperimentalSharedTransitionApi::class)
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(imageUrl)
@@ -120,6 +266,16 @@ fun ImageViewerScreen(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(
+                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                            with(sharedTransitionScope) {
+                                Modifier.sharedElement(
+                                    rememberSharedContentState("illust_image_$sharedElementKey"),
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            }
+                        } else Modifier
+                    )
                     .pointerInput(Unit) {
                         detectTapGestures(onLongPress = { onLongPress() })
                     }

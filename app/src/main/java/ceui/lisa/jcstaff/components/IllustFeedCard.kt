@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff.components
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -73,6 +74,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.cache.BrowseHistoryRepository
+import ceui.lisa.jcstaff.components.animations.AnimatedCounter
+import ceui.lisa.jcstaff.components.animations.LocalSharedTransitionScope
+import ceui.lisa.jcstaff.components.animations.LocalAnimatedVisibilityScope
+import ceui.lisa.jcstaff.components.animations.ParticleBurst
 import ceui.lisa.jcstaff.components.illust.tagGradients
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
@@ -100,7 +105,7 @@ import kotlinx.coroutines.launch
  * 4. 渐变 pill 标签
  * 5. 操作栏（FilledTonalIconButton）
  */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun IllustFeedCard(
     illust: Illust,
@@ -112,11 +117,16 @@ fun IllustFeedCard(
     val coroutineScope = rememberCoroutineScope()
     val user = illust.user
 
+    // Shared element transition scopes
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     // ── Bookmark state (optimistic UI) ──
     var isBookmarked by remember(illust.id, illust.is_bookmarked) {
         mutableStateOf(illust.is_bookmarked == true)
     }
     var isBookmarking by remember { mutableStateOf(false) }
+    var showParticleBurst by remember { mutableStateOf(false) }
 
     // ── Double-tap heart animation ──
     var showDoubleTapHeart by remember { mutableStateOf(false) }
@@ -143,6 +153,7 @@ fun IllustFeedCard(
         if (isBookmarking) return
         val wasBookmarked = isBookmarked
         isBookmarked = !wasBookmarked // optimistic flip
+        if (!wasBookmarked) showParticleBurst = true
         coroutineScope.launch {
             isBookmarking = true
             try {
@@ -327,6 +338,7 @@ fun IllustFeedCard(
                     }
             ) {
                 // 主图
+                @OptIn(ExperimentalSharedTransitionApi::class)
                 AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(illust.image_urls?.large ?: illust.previewUrl())
@@ -340,6 +352,16 @@ fun IllustFeedCard(
                             illust.aspectRatio().coerceIn(0.6f, 1.5f)
                         )
                         .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .then(
+                            if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                                with(sharedTransitionScope) {
+                                    Modifier.sharedElement(
+                                        rememberSharedContentState("illust_image_${illust.id}"),
+                                        animatedVisibilityScope = animatedVisibilityScope
+                                    )
+                                }
+                            } else Modifier
+                        )
                 )
 
                 // 底部渐变遮罩（透明 → 半透明黑）
@@ -382,10 +404,9 @@ fun IllustFeedCard(
                             tint = Color.White,
                             modifier = Modifier.size(14.dp)
                         )
-                        Text(
-                            text = formatCount(illust.total_view ?: 0),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
+                        AnimatedCounter(
+                            count = formatCount(illust.total_view ?: 0),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = Color.White
                         )
                     }
@@ -401,14 +422,22 @@ fun IllustFeedCard(
                             tint = Color.White,
                             modifier = Modifier.size(14.dp)
                         )
-                        Text(
-                            text = formatCount(illust.total_bookmarks ?: 0),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
+                        AnimatedCounter(
+                            count = formatCount(illust.total_bookmarks ?: 0),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = Color.White
                         )
                     }
                 }
+
+                // Particle burst overlay on bookmark
+                ParticleBurst(
+                    trigger = showParticleBurst,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(80.dp)
+                        .padding(10.dp)
+                )
 
                 // 浮动收藏按钮（图片右下角）
                 FeedBookmarkButton(

@@ -18,7 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,6 +36,9 @@ import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
+import ceui.lisa.jcstaff.components.animations.ElasticPullToRefresh
+import ceui.lisa.jcstaff.components.animations.SkeletonIllustCard
+import ceui.lisa.jcstaff.components.animations.staggeredFadeIn
 import ceui.lisa.jcstaff.network.Illust
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -167,11 +170,20 @@ fun IllustGrid(
                 }
             }
             illusts.isEmpty() && isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                // Shimmer skeleton loading
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(columns),
+                    contentPadding = finalContentPadding,
+                    horizontalArrangement = Arrangement.spacedBy(spacing),
+                    verticalItemSpacing = spacing,
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    LoadingIndicator()
+                    items(8) { index ->
+                        SkeletonIllustCard(
+                            modifier = Modifier.staggeredFadeIn(index),
+                            aspectRatio = if (index % 3 == 0) 0.65f else 0.8f
+                        )
+                    }
                 }
             }
             illusts.isEmpty() -> {
@@ -192,6 +204,7 @@ fun IllustGrid(
                     // Illust 列表
                     items(illusts, key = { it.id }) { illust ->
                         IllustCard(
+                            modifier = Modifier.animateItem(),
                             illust = illust,
                             onClick = { onIllustClick(illust) },
                             onLongClick = onIllustLongClick?.let { { it(illust) } },
@@ -229,7 +242,7 @@ fun IllustGrid(
             if (!isLoading) userPulled = false
         }
 
-        PullToRefreshBox(
+        ElasticPullToRefresh(
             isRefreshing = userPulled && isLoading,
             onRefresh = {
                 if (!isLoading) {

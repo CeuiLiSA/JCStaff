@@ -15,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -57,6 +59,8 @@ import ceui.lisa.jcstaff.auth.AuthState
 import ceui.lisa.jcstaff.auth.AuthViewModel
 import ceui.lisa.jcstaff.auth.LoginState
 import ceui.lisa.jcstaff.components.LoadingIndicator
+import ceui.lisa.jcstaff.components.animations.LocalSharedTransitionScope
+import ceui.lisa.jcstaff.components.animations.LocalAnimatedVisibilityScope
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherDemoScreen
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherFab
 import ceui.lisa.jcstaff.components.appswitcher.AppSwitcherOverlay
@@ -65,6 +69,7 @@ import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.SelectionManager
 import ceui.lisa.jcstaff.home.HomeScreen
+import ceui.lisa.jcstaff.navigation.BackStackEntry
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.navigation.NavigationDirection
@@ -323,9 +328,20 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
             // key(activeUserId) forces full recomposition on account switch, recreating all ViewModels
             key(activeUserId) {
                 val entry = currentEntry
+                // 当 ImageViewer 是当前路由时，让 AnimatedContent 显示上一个页面，
+                // ImageViewer 作为透明 overlay 渲染在上面，这样拖拽时能看到底下的详情页
                 if (entry != null) {
+                val isImageViewer = entry.route is NavRoute.ImageViewer
+                val contentEntry = if (isImageViewer) {
+                    // 取 backStack 倒数第二个（即 ImageViewer 下面的页面）
+                    backStackList.getOrNull(backStackList.size - 2) ?: entry
+                } else {
+                    entry
+                }
+                @OptIn(ExperimentalSharedTransitionApi::class)
+                SharedTransitionLayout {
                 AnimatedContent(
-                    targetState = entry,
+                    targetState = contentEntry,
                     transitionSpec = {
                         if (skipNextTransition) {
                             skipNextTransition = false
@@ -385,6 +401,10 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                             }
                         )
                 ) { entry ->
+                    CompositionLocalProvider(
+                        LocalSharedTransitionScope provides this@SharedTransitionLayout,
+                        LocalAnimatedVisibilityScope provides this@AnimatedContent
+                    ) {
                     val route = entry.route
                     saveableStateHolder.SaveableStateProvider(entry.screenshotKey) {
                         // Wrap content with ScreenshotCapture for app switcher.
@@ -474,11 +494,7 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                                     }
 
                                     is NavRoute.ImageViewer -> {
-                                        ImageViewerScreen(
-                                            imageUrl = route.imageUrl,
-                                            originalUrl = route.originalUrl,
-                                            sharedElementKey = route.sharedElementKey
-                                        )
+                                        // ImageViewer 作为 overlay 渲染，这里留空
                                     }
 
                                     is NavRoute.BrowseHistory -> {
@@ -610,6 +626,18 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                             }
                         }
                     }
+                    } // CompositionLocalProvider
+                }
+                } // SharedTransitionLayout
+
+                // ImageViewer 作为透明 overlay 渲染在 AnimatedContent 之上
+                if (isImageViewer) {
+                    val route = entry!!.route as NavRoute.ImageViewer
+                    ImageViewerScreen(
+                        imageUrl = route.imageUrl,
+                        originalUrl = route.originalUrl,
+                        sharedElementKey = route.sharedElementKey
+                    )
                 }
                 }
             }

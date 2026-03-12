@@ -75,6 +75,7 @@ import ceui.lisa.jcstaff.core.saveFromCacheToGallery
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
 import ceui.lisa.jcstaff.ugoira.UgoiraViewModel
+import ceui.lisa.jcstaff.components.animations.AnimatedCounter
 import ceui.lisa.jcstaff.utils.formatCount
 import kotlinx.coroutines.launch
 
@@ -149,8 +150,8 @@ fun IllustActionBar(
                             )
                         }
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = formatCount(illust.total_bookmarks ?: 0),
+                        AnimatedCounter(
+                            count = formatCount(illust.total_bookmarks ?: 0),
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
@@ -329,8 +330,8 @@ fun IllustActionBar(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp)
             )
-            Text(
-                text = formatCount(illust.total_view ?: 0),
+            AnimatedCounter(
+                count = formatCount(illust.total_view ?: 0),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp)

@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.components
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -52,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ceui.lisa.jcstaff.components.animations.LocalSharedTransitionScope
+import ceui.lisa.jcstaff.components.animations.LocalAnimatedVisibilityScope
+import ceui.lisa.jcstaff.components.animations.ParticleBurst
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.ObjectStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
@@ -63,7 +67,7 @@ import coil.request.ImageRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun IllustCard(
     illust: Illust,
@@ -82,11 +86,16 @@ fun IllustCard(
     val previewUrl = illust.previewUrl()
     val aspectRatio = illust.aspectRatio()
 
+    // Shared element transition scopes
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     // Bookmark state (optimistic UI)
     var isBookmarked by remember(illust.id, illust.is_bookmarked) {
         mutableStateOf(illust.is_bookmarked == true)
     }
     var isBookmarking by remember { mutableStateOf(false) }
+    var showParticleBurst by remember { mutableStateOf(false) }
 
     // Selection scale animation
     val scale by animateFloatAsState(
@@ -145,6 +154,7 @@ fun IllustCard(
             )
     ) {
         Box {
+            @OptIn(ExperimentalSharedTransitionApi::class)
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(previewUrl)
@@ -155,6 +165,16 @@ fun IllustCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(aspectRatio)
+                    .then(
+                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                            with(sharedTransitionScope) {
+                                Modifier.sharedElement(
+                                    rememberSharedContentState("illust_image_${illust.id}"),
+                                    animatedVisibilityScope = animatedVisibilityScope
+                                )
+                            }
+                        } else Modifier
+                    )
             )
 
             // Selection indicator (top-start)
@@ -250,12 +270,21 @@ fun IllustCard(
                 }
             }
 
+            // Particle burst overlay on bookmark
+            ParticleBurst(
+                trigger = showParticleBurst,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(72.dp)
+            )
+
             // Bookmark button — bottom-end, always visible
             IconButton(
                 onClick = {
                     if (isBookmarking) return@IconButton
                     val wasBookmarked = isBookmarked
                     isBookmarked = !wasBookmarked // optimistic flip
+                    if (!wasBookmarked) showParticleBurst = true
                     coroutineScope.launch {
                         isBookmarking = true
                         try {

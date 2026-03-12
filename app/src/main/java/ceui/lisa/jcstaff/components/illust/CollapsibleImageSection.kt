@@ -37,8 +37,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.ProgressiveImage
+import ceui.lisa.jcstaff.components.animations.LocalSharedTransitionScope
+import ceui.lisa.jcstaff.components.animations.LocalAnimatedVisibilityScope
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.ugoira.UgoiraPlayer
 import coil.compose.rememberAsyncImagePainter
@@ -49,6 +52,7 @@ import coil.compose.rememberAsyncImagePainter
  * 展开状态：所有图片完整展示
  * 右下角悬浮按钮控制展开/收起
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CollapsibleImageSection(
     illustId: Long,
@@ -61,6 +65,9 @@ fun CollapsibleImageSection(
     onImageClick: ((previewUrl: String, originalUrl: String?, sharedElementKey: String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
 
@@ -177,10 +184,21 @@ fun CollapsibleImageSection(
                             }
                         } else {
                             // 正常图片：直接显示
+                            @OptIn(ExperimentalSharedTransitionApi::class)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(actualAspectRatio)
+                                    .then(
+                                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                                            with(sharedTransitionScope) {
+                                                Modifier.sharedElement(
+                                                    rememberSharedContentState("illust_image_$illustId"),
+                                                    animatedVisibilityScope = animatedVisibilityScope
+                                                )
+                                            }
+                                        } else Modifier
+                                    )
                             ) {
                                 ProgressiveImage(
                                     previewUrl = previewUrl,

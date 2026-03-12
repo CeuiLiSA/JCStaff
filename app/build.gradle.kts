@@ -98,6 +98,9 @@ dependencies {
     // GIF support for Coil
     implementation(libs.coil.gif)
 
+    // Lottie animations
+    implementation(libs.lottie.compose)
+
     // Room database
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

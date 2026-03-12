@@ -86,6 +86,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import ceui.lisa.jcstaff.components.animations.ElasticTabIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -459,10 +460,9 @@ private fun RecommendedTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary,
             indicator = {
-                TabRowDefaults.PrimaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
-                    width = 32.dp,
-                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                ElasticTabIndicator(
+                    pagerState = innerPagerState,
+                    tabCount = tabs.size
                 )
             }
         ) {
@@ -631,10 +631,9 @@ private fun DiscoverTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             indicator = {
-                TabRowDefaults.PrimaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
-                    width = 32.dp,
-                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                ElasticTabIndicator(
+                    pagerState = innerPagerState,
+                    tabCount = tabs.size
                 )
             }
         ) {
@@ -722,10 +721,9 @@ private fun NewWorksTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             indicator = {
-                TabRowDefaults.PrimaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
-                    width = 32.dp,
-                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                ElasticTabIndicator(
+                    pagerState = innerPagerState,
+                    tabCount = tabs.size
                 )
             }
         ) {
@@ -2045,10 +2043,9 @@ private fun GeneralTabPage() {
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
             indicator = {
-                TabRowDefaults.PrimaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(selectedTabIndex = innerPagerState.currentPage),
-                    width = 32.dp,
-                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                ElasticTabIndicator(
+                    pagerState = innerPagerState,
+                    tabCount = tabs.size
                 )
             }
         ) {

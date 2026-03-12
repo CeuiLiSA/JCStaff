@@ -15,7 +15,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,6 +26,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import ceui.lisa.jcstaff.components.animations.ElasticPullToRefresh
+import ceui.lisa.jcstaff.components.animations.SkeletonFeedCard
+import ceui.lisa.jcstaff.components.animations.staggeredFadeIn
 import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -87,11 +90,16 @@ fun IllustFeed(
                 }
             }
             state.items.isEmpty() && state.isLoading -> {
-                Box(
+                // Shimmer skeleton loading
+                LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentPadding = contentPadding
                 ) {
-                    LoadingIndicator()
+                    items(6) { index ->
+                        SkeletonFeedCard(
+                            modifier = Modifier.staggeredFadeIn(index)
+                        )
+                    }
                 }
             }
             state.items.isEmpty() -> {
@@ -109,6 +117,7 @@ fun IllustFeed(
                         key = { it.id }
                     ) { illust ->
                         IllustFeedCard(
+                            modifier = Modifier.animateItem(),
                             illust = illust,
                             onClick = {
                                 navViewModel.navigate(
@@ -151,7 +160,7 @@ fun IllustFeed(
             if (!state.isLoading) userPulled = false
         }
 
-        PullToRefreshBox(
+        ElasticPullToRefresh(
             isRefreshing = userPulled && state.isLoading,
             onRefresh = {
                 if (!state.isLoading) {
