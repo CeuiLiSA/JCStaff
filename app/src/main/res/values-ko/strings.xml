@@ -366,4 +366,37 @@
     <string name="no_content">콘텐츠 없음</string>
     <string name="n_works">%1$d 작품</string>
     <string name="n_users">%1$d 명</string>
+
+    <!-- Report -->
+    <string name="report_illust_title">작품 신고</string>
+    <string name="report_user_title">사용자 신고</string>
+    <string name="report_reason">신고 사유</string>
+    <string name="report_detail">상세 내용</string>
+    <string name="report_required">*필수</string>
+    <string name="report_detail_placeholder">상세한 사유를 입력해 주세요</string>
+    <string name="report_info_title">괴롭힘·부정 행위 신고에 대하여</string>
+    <string name="report_info_body">태그나 댓글 등에서 이용약관 위반 내용을 발견한 경우, 해당 사용자의 프로필 페이지에서 「신고」를 클릭하여 알려주세요.</string>
+    <string name="report_submit">보내기</string>
+    <string name="report_success">신고해 주셔서 감사합니다. 해당 콘텐츠를 차단했습니다.</string>
+
+    <!-- Report reasons — illust -->
+    <string name="report_reason_illust_sexual">과도한 성적 표현이 포함된 작품</string>
+    <string name="report_reason_illust_privacy">타인의 개인정보 또는 초상권 침해</string>
+    <string name="report_reason_illust_repost">무단 전재</string>
+    <string name="report_reason_illust_ad">상업 광고·홍보·권유 목적의 정보 포함</string>
+    <string name="report_reason_illust_grotesque">과도한 잔인한 표현이 포함된 작품</string>
+    <string name="report_reason_illust_child">아동 포르노 또는 아동 학대 콘텐츠</string>
+    <string name="report_reason_illust_other">기타, 이용약관·사이트 방침 위반</string>
+
+    <!-- Report reasons — user -->
+    <string name="report_reason_user_inappropriate">부적절한 작품을 게시</string>
+    <string name="report_reason_user_harassment">괴롭힘 등 부정 행위</string>
+    <string name="report_reason_user_malicious_link">악성 웹사이트로 유도</string>
+    <string name="report_reason_user_profile">프로필에 부적절한 내용 포함</string>
+    <string name="report_reason_user_repost">무단 전재</string>
+    <string name="report_reason_user_privacy">타인의 개인정보 또는 초상권 침해</string>
+    <string name="report_reason_user_child">아동 포르노 또는 아동 학대 콘텐츠</string>
+    <string name="report_reason_user_threat">자살 또는 범죄 예고</string>
+    <string name="report_reason_user_wiki">pixiv 백과사전에서 부정 행위</string>
+    <string name="report_reason_user_other">기타, 이용약관·사이트 방침 위반</string>
 </resources>

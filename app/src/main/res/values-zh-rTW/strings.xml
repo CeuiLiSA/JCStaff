@@ -366,4 +366,37 @@
     <string name="no_content">暫無內容</string>
     <string name="n_works">%1$d 件作品</string>
     <string name="n_users">%1$d 人</string>
+
+    <!-- Report -->
+    <string name="report_illust_title">檢舉作品</string>
+    <string name="report_user_title">檢舉使用者</string>
+    <string name="report_reason">檢舉理由</string>
+    <string name="report_detail">詳情</string>
+    <string name="report_required">*必填</string>
+    <string name="report_detail_placeholder">詳細理由</string>
+    <string name="report_info_title">關於檢舉騷擾、不良行為</string>
+    <string name="report_info_body">若發現標籤、留言等處存在違反使用條款的情況，請於相關使用者的個人資料頁面內點擊「檢舉」聯繫我們。</string>
+    <string name="report_submit">送出</string>
+    <string name="report_success">感謝您的回報，已將該內容加入封鎖清單</string>
+
+    <!-- Report reasons — illust -->
+    <string name="report_reason_illust_sexual">作品含有過度的性描寫</string>
+    <string name="report_reason_illust_privacy">作品侵犯他人隱私或肖像權</string>
+    <string name="report_reason_illust_repost">未經許可擅自轉載他人作品</string>
+    <string name="report_reason_illust_ad">含有以商業廣告、散佈宣傳、招攬為目的的資訊</string>
+    <string name="report_reason_illust_grotesque">作品含有過度的獵奇表現</string>
+    <string name="report_reason_illust_child">含有兒童色情或虐待兒童的內容</string>
+    <string name="report_reason_illust_other">其他、違反了使用條款·本站方針</string>
+
+    <!-- Report reasons — user -->
+    <string name="report_reason_user_inappropriate">投稿了不恰當的作品</string>
+    <string name="report_reason_user_harassment">做出騷擾等不良行為</string>
+    <string name="report_reason_user_malicious_link">誘導他人進入不良網頁</string>
+    <string name="report_reason_user_profile">個人資料中包含不恰當內容</string>
+    <string name="report_reason_user_repost">未經許可擅自轉載他人作品</string>
+    <string name="report_reason_user_privacy">作品侵犯他人隱私或肖像權</string>
+    <string name="report_reason_user_child">含有兒童色情或虐待兒童的內容</string>
+    <string name="report_reason_user_threat">進行自殺或犯罪預告</string>
+    <string name="report_reason_user_wiki">在pixiv百科全書進行不良行為</string>
+    <string name="report_reason_user_other">其他、違反了使用條款·本站方針</string>
 </resources>

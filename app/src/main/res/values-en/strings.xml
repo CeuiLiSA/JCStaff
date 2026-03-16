@@ -366,4 +366,37 @@
     <string name="no_content">No content</string>
     <string name="n_works">%1$d works</string>
     <string name="n_users">%1$d users</string>
+
+    <!-- Report -->
+    <string name="report_illust_title">Report Artwork</string>
+    <string name="report_user_title">Report User</string>
+    <string name="report_reason">Reason</string>
+    <string name="report_detail">Details</string>
+    <string name="report_required">*Required</string>
+    <string name="report_detail_placeholder">Describe the issue in detail</string>
+    <string name="report_info_title">About reporting harassment</string>
+    <string name="report_info_body">If you find tags, comments, or other content that violates our terms, please report the user from their profile page.</string>
+    <string name="report_submit">Submit</string>
+    <string name="report_success">Thank you for your feedback. The content has been blocked.</string>
+
+    <!-- Report reasons — illust -->
+    <string name="report_reason_illust_sexual">Excessive sexual content</string>
+    <string name="report_reason_illust_privacy">Violates privacy or portrait rights</string>
+    <string name="report_reason_illust_repost">Unauthorized repost of others\' work</string>
+    <string name="report_reason_illust_ad">Commercial advertising or solicitation</string>
+    <string name="report_reason_illust_grotesque">Excessive grotesque content</string>
+    <string name="report_reason_illust_child">Child exploitation or abuse</string>
+    <string name="report_reason_illust_other">Other / Violation of Terms of Service</string>
+
+    <!-- Report reasons — user -->
+    <string name="report_reason_user_inappropriate">Posted inappropriate works</string>
+    <string name="report_reason_user_harassment">Harassment or abusive behavior</string>
+    <string name="report_reason_user_malicious_link">Directing to malicious websites</string>
+    <string name="report_reason_user_profile">Inappropriate profile content</string>
+    <string name="report_reason_user_repost">Unauthorized repost of others\' work</string>
+    <string name="report_reason_user_privacy">Violates privacy or portrait rights</string>
+    <string name="report_reason_user_child">Child exploitation or abuse</string>
+    <string name="report_reason_user_threat">Suicide or criminal threats</string>
+    <string name="report_reason_user_wiki">Misconduct on pixiv Encyclopedia</string>
+    <string name="report_reason_user_other">Other / Violation of Terms of Service</string>
 </resources>

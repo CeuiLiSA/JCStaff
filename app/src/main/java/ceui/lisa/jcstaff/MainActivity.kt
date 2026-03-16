@@ -101,6 +101,7 @@ import ceui.lisa.jcstaff.screens.UserBookmarkNovelsScreen
 import ceui.lisa.jcstaff.screens.UserCreatedIllustsScreen
 import ceui.lisa.jcstaff.screens.UserCreatedNovelsScreen
 import ceui.lisa.jcstaff.screens.CollectionDetailScreen
+import ceui.lisa.jcstaff.screens.ReportScreen
 import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
 import ceui.lisa.jcstaff.ui.theme.JCStaffTheme
@@ -696,6 +697,13 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
 
                                     is NavRoute.CollectionDiscovery -> {
                                         CollectionDiscoveryScreen()
+                                    }
+
+                                    is NavRoute.Report -> {
+                                        ReportScreen(
+                                            objectId = route.objectId,
+                                            objectType = route.objectType
+                                        )
                                     }
                                 }
                             }

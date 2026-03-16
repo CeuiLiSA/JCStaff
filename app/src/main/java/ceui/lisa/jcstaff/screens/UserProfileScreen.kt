@@ -246,6 +246,11 @@ fun UserProfileScreen(
             FloatingTopBar(
                 shareUrl = shareUrl,
                 shareTitle = state.user?.name ?: "",
+                onReportClick = {
+                    navViewModel.navigate(
+                        NavRoute.Report(objectId = userId, objectType = "user")
+                    )
+                },
                 onBlockClick = { showBlockDialog = true }
             )
         }

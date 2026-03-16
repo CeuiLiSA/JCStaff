@@ -401,4 +401,38 @@
     <string name="sauce_nao">以图搜源</string>
     <string name="sauce_nao_open_in_app">在应用内打开</string>
     <string name="related_articles">相关文章</string>
+
+    <!-- Report -->
+    <string name="report_illust_title">举报作品</string>
+    <string name="report_user_title">举报用户</string>
+    <string name="report_reason">报告理由</string>
+    <string name="report_detail">详情</string>
+    <string name="report_required">*必填</string>
+    <string name="report_detail_placeholder">详细理由</string>
+    <string name="report_info_title">关于举报骚扰、不良行为</string>
+    <string name="report_info_body">若发现标签、评论等处存在违反使用条款的情况，请于涉事用户的个人资料页面内点击「举报」联系我们。</string>
+    <string name="report_submit">发送</string>
+    <string name="report_success">感谢您的反馈，已将该内容加入屏蔽列表</string>
+
+    <!-- Report reasons — illust -->
+    <string name="report_reason_illust_sexual">作品含有过度的性描写</string>
+    <string name="report_reason_illust_privacy">作品侵犯他人隐私或肖像权</string>
+    <string name="report_reason_illust_repost">未经许可擅自转载他人作品</string>
+    <string name="report_reason_illust_ad">含有以商用广告、散布宣传、招揽为目的的信息</string>
+    <string name="report_reason_illust_grotesque">作品含有过度的猎奇表现</string>
+    <string name="report_reason_illust_child">含有儿童色情或虐待儿童的内容</string>
+    <string name="report_reason_illust_other">其他、违反了使用条款·本站方针</string>
+
+    <!-- Report reasons — user -->
+    <string name="report_reason_user_inappropriate">投稿了不恰当的作品</string>
+    <string name="report_reason_user_harassment">做出骚扰等不良行为</string>
+    <string name="report_reason_user_malicious_link">诱导他人进入不良网页</string>
+    <string name="report_reason_user_profile">个人资料中包含不恰当内容</string>
+    <string name="report_reason_user_repost">未经许可擅自转载他人作品</string>
+    <string name="report_reason_user_privacy">作品侵犯他人隐私或肖像权</string>
+    <string name="report_reason_user_child">含有儿童色情或虐待儿童的内容</string>
+    <string name="report_reason_user_threat">进行自杀或犯罪预告</string>
+    <string name="report_reason_user_wiki">在pixiv百科全书进行不良行为</string>
+    <string name="report_reason_user_other">其他、违反了使用条款·本站方针</string>
+
 </resources>

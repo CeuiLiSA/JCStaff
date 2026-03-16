@@ -1085,7 +1085,6 @@ private fun DrawerContent(
                 label = stringResource(R.string.sauce_nao),
                 onClick = onSauceNaoClick
             )
-
             Spacer(modifier = Modifier.weight(1f))
 
             // ── Footer ───────────────────────────────────────────────

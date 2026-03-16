@@ -31,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -85,6 +86,7 @@ fun IllustDetailScreen(
     )
 ) {
     val navViewModel = LocalNavigationViewModel.current
+    val context = LocalContext.current
     val currentUserId by AccountRegistry.activeUserId.collectAsState(initial = null)
 
     // 从 ViewModel 获取状态
@@ -448,6 +450,11 @@ fun IllustDetailScreen(
             FloatingTopBar(
                 shareUrl = "https://www.pixiv.net/artworks/$illustId",
                 shareTitle = title,
+                onReportClick = {
+                    navViewModel.navigate(
+                        NavRoute.Report(objectId = illustId, objectType = "illust")
+                    )
+                },
                 onBlockClick = { showBlockUserDialog = true },
                 onBlockWorkClick = { showBlockWorkDialog = true }
             )

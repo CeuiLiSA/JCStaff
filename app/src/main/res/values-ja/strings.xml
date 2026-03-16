@@ -366,4 +366,37 @@
     <string name="no_content">コンテンツなし</string>
     <string name="n_works">%1$d 件の作品</string>
     <string name="n_users">%1$d 人</string>
+
+    <!-- Report -->
+    <string name="report_illust_title">作品を報告</string>
+    <string name="report_user_title">ユーザーを報告</string>
+    <string name="report_reason">報告理由</string>
+    <string name="report_detail">詳細</string>
+    <string name="report_required">*必須</string>
+    <string name="report_detail_placeholder">詳細な理由</string>
+    <string name="report_info_title">嫌がらせ・迷惑行為の報告について</string>
+    <string name="report_info_body">タグやコメント等に利用規約に違反する内容を発見した場合は、該当ユーザーのプロフィールページから「報告」をクリックしてご連絡ください。</string>
+    <string name="report_submit">送信</string>
+    <string name="report_success">ご報告ありがとうございます。該当コンテンツをブロックしました。</string>
+
+    <!-- Report reasons — illust -->
+    <string name="report_reason_illust_sexual">過度な性的表現を含む作品</string>
+    <string name="report_reason_illust_privacy">他人のプライバシーや肖像権を侵害する作品</string>
+    <string name="report_reason_illust_repost">無断転載</string>
+    <string name="report_reason_illust_ad">商業広告・宣伝・勧誘目的の情報を含む</string>
+    <string name="report_reason_illust_grotesque">過度なグロテスク表現を含む作品</string>
+    <string name="report_reason_illust_child">児童ポルノ・児童虐待に該当する内容</string>
+    <string name="report_reason_illust_other">その他、利用規約・サイトポリシー違反</string>
+
+    <!-- Report reasons — user -->
+    <string name="report_reason_user_inappropriate">不適切な作品を投稿している</string>
+    <string name="report_reason_user_harassment">嫌がらせなどの迷惑行為</string>
+    <string name="report_reason_user_malicious_link">不正なウェブサイトへの誘導</string>
+    <string name="report_reason_user_profile">プロフィールに不適切な内容を含む</string>
+    <string name="report_reason_user_repost">無断転載</string>
+    <string name="report_reason_user_privacy">他人のプライバシーや肖像権を侵害</string>
+    <string name="report_reason_user_child">児童ポルノ・児童虐待に該当する内容</string>
+    <string name="report_reason_user_threat">自殺または犯罪予告</string>
+    <string name="report_reason_user_wiki">pixiv百科事典での迷惑行為</string>
+    <string name="report_reason_user_other">その他、利用規約・サイトポリシー違反</string>
 </resources>

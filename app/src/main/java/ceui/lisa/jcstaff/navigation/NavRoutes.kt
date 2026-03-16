@@ -119,6 +119,9 @@ sealed interface NavRoute : java.io.Serializable {
     data object CollectionDiscovery : NavRoute {
         override val stableKey = "CollectionDiscovery"
     }
+    data class Report(val objectId: Long, val objectType: String) : NavRoute {
+        override val stableKey = "Report_${objectType}_$objectId"
+    }
 }
 
 /** Get a human-readable title for the route (used in app switcher) */
@@ -155,4 +158,5 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.DemoPage -> title
     is NavRoute.CollectionDetail -> "珍藏册"
     is NavRoute.CollectionDiscovery -> "珍藏册发现"
+    is NavRoute.Report -> if (objectType == "user") "举报用户" else "举报作品"
 }
