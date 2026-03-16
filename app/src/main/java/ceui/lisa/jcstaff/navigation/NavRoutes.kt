@@ -52,6 +52,9 @@ sealed interface NavRoute : java.io.Serializable {
     data class NovelDetail(val novelId: Long) : NavRoute {
         override val stableKey = "NovelDetail_$novelId"
     }
+    data class NovelReader(val novelId: Long, val novelTitle: String) : NavRoute {
+        override val stableKey = "NovelReader_$novelId"
+    }
     data object ShaderDemo : NavRoute {
         override val stableKey = "ShaderDemo"
     }
@@ -132,6 +135,7 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.UserProfile -> "用户主页"
     is NavRoute.TagDetail -> tag.name ?: "标签"
     is NavRoute.NovelDetail -> "小说详情"
+    is NavRoute.NovelReader -> novelTitle.ifEmpty { "阅读小说" }
     is NavRoute.ShaderDemo -> "着色器演示"
     is NavRoute.AccountManagement -> "账号管理"
     is NavRoute.CommentDetail -> "评论"

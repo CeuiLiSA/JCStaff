@@ -228,6 +228,71 @@ data class SingleNovelResponse(
     val novel: Novel? = null,
 ) : Serializable
 
+data class NovelTextResponse(
+    val novel_text: String? = null,
+    val series_prev: Novel? = null,
+    val series_next: Novel? = null,
+    val webNovel: NovelWebviewContent? = null
+) : Serializable
+
+/**
+ * webview/v2/novel HTML 中嵌入的 pixiv 对象
+ */
+data class PixivHtmlObject(
+    val novel: NovelWebviewContent? = null,
+    val isOwnWork: Boolean? = null
+) : Serializable
+
+data class NovelWebviewContent(
+    val id: String? = null,
+    val title: String? = null,
+    val text: String? = null,
+    val coverUrl: String? = null,
+    val userId: String? = null,
+    val tags: List<String?>? = null,
+    val caption: String? = null,
+    val isOriginal: Boolean? = null,
+    val seriesId: String? = null,
+    val seriesTitle: String? = null,
+    val seriesNavigation: SeriesNavigation? = null,
+    val illusts: Map<String, WebviewIllustHolder>? = null,
+    val images: Map<String, NovelImages>? = null,
+    val marker: NovelMarker? = null,
+    val aiType: Int? = null
+) : Serializable
+
+data class SeriesNavigation(
+    val nextNovel: SeriesNovelNav? = null,
+    val prevNovel: SeriesNovelNav? = null
+) : Serializable
+
+data class SeriesNovelNav(
+    val id: Int? = null,
+    val title: String? = null,
+    val coverUrl: String? = null,
+    val viewable: Boolean? = null
+) : Serializable {
+    fun toNovel(): Novel = Novel(
+        id = id?.toLong() ?: 0L,
+        title = title,
+        image_urls = coverUrl?.let { ImageUrls(medium = it) }
+    )
+}
+
+data class WebviewIllustHolder(
+    val id: Long? = null
+) : Serializable
+
+data class NovelImages(
+    val novelImageId: Long? = null,
+    val sl: Int? = null,
+    val urls: Map<String, String>? = null
+) : Serializable
+
+data class NovelMarker(
+    val page: Int? = null
+) : Serializable
+
 data class SingleIllustResponse(
     val illust: Illust? = null,
 ) : Serializable

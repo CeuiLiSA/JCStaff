@@ -88,6 +88,7 @@ import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LatestWorksScreen
 import ceui.lisa.jcstaff.screens.NovelDetailScreen
+import ceui.lisa.jcstaff.screens.NovelReaderScreen
 import ceui.lisa.jcstaff.screens.RankingDetailScreen
 import ceui.lisa.jcstaff.screens.SauceNaoScreen
 import ceui.lisa.jcstaff.screens.SearchScreen
@@ -473,6 +474,13 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                                     is NavRoute.NovelDetail -> {
                                         NovelDetailScreen(
                                             novelId = route.novelId
+                                        )
+                                    }
+
+                                    is NavRoute.NovelReader -> {
+                                        NovelReaderScreen(
+                                            novelId = route.novelId,
+                                            novelTitle = route.novelTitle
                                         )
                                     }
 

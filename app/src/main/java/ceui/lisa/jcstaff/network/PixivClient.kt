@@ -142,6 +142,47 @@ object PixivClient {
         }
     }
 
+    /**
+     * 获取小说正文：调用 webview/v2/novel，用 Jsoup 从 HTML 中提取嵌入的 pixiv JSON
+     */
+    suspend fun getNovelText(novelId: Long): NovelTextResponse {
+        val responseBody = pixivApi.getNovelWebview(novelId)
+        return withContext(Dispatchers.Default) {
+            val html = responseBody.string()
+            val pixivObj = parsePixivHtmlObject(html)
+                ?: throw Exception("Failed to extract novel content")
+            val webNovel = pixivObj.novel
+                ?: throw Exception("Novel object is null")
+            NovelTextResponse(
+                novel_text = webNovel.text,
+                series_prev = webNovel.seriesNavigation?.prevNovel?.toNovel(),
+                series_next = webNovel.seriesNavigation?.nextNovel?.toNovel(),
+                webNovel = webNovel
+            )
+        }
+    }
+
+    /**
+     * 从 webview HTML 中解析 pixiv 对象（学习自 Shaft 的 WebNovelParser）
+     * 用 Jsoup 解析 HTML，找到 Object.defineProperty(window, 'pixiv') 的 script，
+     * 提取 value: {...} 中的 JSON，去掉尾逗号后用 Gson 反序列化
+     */
+    private fun parsePixivHtmlObject(html: String): PixivHtmlObject? {
+        val doc = org.jsoup.Jsoup.parse(html)
+        for (script in doc.getElementsByTag("script")) {
+            val content = script.html()
+            if (content.contains("Object.defineProperty(window, 'pixiv'")) {
+                val start = content.indexOf("value: {") + 7
+                val end = content.indexOf("});", start)
+                if (start < 7 || end < 0) continue
+                val trailingCommaRegex = ",(?=\\s*[}\\]])".toRegex()
+                val json = content.substring(start, end).trim().replace(trailingCommaRegex, "")
+                return gson.fromJson(json, PixivHtmlObject::class.java)
+            }
+        }
+        return null
+    }
+
     fun getPkce(): PKCEItem {
         return currentPkce ?: PKCEItem.create().also {
             currentPkce = it

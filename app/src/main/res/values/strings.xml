@@ -334,6 +334,12 @@
     <string name="novel_detail">小说详情</string>
     <string name="novel_series">系列</string>
     <string name="novel_read">阅读小说</string>
+    <string name="novel_start_reading">开始阅读</string>
+    <string name="novel_loading">正在加载小说内容…</string>
+    <string name="novel_load_error">加载失败，点击重试</string>
+    <string name="novel_settings">阅读设置</string>
+    <string name="novel_font_size">字号</string>
+    <string name="novel_line_height">行距</string>
 
     <!-- General Tab -->
     <string name="tab_general">综合</string>

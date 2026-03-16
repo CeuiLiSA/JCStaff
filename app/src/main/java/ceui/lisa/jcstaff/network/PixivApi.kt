@@ -190,6 +190,12 @@ interface PixivApi {
         @Query("novel_id") novelId: Long
     ): SingleNovelResponse
 
+    @GET("/webview/v2/novel")
+    suspend fun getNovelWebview(
+        @Query("id") novelId: Long,
+        @Query("viewer_version") viewerVersion: String = "20221031_ai"
+    ): okhttp3.ResponseBody
+
     @GET("/v1/novel/follow")
     suspend fun getFollowingNovels(
         @Query("restrict") restrict: String = "public"
