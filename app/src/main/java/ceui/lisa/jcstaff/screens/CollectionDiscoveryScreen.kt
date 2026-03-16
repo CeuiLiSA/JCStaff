@@ -1,9 +1,7 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -51,7 +48,6 @@ import ceui.lisa.jcstaff.home.CollectionDiscoveryViewModel
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.CollectionSummary
-import ceui.lisa.jcstaff.network.WebTagTranslation
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
@@ -124,19 +120,6 @@ fun CollectionDiscoveryScreen() {
                         .padding(paddingValues),
                     contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
-                    // ── 发现珍藏册: 标签 chips ──
-                    if (state.recommendedTags.isNotEmpty()) {
-                        item(key = "discover_title") {
-                            SectionHeader(title = "发现珍藏册")
-                        }
-                        item(key = "discover_chips") {
-                            TagChipsRow(
-                                tags = state.recommendedTags,
-                                tagTranslation = state.tagTranslation
-                            )
-                        }
-                    }
-
                     // ── 推荐珍藏册 ──
                     if (state.recommendCollections.isNotEmpty()) {
                         item(key = "recommend_title") {
@@ -200,57 +183,6 @@ fun CollectionDiscoveryScreen() {
                     item {
                         Spacer(modifier = Modifier.height(32.dp))
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TagChipsRow(
-    tags: List<String>,
-    tagTranslation: Map<String, WebTagTranslation>
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        tags.forEach { tag ->
-            val translation = tagTranslation[tag]
-            val displayEn = translation?.en?.takeIf { it.isNotEmpty() }
-
-            Column(
-                modifier = Modifier
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (displayEn != null) {
-                    Text(
-                        text = displayEn,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "#$tag",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Text(
-                        text = "#$tag",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
                 }
             }
         }
@@ -328,11 +260,8 @@ private fun CollectionCard(
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
     ) {
-        // Thumbnail: coverUrl (from illust thumbnails) > thumbnailImageUrl (skip embed.pixiv.net)
         val coverImageUrl = coverUrl
-            ?: collection.thumbnailImageUrl?.takeIf {
-                it.isNotBlank() && !it.contains("embed.pixiv.net")
-            }
+            ?: collection.thumbnailImageUrl?.takeIf { it.isNotBlank() }
         Box(
             modifier = Modifier
                 .fillMaxWidth()

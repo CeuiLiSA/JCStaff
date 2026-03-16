@@ -182,3 +182,9 @@ data class CollectionTagGroup(
     val total: Int = 0,
     val collections: List<CollectionSummary> = emptyList()
 ) : Serializable
+
+data class CollectionPageData(
+    val recommendCollections: List<CollectionSummary> = emptyList(),
+    val everyoneCollections: List<CollectionSummary> = emptyList(),
+    val tagGroups: List<CollectionTagGroup> = emptyList()
+) : Serializable

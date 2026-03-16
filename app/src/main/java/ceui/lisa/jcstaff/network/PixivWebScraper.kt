@@ -657,43 +657,132 @@ object PixivWebScraper {
     }
 
     private fun parseRecommendedCollections(html: String): List<CollectionSummary> {
-        val matcher = nextDataPattern.matcher(html)
-        if (!matcher.find()) return emptyList()
+        return parseCollectionPage(html).recommendCollections
+    }
 
-        val jsonString = matcher.group(1) ?: return emptyList()
+    /**
+     * 从 /collection 页面 HTML 解析完整的珍藏册发现页数据
+     */
+    fun parseCollectionPage(html: String): CollectionPageData {
+        val matcher = nextDataPattern.matcher(html)
+        if (!matcher.find()) return CollectionPageData()
+
+        val jsonString = matcher.group(1) ?: return CollectionPageData()
 
         return try {
             val root = gson.fromJson(jsonString, JsonObject::class.java)
             val pageProps = root
                 .getAsJsonObject("props")
-                ?.getAsJsonObject("pageProps") ?: return emptyList()
+                ?.getAsJsonObject("pageProps") ?: return CollectionPageData()
 
-            val page = pageProps.getAsJsonObject("page")
-            val recommendIds = page?.getAsJsonArray("recommendCollectionIds")
-                ?.map { it.asString } ?: emptyList()
-
-            if (recommendIds.isEmpty()) return emptyList()
+            val page = pageProps.getAsJsonObject("page") ?: return CollectionPageData()
 
             // Parse serverSerializedPreloadedState for collection metadata
             val preloadedStateStr = pageProps.get("serverSerializedPreloadedState")?.asString
-                ?: return emptyList()
+                ?: return CollectionPageData()
             val preloadedState = gson.fromJson(preloadedStateStr, JsonObject::class.java)
             val thumbnailCollection = preloadedState
                 ?.getAsJsonObject("thumbnail")
-                ?.getAsJsonObject("collection") ?: return emptyList()
+                ?.getAsJsonObject("collection") ?: return CollectionPageData()
 
-            recommendIds.mapNotNull { id ->
-                thumbnailCollection.get(id)?.let { element ->
-                    try {
-                        gson.fromJson(element, CollectionSummary::class.java)
-                    } catch (e: Exception) {
-                        null
+            fun resolveIds(ids: List<String>): List<CollectionSummary> {
+                return ids.mapNotNull { id ->
+                    thumbnailCollection.get(id)?.let { element ->
+                        try {
+                            gson.fromJson(element, CollectionSummary::class.java)
+                        } catch (e: Exception) {
+                            null
+                        }
                     }
                 }
             }
+
+            // 推荐珍藏册
+            val recommendIds = page.getAsJsonArray("recommendCollectionIds")
+                ?.map { it.asString } ?: emptyList()
+
+            // 大家的珍藏册
+            val everyoneIds = page.getAsJsonArray("everyoneCollectionIds")
+                ?.map { it.asString } ?: emptyList()
+
+            // 标签分组
+            val tagGroups = page.getAsJsonArray("tagRecommendCollectionIds")
+                ?.mapNotNull { element ->
+                    try {
+                        val obj = element.asJsonObject
+                        val tag = obj.get("tag")?.asString ?: return@mapNotNull null
+                        val ids = obj.getAsJsonArray("ids")?.map { it.asString } ?: emptyList()
+                        val collections = resolveIds(ids)
+                        if (collections.isNotEmpty()) {
+                            CollectionTagGroup(tag = tag, collections = collections)
+                        } else null
+                    } catch (e: Exception) {
+                        null
+                    }
+                } ?: emptyList()
+
+            CollectionPageData(
+                recommendCollections = resolveIds(recommendIds),
+                everyoneCollections = resolveIds(everyoneIds),
+                tagGroups = tagGroups
+            )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse recommended collections", e)
-            emptyList()
+            Log.e(TAG, "Failed to parse collection page", e)
+            CollectionPageData()
+        }
+    }
+
+    /**
+     * 获取完整的珍藏册发现页数据（从 /collection HTML 解析）
+     */
+    suspend fun getCollectionPageData(
+        forceRefresh: Boolean = false
+    ): Result<CollectionPageData> = withContext(Dispatchers.IO) {
+        val url = "$WEB_BASE_URL/collection"
+        val cacheKey = ApiCacheManager.buildCacheKey("GET", "$url#recommended")
+
+        if (!forceRefresh) {
+            val cached = ApiCacheManager.get(cacheKey)
+            if (cached != null) {
+                try {
+                    val html = String(cached.responseBody, Charsets.UTF_8)
+                    val result = parseCollectionPage(html)
+                    if (result.recommendCollections.isNotEmpty() || result.tagGroups.isNotEmpty()) {
+                        return@withContext Result.success(result)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Cache parse failed: ${e.message}")
+                }
+            }
+        }
+
+        try {
+            val request = Request.Builder().url(url).get().build()
+            val response = webClient.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                return@withContext Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
+            }
+
+            val html = response.body?.string()
+            if (html.isNullOrEmpty()) {
+                return@withContext Result.failure(Exception("Empty response"))
+            }
+
+            val result = parseCollectionPage(html)
+
+            ApiCacheManager.put(
+                key = cacheKey,
+                responseBody = html.toByteArray(Charsets.UTF_8),
+                contentType = "text/html",
+                httpCode = response.code,
+                httpMessage = response.message
+            )
+
+            Result.success(result)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get collection page data", e)
+            Result.failure(e)
         }
     }
 
