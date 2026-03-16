@@ -22,10 +22,22 @@ import java.util.concurrent.TimeUnit
  */
 class RefererInterceptor : okhttp3.Interceptor {
     override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
-        val request = chain.request().newBuilder()
-            .addHeader("Referer", "https://app-api.pixiv.net/")
-            .build()
-        return chain.proceed(request)
+        val host = chain.request().url.host
+        val requestBuilder = chain.request().newBuilder()
+
+        if (host.endsWith("pixiv.net")) {
+            // embed.pixiv.net 等 pixiv 域名需要浏览器级 headers
+            requestBuilder
+                .addHeader("Referer", "https://www.pixiv.net/")
+                .addHeader(
+                    "User-Agent",
+                    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+                )
+        } else {
+            requestBuilder.addHeader("Referer", "https://app-api.pixiv.net/")
+        }
+
+        return chain.proceed(requestBuilder.build())
     }
 }
 

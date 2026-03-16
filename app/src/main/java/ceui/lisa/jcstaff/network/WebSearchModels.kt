@@ -64,6 +64,8 @@ data class WebIllust(
     val isUnlisted: Boolean = false,
     val isMasked: Boolean = false,
     val aiType: Int = 0,  // 0=unknown, 1=not_ai, 2=ai_generated
+    val visibilityScope: Int = 0,
+    val urls: Map<String, String>? = null,
     val seriesId: String? = null,
     val seriesTitle: String? = null
 ) : Serializable {
@@ -73,8 +75,11 @@ data class WebIllust(
      */
     fun toIllust(): Illust {
         val illustId = id?.toLongOrNull() ?: 0L
+        // 优先用 url 字段，fallback 到 urls map
+        val squareUrl = url ?: urls?.get("250x250") ?: urls?.get("360x360") ?: urls?.values?.firstOrNull()
         // 构建大图 URL
-        val largeUrl = url?.replace("/c/250x250_80_a2/", "/c/540x540_70/")
+        val largeUrl = (url ?: urls?.get("540x540") ?: urls?.get("1200x1200") ?: squareUrl)
+            ?.replace("/c/250x250_80_a2/", "/c/540x540_70/")
             ?.replace("/c/360x360_70/", "/c/540x540_70/")
 
         return Illust(
@@ -93,9 +98,9 @@ data class WebIllust(
             illust_ai_type = aiType,
             create_date = createDate,
             image_urls = ImageUrls(
-                medium = url,
+                medium = squareUrl,
                 large = largeUrl,
-                square_medium = url
+                square_medium = squareUrl
             ),
             user = User(
                 id = userId?.toLongOrNull() ?: 0L,

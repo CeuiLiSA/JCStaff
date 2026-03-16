@@ -145,7 +145,7 @@ fun CollectionDiscoveryScreen() {
                         item(key = "recommend_row") {
                             CollectionRow(
                                 collections = state.recommendCollections,
-                                coverUrls = emptyMap(),
+                                coverUrls = state.coverUrls,
                                 onCollectionClick = { collection ->
                                     collection.id?.let { id ->
                                         navViewModel.navigate(NavRoute.CollectionDetail(collectionId = id))
@@ -166,7 +166,7 @@ fun CollectionDiscoveryScreen() {
                         item(key = "everyone_row") {
                             CollectionRow(
                                 collections = state.everyoneCollections,
-                                coverUrls = emptyMap(),
+                                coverUrls = state.coverUrls,
                                 onCollectionClick = { collection ->
                                     collection.id?.let { id ->
                                         navViewModel.navigate(NavRoute.CollectionDetail(collectionId = id))
@@ -187,7 +187,7 @@ fun CollectionDiscoveryScreen() {
                         item(key = "tag_row_${group.tag}") {
                             CollectionRow(
                                 collections = group.collections,
-                                coverUrls = emptyMap(),
+                                coverUrls = state.coverUrls,
                                 onCollectionClick = { collection ->
                                     collection.id?.let { id ->
                                         navViewModel.navigate(NavRoute.CollectionDetail(collectionId = id))
@@ -328,7 +328,11 @@ private fun CollectionCard(
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
     ) {
-        // Thumbnail
+        // Thumbnail: coverUrl (from illust thumbnails) > thumbnailImageUrl (skip embed.pixiv.net)
+        val coverImageUrl = coverUrl
+            ?: collection.thumbnailImageUrl?.takeIf {
+                it.isNotBlank() && !it.contains("embed.pixiv.net")
+            }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -337,18 +341,8 @@ private fun CollectionCard(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
-            if (coverUrl != null) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(coverUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = collection.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else if (collection.profileImageUrl != null) {
-                // 无封面时显示用户头像
+            // 底层：用户头像 fallback（始终渲染，被封面覆盖时不可见）
+            if (collection.profileImageUrl != null) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -373,6 +367,19 @@ private fun CollectionCard(
                         )
                     }
                 }
+            }
+
+            // 上层：封面图（加载成功时覆盖头像）
+            if (coverImageUrl != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(coverImageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = collection.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
 
