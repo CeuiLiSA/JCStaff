@@ -37,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,8 +82,11 @@ fun IllustCard(
     val selectionManager = LocalSelectionManager.current
     val navViewModel = LocalNavigationViewModel.current
     val coroutineScope = rememberCoroutineScope()
-    val isSelectionMode = selectionManager.isSelectionMode
-    val isSelected = selectionManager.isSelected(illust.id)
+
+    // P3: 用 derivedStateOf 包装 selectionManager 读取，减少不必要的重组
+    val isSelectionMode by remember { derivedStateOf { selectionManager.isSelectionMode } }
+    val isSelected by remember { derivedStateOf { selectionManager.isSelected(illust.id) } }
+
     val previewUrl = illust.previewUrl()
     val aspectRatio = illust.aspectRatio()
 
@@ -97,15 +101,20 @@ fun IllustCard(
     var isBookmarking by remember { mutableStateOf(false) }
     var showParticleBurst by remember { mutableStateOf(false) }
 
-    // Selection scale animation
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "selection_scale"
-    )
+    // P1: 选择模式动画仅在选择模式下创建，非选择模式下直接用静态值
+    val scale = if (isSelectionMode) {
+        val animatedScale by animateFloatAsState(
+            targetValue = if (isSelected) 0.92f else 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            ),
+            label = "selection_scale"
+        )
+        animatedScale
+    } else {
+        1f
+    }
 
     // Bookmark button animations
     val bookmarkScale by animateFloatAsState(

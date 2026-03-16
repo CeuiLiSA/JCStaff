@@ -204,7 +204,7 @@ fun IllustGrid(
                     // Illust 列表
                     items(illusts, key = { it.id }) { illust ->
                         IllustCard(
-                            modifier = Modifier.animateItem(),
+                            modifier = Modifier,
                             illust = illust,
                             onClick = { onIllustClick(illust) },
                             onLongClick = onIllustLongClick?.let { { it(illust) } },
