@@ -280,12 +280,6 @@ fun HomeScreen(
                         navViewModel.navigate(NavRoute.Settings)
                     }
                 },
-                onShaderDemoClick = {
-                    coroutineScope.launch {
-                        drawerState.close()
-                        navViewModel.navigate(NavRoute.ShaderDemo)
-                    }
-                },
                 onAppSwitcherDemoClick = {
                     coroutineScope.launch {
                         drawerState.close()
@@ -816,7 +810,6 @@ private fun DrawerContent(
     onLatestWorksClick: () -> Unit,
     onSauceNaoClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onShaderDemoClick: () -> Unit,
     onAppSwitcherDemoClick: () -> Unit,
     onCollectionDebugClick: () -> Unit
 ) {
@@ -1108,12 +1101,7 @@ private fun DrawerContent(
                 label = stringResource(R.string.settings),
                 onClick = onSettingsClick
             )
-            DrawerMenuItem(
-                icon = Icons.Default.AutoAwesome,
-                label = "Shader Demo",
-                onClick = onShaderDemoClick
-            )
-            DrawerMenuItem(
+DrawerMenuItem(
                 icon = Icons.Default.Explore,
                 label = "App Switcher Demo",
                 onClick = onAppSwitcherDemoClick

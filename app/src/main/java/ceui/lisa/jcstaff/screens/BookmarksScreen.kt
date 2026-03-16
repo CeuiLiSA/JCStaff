@@ -2,7 +2,6 @@ package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +31,7 @@ import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.components.BookmarkTagDialog
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.IllustListViewModel
@@ -70,51 +70,33 @@ fun BookmarksScreen(
     Box {
         Scaffold(
             topBar = {
-                Column {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                stringResource(
-                                    if (isMyBookmarks) R.string.my_bookmarks else R.string.bookmarks
-                                )
+                TopAppBar(
+                    title = {
+                        Text(
+                            stringResource(
+                                if (isMyBookmarks) R.string.my_bookmarks else R.string.bookmarks
                             )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { navViewModel.goBack() }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.back)
-                                )
-                            }
-                        },
-                        actions = {
-                            if (isMyBookmarks) {
-                                IconButton(onClick = { showTagDialog = true }) {
-                                    Icon(
-                                        imageVector = Icons.Default.FilterList,
-                                        contentDescription = stringResource(R.string.filter_by_tag)
-                                    )
-                                }
-                            }
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navViewModel.goBack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
                         }
-                    )
-                    if (isMyBookmarks) {
-                        // 当前筛选标签
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            FilterChip(
-                                selected = true,
-                                onClick = { showTagDialog = true },
-                                label = {
-                                    Text(selectedTag ?: stringResource(R.string.all_bookmarks))
-                                }
-                            )
+                    },
+                    actions = {
+                        if (isMyBookmarks) {
+                            IconButton(onClick = { showTagDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = stringResource(R.string.filter_by_tag)
+                                )
+                            }
                         }
                     }
-                }
+                )
             }
         ) { paddingValues ->
             IllustGrid(
@@ -135,7 +117,26 @@ fun BookmarksScreen(
                 canLoadMore = state.canLoadMore,
                 error = state.error,
                 onRefresh = { viewModel.refresh() },
-                onLoadMore = { viewModel.loadMore() }
+                onLoadMore = { viewModel.loadMore() },
+                headerContent = if (isMyBookmarks) {
+                    {
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = true,
+                                    onClick = { showTagDialog = true },
+                                    label = {
+                                        Text(selectedTag ?: stringResource(R.string.all_bookmarks))
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else null
             )
         }
 
