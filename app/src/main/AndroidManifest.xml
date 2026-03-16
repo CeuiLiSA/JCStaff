@@ -43,6 +43,23 @@
 
                 <data android:scheme="pixiv" />
             </intent-filter>
+
+            <!-- Deep link: Pixiv artwork, user, and novel URLs -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="www.pixiv.net" />
+                <data android:host="pixiv.net" />
+                <data android:pathPrefix="/artworks/" />
+                <data android:pathPrefix="/en/artworks/" />
+                <data android:pathPrefix="/users/" />
+                <data android:pathPrefix="/en/users/" />
+                <data android:pathPrefix="/novel/show.php" />
+            </intent-filter>
         </activity>
         <provider
             android:name="androidx.core.content.FileProvider"

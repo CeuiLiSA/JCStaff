@@ -86,6 +86,19 @@ class NavigationViewModel(
     val navigationDepth: Int
         get() = (_backStack.value.size - 1).coerceAtLeast(0)
 
+    /** Route queued from a deep link, consumed after authentication completes. */
+    private val _pendingDeepLink = MutableStateFlow<NavRoute?>(null)
+
+    fun setPendingDeepLink(route: NavRoute) {
+        _pendingDeepLink.value = route
+    }
+
+    fun consumePendingDeepLink(): NavRoute? {
+        val route = _pendingDeepLink.value
+        _pendingDeepLink.value = null
+        return route
+    }
+
     init {
         restoreBackStack()
     }

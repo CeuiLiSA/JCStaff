@@ -129,6 +129,10 @@ class MainActivity : AppCompatActivity() {
                             if (stack.isEmpty() || stack.first().route == NavRoute.Landing) {
                                 navViewModel.clearAndNavigate(NavRoute.Home)
                             }
+                            // Navigate to pending deep link after auth completes
+                            navViewModel.consumePendingDeepLink()?.let { route ->
+                                navViewModel.navigate(route)
+                            }
                         }
 
                         is AuthState.NotAuthenticated -> {
@@ -169,12 +173,75 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleDeepLink(intent: Intent?) {
         val uri = intent?.data ?: return
+
         // 处理 pixiv://account/login?code=xxx 回调
         if (uri.scheme == "pixiv" && uri.host == "account" && uri.path == "/login") {
             uri.getQueryParameter("code")?.let { code ->
                 val callbackUri = Uri.parse("${PixivClient.CALLBACK_URL}?code=$code")
                 authViewModel.handleCallback(callbackUri)
             }
+            return
+        }
+
+        // 解析 Pixiv URL deep link
+        val route = parsePixivDeepLink(uri) ?: return
+
+        // 已登录且有导航栈 → 直接跳转；否则暂存等认证完成
+        if (authViewModel.authState.value is AuthState.Authenticated &&
+            navViewModel.backStack.value.isNotEmpty()
+        ) {
+            navViewModel.navigate(route)
+        } else {
+            navViewModel.setPendingDeepLink(route)
+        }
+    }
+
+    /**
+     * 解析 Pixiv 网页 URL 为对应的 [NavRoute]。
+     *
+     * 支持的格式：
+     * - https://www.pixiv.net/artworks/{id}
+     * - https://www.pixiv.net/en/artworks/{id}
+     * - https://www.pixiv.net/users/{id}
+     * - https://www.pixiv.net/en/users/{id}
+     * - https://www.pixiv.net/novel/show.php?id={id}
+     */
+    private fun parsePixivDeepLink(uri: Uri): NavRoute? {
+        val host = uri.host ?: return null
+        if (!host.endsWith("pixiv.net")) return null
+
+        val segments = uri.pathSegments
+        if (segments.isEmpty()) return null
+
+        // 跳过语言前缀（如 /en/、/ja/、/zh/）
+        val offset = if (segments.first().length <= 3 && segments.size > 1) 1 else 0
+        val type = segments.getOrNull(offset) ?: return null
+
+        return when (type) {
+            "artworks" -> {
+                val id = segments.getOrNull(offset + 1)?.toLongOrNull() ?: return null
+                NavRoute.IllustDetail(
+                    illustId = id,
+                    title = "",
+                    previewUrl = "",
+                    aspectRatio = 1f
+                )
+            }
+
+            "users" -> {
+                val id = segments.getOrNull(offset + 1)?.toLongOrNull() ?: return null
+                NavRoute.UserProfile(userId = id)
+            }
+
+            "novel" -> {
+                // /novel/show.php?id=123
+                if (segments.getOrNull(offset + 1) == "show.php") {
+                    val id = uri.getQueryParameter("id")?.toLongOrNull() ?: return null
+                    NavRoute.NovelDetail(novelId = id)
+                } else null
+            }
+
+            else -> null
         }
     }
 }

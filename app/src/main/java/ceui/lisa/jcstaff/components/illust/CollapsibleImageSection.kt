@@ -68,6 +68,12 @@ fun CollapsibleImageSection(
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
+    // Deep link 时 previewUrl 为空，illust 加载后用 illust 自身的 URL
+    val effectivePreviewUrl = previewUrl.ifEmpty { illust?.previewUrl() ?: "" }
+    val effectiveAspectRatio = if (aspectRatio > 0f && previewUrl.isNotEmpty()) aspectRatio else {
+        illust?.aspectRatio() ?: aspectRatio
+    }
+
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
 
@@ -124,8 +130,8 @@ fun CollapsibleImageSection(
                         // Ugoira 播放器
                         UgoiraPlayer(
                             illustId = illustId,
-                            previewUrl = previewUrl,
-                            aspectRatio = aspectRatio,
+                            previewUrl = effectivePreviewUrl,
+                            aspectRatio = effectiveAspectRatio,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = minImageHeight)
@@ -140,7 +146,7 @@ fun CollapsibleImageSection(
                             val w = it.width?.toFloat() ?: 0f
                             val h = it.height?.toFloat() ?: 0f
                             if (w > 0 && h > 0) w / h else null
-                        } ?: aspectRatio
+                        } ?: effectiveAspectRatio
 
                         // 计算图片自然高度（基于真实 aspect ratio）
                         val naturalImageHeight = screenWidthDp / actualAspectRatio
@@ -158,7 +164,7 @@ fun CollapsibleImageSection(
                             ) {
                                 // 模糊背景层
                                 Image(
-                                    painter = rememberAsyncImagePainter(previewUrl),
+                                    painter = rememberAsyncImagePainter(effectivePreviewUrl),
                                     contentDescription = null,
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -167,7 +173,7 @@ fun CollapsibleImageSection(
                                 )
                                 // 原图居中显示
                                 ProgressiveImage(
-                                    previewUrl = previewUrl,
+                                    previewUrl = effectivePreviewUrl,
                                     originalUrl = firstOriginalUrl,
                                     contentDescription = title,
                                     modifier = Modifier
@@ -175,7 +181,7 @@ fun CollapsibleImageSection(
                                         .aspectRatio(actualAspectRatio),
                                     onClick = {
                                         onImageClick?.invoke(
-                                            previewUrl,
+                                            effectivePreviewUrl,
                                             firstOriginalUrl,
                                             firstImageKey
                                         )
@@ -201,13 +207,13 @@ fun CollapsibleImageSection(
                                     )
                             ) {
                                 ProgressiveImage(
-                                    previewUrl = previewUrl,
+                                    previewUrl = effectivePreviewUrl,
                                     originalUrl = firstOriginalUrl,
                                     contentDescription = title,
                                     modifier = Modifier.fillMaxWidth(),
                                     onClick = {
                                         onImageClick?.invoke(
-                                            previewUrl,
+                                            effectivePreviewUrl,
                                             firstOriginalUrl,
                                             firstImageKey
                                         )
