@@ -367,6 +367,10 @@
     <string name="n_works">%1$d 件作品</string>
     <string name="n_users">%1$d 人</string>
 
+    <string name="share_image">分享圖片</string>
+    <string name="share_link">分享連結</string>
+    <string name="share_failed">分享失敗</string>
+
     <!-- Report -->
     <string name="report_illust_title">檢舉作品</string>
     <string name="report_user_title">檢舉使用者</string>

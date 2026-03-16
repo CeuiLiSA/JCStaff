@@ -367,6 +367,10 @@
     <string name="n_works">%1$d 件の作品</string>
     <string name="n_users">%1$d 人</string>
 
+    <string name="share_image">画像を共有</string>
+    <string name="share_link">リンクを共有</string>
+    <string name="share_failed">共有に失敗しました</string>
+
     <!-- Report -->
     <string name="report_illust_title">作品を報告</string>
     <string name="report_user_title">ユーザーを報告</string>

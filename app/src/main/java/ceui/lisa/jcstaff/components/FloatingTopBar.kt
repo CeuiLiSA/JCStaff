@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.HideSource
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenu
@@ -47,6 +48,7 @@ fun FloatingTopBar(
     shareUrl: String,
     shareTitle: String,
     modifier: Modifier = Modifier,
+    onShareImageClick: (() -> Unit)? = null,
     onReportClick: () -> Unit = {},
     onBlockClick: () -> Unit = {},
     onBlockWorkClick: (() -> Unit)? = null
@@ -101,25 +103,6 @@ fun FloatingTopBar(
 
             // 右侧按钮组
             Row {
-                // 分享按钮
-                val shareText = stringResource(R.string.share)
-                IconButton(
-                    onClick = {
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, shareUrl)
-                            putExtra(Intent.EXTRA_TITLE, shareTitle)
-                        }
-                        context.startActivity(Intent.createChooser(shareIntent, shareText))
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = shareText,
-                        tint = Color.White
-                    )
-                }
-
                 // 更多按钮
                 Box {
                     IconButton(onClick = { showMoreMenu = true }) {
@@ -134,6 +117,43 @@ fun FloatingTopBar(
                         expanded = showMoreMenu,
                         onDismissRequest = { showMoreMenu = false }
                     ) {
+                        // 分享图片
+                        if (onShareImageClick != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.share_image)) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    onShareImageClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                        }
+                        // 分享链接
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share_link)) },
+                            onClick = {
+                                showMoreMenu = false
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareUrl)
+                                    putExtra(Intent.EXTRA_TITLE, shareTitle)
+                                }
+                                context.startActivity(
+                                    Intent.createChooser(shareIntent, context.getString(R.string.share))
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Link,
+                                    contentDescription = null
+                                )
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.report)) },
                             onClick = {

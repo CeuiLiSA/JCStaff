@@ -367,6 +367,10 @@
     <string name="n_works">%1$d works</string>
     <string name="n_users">%1$d users</string>
 
+    <string name="share_image">Share Image</string>
+    <string name="share_link">Share Link</string>
+    <string name="share_failed">Share failed</string>
+
     <!-- Report -->
     <string name="report_illust_title">Report Artwork</string>
     <string name="report_user_title">Report User</string>

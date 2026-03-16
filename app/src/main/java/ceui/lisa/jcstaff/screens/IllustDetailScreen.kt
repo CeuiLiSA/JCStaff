@@ -450,6 +450,22 @@ fun IllustDetailScreen(
             FloatingTopBar(
                 shareUrl = "https://www.pixiv.net/artworks/$illustId",
                 shareTitle = title,
+                onShareImageClick = firstOriginalUrl?.let { url ->
+                    {
+                        coroutineScope.launch {
+                            try {
+                                val imageFile = ceui.lisa.jcstaff.core.prepareShareableImageFile(context, url, "pixiv_$illustId")
+                                ceui.lisa.jcstaff.core.shareImageFile(context, imageFile)
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    context.getString(R.string.share_failed),
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                },
                 onReportClick = {
                     navViewModel.navigate(
                         NavRoute.Report(objectId = illustId, objectType = "illust")

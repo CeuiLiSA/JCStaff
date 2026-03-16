@@ -414,6 +414,10 @@
     <string name="report_submit">发送</string>
     <string name="report_success">感谢您的反馈，已将该内容加入屏蔽列表</string>
 
+    <string name="share_image">分享图片</string>
+    <string name="share_link">分享链接</string>
+    <string name="share_failed">分享失败</string>
+
     <!-- Report reasons — illust -->
     <string name="report_reason_illust_sexual">作品含有过度的性描写</string>
     <string name="report_reason_illust_privacy">作品侵犯他人隐私或肖像权</string>

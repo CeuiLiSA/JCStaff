@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -356,6 +357,39 @@ fun ImageViewerScreen(
             sheetState = sheetState
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                // 分享图片
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.share_image)) },
+                    leadingContent = {
+                        Icon(Icons.Default.Share, contentDescription = null)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isSaving) {
+                            showBottomSheet = false
+                            isSaving = true
+                            coroutineScope.launch {
+                                try {
+                                    // 从 URL 提取文件名：.../12345_p0.jpg → pixiv_12345_p0
+                                    val urlFileName = effectiveUrl.substringAfterLast('/')
+                                        .substringBeforeLast('.')
+                                        .let { "pixiv_$it" }
+                                    val imageFile = ceui.lisa.jcstaff.core.prepareShareableImageFile(context, effectiveUrl, urlFileName)
+                                    ceui.lisa.jcstaff.core.shareImageFile(context, imageFile)
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.share_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } finally {
+                                    isSaving = false
+                                }
+                            }
+                        }
+                )
+
                 // 保存到相册
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.save_to_gallery)) },
