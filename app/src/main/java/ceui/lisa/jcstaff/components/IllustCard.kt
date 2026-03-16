@@ -120,6 +120,7 @@ fun IllustCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(aspectRatio)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         )
 
         if (isSelectionMode) {

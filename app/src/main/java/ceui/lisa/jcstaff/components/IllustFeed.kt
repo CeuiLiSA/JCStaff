@@ -26,7 +26,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import ceui.lisa.jcstaff.components.animations.ElasticPullToRefresh
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import ceui.lisa.jcstaff.components.animations.SkeletonFeedCard
 import ceui.lisa.jcstaff.components.animations.staggeredFadeIn
 import ceui.lisa.jcstaff.core.PagedState
@@ -160,7 +160,7 @@ fun IllustFeed(
             if (!state.isLoading) userPulled = false
         }
 
-        ElasticPullToRefresh(
+        PullToRefreshBox(
             isRefreshing = userPulled && state.isLoading,
             onRefresh = {
                 if (!state.isLoading) {

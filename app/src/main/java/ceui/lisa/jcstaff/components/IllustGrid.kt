@@ -33,7 +33,7 @@ import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.PagedState
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
-import ceui.lisa.jcstaff.components.animations.ElasticPullToRefresh
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import ceui.lisa.jcstaff.components.animations.SkeletonIllustCard
 import ceui.lisa.jcstaff.components.animations.staggeredFadeIn
 import ceui.lisa.jcstaff.network.Illust
@@ -225,7 +225,7 @@ fun IllustGrid(
             if (!isLoading) userPulled = false
         }
 
-        ElasticPullToRefresh(
+        PullToRefreshBox(
             isRefreshing = userPulled && isLoading,
             onRefresh = {
                 if (!isLoading) {
