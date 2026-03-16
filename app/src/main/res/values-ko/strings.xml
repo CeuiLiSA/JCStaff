@@ -413,7 +413,4 @@
     <string name="report_reason_user_wiki">pixiv 백과사전에서 부정 행위</string>
     <string name="report_reason_user_other">기타, 이용약관·사이트 방침 위반</string>
 
-    <!-- Secure Mode -->
-    <string name="secure_mode_title">보안 모드</string>
-    <string name="secure_mode_desc">최근 앱 및 스크린샷에서 앱 콘텐츠를 숨겨 민감한 콘텐츠를 보호</string>
 </resources>

@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.SwitchAccount
 import androidx.compose.material.icons.filled.TextFields
@@ -89,7 +88,6 @@ fun SettingsScreen(
     val navViewModel = LocalNavigationViewModel.current
     val imageCacheLimitMb by SettingsStore.imageCacheLimitMb.collectAsState()
     val hideAiContent by SettingsStore.hideAiContent.collectAsState()
-    val secureMode by SettingsStore.secureMode.collectAsState()
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     val filenameTemplate by SettingsStore.downloadFilenameTemplate.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -182,19 +180,6 @@ fun SettingsScreen(
                 onCheckedChange = {
                     coroutineScope.launch {
                         SettingsStore.setHideAiContent(it)
-                    }
-                }
-            )
-
-            // 隐私模式
-            SettingsItemSwitch(
-                icon = Icons.Default.Security,
-                title = stringResource(R.string.secure_mode_title),
-                description = stringResource(R.string.secure_mode_desc),
-                checked = secureMode,
-                onCheckedChange = {
-                    coroutineScope.launch {
-                        SettingsStore.setSecureMode(it)
                     }
                 }
             )

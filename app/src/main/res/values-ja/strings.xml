@@ -413,7 +413,4 @@
     <string name="report_reason_user_wiki">pixiv百科事典での迷惑行為</string>
     <string name="report_reason_user_other">その他、利用規約・サイトポリシー違反</string>
 
-    <!-- Secure Mode -->
-    <string name="secure_mode_title">セキュアモード</string>
-    <string name="secure_mode_desc">最近のアプリやスクリーンショットでアプリの内容を非表示にし、センシティブなコンテンツを保護</string>
 </resources>

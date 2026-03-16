@@ -413,7 +413,4 @@
     <string name="report_reason_user_wiki">在pixiv百科全書進行不良行為</string>
     <string name="report_reason_user_other">其他、違反了使用條款·本站方針</string>
 
-    <!-- Secure Mode -->
-    <string name="secure_mode_title">隱私模式</string>
-    <string name="secure_mode_desc">在最近任務和截圖中隱藏應用內容，防止敏感內容洩露</string>
 </resources>

@@ -403,7 +403,4 @@
     <string name="n_works">%1$d 件作品</string>
     <string name="n_users">%1$d 人</string>
 
-    <!-- Secure Mode -->
-    <string name="secure_mode_title">隐私模式</string>
-    <string name="secure_mode_desc">在最近任务和截图中隐藏应用内容，防止敏感内容泄露</string>
 </resources>

@@ -30,7 +30,6 @@ object SettingsStore {
     private val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
     private val IMAGE_CACHE_LIMIT_MB = intPreferencesKey("image_cache_limit_mb")
     private val HIDE_AI_CONTENT = booleanPreferencesKey("hide_ai_content")
-    private val SECURE_MODE = booleanPreferencesKey("secure_mode")
     private val DOWNLOAD_FILENAME_TEMPLATE = stringPreferencesKey("download_filename_template")
 
     const val DEFAULT_FILENAME_TEMPLATE = "{id}_{title}_p{page}"
@@ -55,9 +54,6 @@ object SettingsStore {
 
     private val _hideAiContent = MutableStateFlow(false)
     val hideAiContent: StateFlow<Boolean> = _hideAiContent.asStateFlow()
-
-    private val _secureMode = MutableStateFlow(false)
-    val secureMode: StateFlow<Boolean> = _secureMode.asStateFlow()
 
     private val _downloadFilenameTemplate = MutableStateFlow(DEFAULT_FILENAME_TEMPLATE)
     val downloadFilenameTemplate: StateFlow<String> = _downloadFilenameTemplate.asStateFlow()
@@ -91,7 +87,6 @@ object SettingsStore {
         globalSyncJob = scope.launch {
             globalDataStore?.data?.collect { preferences ->
                 _selectedLanguage.value = preferences[SELECTED_LANGUAGE]
-                _secureMode.value = preferences[SECURE_MODE] ?: false
             }
         }
     }
@@ -134,13 +129,6 @@ object SettingsStore {
         ContentFilterManager.notifyFilterChanged()
         dataStore?.edit { preferences ->
             preferences[HIDE_AI_CONTENT] = hide
-        }
-    }
-
-    suspend fun setSecureMode(enabled: Boolean) {
-        _secureMode.value = enabled
-        globalDataStore?.edit { preferences ->
-            preferences[SECURE_MODE] = enabled
         }
     }
 

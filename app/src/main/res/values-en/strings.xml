@@ -413,7 +413,4 @@
     <string name="report_reason_user_wiki">Misconduct on pixiv Encyclopedia</string>
     <string name="report_reason_user_other">Other / Violation of Terms of Service</string>
 
-    <!-- Secure Mode -->
-    <string name="secure_mode_title">Secure Mode</string>
-    <string name="secure_mode_desc">Hide app content in recent apps and screenshots to protect sensitive content</string>
 </resources>
