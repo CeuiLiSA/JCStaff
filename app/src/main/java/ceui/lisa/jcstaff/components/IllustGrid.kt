@@ -161,9 +161,9 @@ fun IllustGrid(
                 // Shimmer skeleton loading
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(columns),
-                    contentPadding = PaddingValues(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalItemSpacing = 4.dp,
+                    contentPadding = PaddingValues(0.dp),
+                    horizontalArrangement = Arrangement.spacedBy(1.dp),
+                    verticalItemSpacing = 1.dp,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(8) { index ->
@@ -182,8 +182,8 @@ fun IllustGrid(
                     columns = StaggeredGridCells.Fixed(columns),
                     state = actualGridState,
                     contentPadding = finalContentPadding,
-                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                    verticalItemSpacing = 0.dp,
+                    horizontalArrangement = Arrangement.spacedBy(1.dp),
+                    verticalItemSpacing = 1.dp,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     headerContent?.invoke(this)

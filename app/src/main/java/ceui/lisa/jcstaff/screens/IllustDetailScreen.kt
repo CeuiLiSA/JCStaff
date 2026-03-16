@@ -173,8 +173,8 @@ fun IllustDetailScreen(
                 contentPadding = PaddingValues(
                     bottom = paddingValues.calculateBottomPadding() + 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
-                verticalItemSpacing = 0.dp,
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
+                verticalItemSpacing = 1.dp,
                 modifier = Modifier.fillMaxSize()
             ) {
                 // ══════════════════════════════════════════════════════
