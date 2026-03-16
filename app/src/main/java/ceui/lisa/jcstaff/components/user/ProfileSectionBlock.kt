@@ -1,5 +1,6 @@
 package ceui.lisa.jcstaff.components.user
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -170,6 +171,7 @@ fun IllustPreviewRow(
                 modifier = Modifier
                     .size(130.dp)
                     .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     .clickable {
                         navViewModel.navigate(
                             NavRoute.IllustDetail(
@@ -227,6 +229,7 @@ fun NovelPreviewRow(
                     modifier = Modifier
                         .size(width = 110.dp, height = 150.dp)
                         .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
