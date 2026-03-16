@@ -117,6 +117,8 @@
     <string name="card_corner_radius_desc">調整瀑布流卡片的圓角大小</string>
     <string name="card_spacing_title">卡片間距</string>
     <string name="card_spacing_desc">開啟後瀑布流卡片之間有間距</string>
+    <string name="hide_ai_content_title">隱藏AI生成作品</string>
+    <string name="hide_ai_content_desc">在所有列表中過濾AI生成的插畫和漫畫</string>
 
     <!-- Download History Screen -->
     <string name="download_history">下載紀錄</string>
@@ -232,6 +234,13 @@
     <string name="all_bookmarks">全部</string>
     <string name="filter_by_tag">依標籤篩選</string>
     <string name="no_bookmark_tags">暫無收藏標籤</string>
+
+    <!-- Filename Template -->
+    <string name="filename_template_title">下載檔名格式</string>
+    <string name="filename_template_desc">自訂下載圖片的檔名</string>
+    <string name="filename_template_preview">預覽</string>
+    <string name="filename_template_variables">可用變數: {id} 作品ID, {title} 標題, {user} 作者, {user_id} 作者ID, {page} 頁碼, {date} 日期</string>
+    <string name="filename_template_reset">恢復預設</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">取得元資料...</string>
@@ -403,4 +412,8 @@
     <string name="report_reason_user_threat">進行自殺或犯罪預告</string>
     <string name="report_reason_user_wiki">在pixiv百科全書進行不良行為</string>
     <string name="report_reason_user_other">其他、違反了使用條款·本站方針</string>
+
+    <!-- Secure Mode -->
+    <string name="secure_mode_title">隱私模式</string>
+    <string name="secure_mode_desc">在最近任務和截圖中隱藏應用內容，防止敏感內容洩露</string>
 </resources>

@@ -117,6 +117,8 @@
     <string name="card_corner_radius_desc">Adjust card corner radius</string>
     <string name="card_spacing_title">Card Spacing</string>
     <string name="card_spacing_desc">Add spacing between waterfall cards</string>
+    <string name="hide_ai_content_title">Hide AI-Generated Works</string>
+    <string name="hide_ai_content_desc">Filter AI-generated illustrations and manga from all lists</string>
 
     <!-- Download History Screen -->
     <string name="download_history">Downloads</string>
@@ -232,6 +234,13 @@
     <string name="all_bookmarks">All</string>
     <string name="filter_by_tag">Filter by Tag</string>
     <string name="no_bookmark_tags">No bookmark tags</string>
+
+    <!-- Filename Template -->
+    <string name="filename_template_title">Download Filename Format</string>
+    <string name="filename_template_desc">Customize the filename for downloaded images</string>
+    <string name="filename_template_preview">Preview</string>
+    <string name="filename_template_variables">Variables: {id} artwork ID, {title} title, {user} author, {user_id} author ID, {page} page number, {date} date</string>
+    <string name="filename_template_reset">Reset to Default</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">Fetching metadata...</string>
@@ -403,4 +412,8 @@
     <string name="report_reason_user_threat">Suicide or criminal threats</string>
     <string name="report_reason_user_wiki">Misconduct on pixiv Encyclopedia</string>
     <string name="report_reason_user_other">Other / Violation of Terms of Service</string>
+
+    <!-- Secure Mode -->
+    <string name="secure_mode_title">Secure Mode</string>
+    <string name="secure_mode_desc">Hide app content in recent apps and screenshots to protect sensitive content</string>
 </resources>

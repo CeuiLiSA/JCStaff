@@ -211,6 +211,8 @@
     <string name="block_work_message">屏蔽后，该作品将从所有列表中隐藏。</string>
     <string name="block_settings">Block Settings</string>
     <string name="block_settings_desc">Manage blocked users, works and tags</string>
+    <string name="hide_ai_content_title">隐藏AI生成作品</string>
+    <string name="hide_ai_content_desc">在所有列表中过滤AI生成的插画和漫画</string>
     <string name="blocked_users">Blocked Users</string>
     <string name="blocked_works">Blocked Works</string>
     <string name="blocked_tags">Blocked Tags</string>
@@ -259,6 +261,13 @@
     <string name="all_bookmarks">全部</string>
     <string name="filter_by_tag">按标签筛选</string>
     <string name="no_bookmark_tags">暂无收藏标签</string>
+
+    <!-- Filename Template -->
+    <string name="filename_template_title">下载文件名格式</string>
+    <string name="filename_template_desc">自定义下载图片的文件名</string>
+    <string name="filename_template_preview">预览</string>
+    <string name="filename_template_variables">可用变量: {id} 作品ID, {title} 标题, {user} 作者, {user_id} 作者ID, {page} 页码, {date} 日期</string>
+    <string name="filename_template_reset">恢复默认</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">获取元数据...</string>
@@ -438,5 +447,9 @@
     <string name="report_reason_user_threat">进行自杀或犯罪预告</string>
     <string name="report_reason_user_wiki">在pixiv百科全书进行不良行为</string>
     <string name="report_reason_user_other">其他、违反了使用条款·本站方针</string>
+
+    <!-- Secure Mode -->
+    <string name="secure_mode_title">隐私模式</string>
+    <string name="secure_mode_desc">在最近任务和截图中隐藏应用内容，防止敏感内容泄露</string>
 
 </resources>

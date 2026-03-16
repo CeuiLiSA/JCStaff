@@ -117,6 +117,8 @@
     <string name="card_corner_radius_desc">カードの角丸サイズを調整</string>
     <string name="card_spacing_title">カード間隔</string>
     <string name="card_spacing_desc">オンにするとカード間に余白が入ります</string>
+    <string name="hide_ai_content_title">AI生成作品を非表示</string>
+    <string name="hide_ai_content_desc">すべてのリストからAI生成のイラスト・漫画をフィルタリング</string>
 
     <!-- Download History Screen -->
     <string name="download_history">ダウンロード履歴</string>
@@ -232,6 +234,13 @@
     <string name="all_bookmarks">すべて</string>
     <string name="filter_by_tag">タグで絞り込み</string>
     <string name="no_bookmark_tags">ブックマークタグがありません</string>
+
+    <!-- Filename Template -->
+    <string name="filename_template_title">ダウンロードファイル名形式</string>
+    <string name="filename_template_desc">ダウンロード画像のファイル名をカスタマイズ</string>
+    <string name="filename_template_preview">プレビュー</string>
+    <string name="filename_template_variables">使用可能な変数: {id} 作品ID, {title} タイトル, {user} 作者, {user_id} 作者ID, {page} ページ番号, {date} 日付</string>
+    <string name="filename_template_reset">デフォルトに戻す</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">メタデータ取得中...</string>
@@ -403,4 +412,8 @@
     <string name="report_reason_user_threat">自殺または犯罪予告</string>
     <string name="report_reason_user_wiki">pixiv百科事典での迷惑行為</string>
     <string name="report_reason_user_other">その他、利用規約・サイトポリシー違反</string>
+
+    <!-- Secure Mode -->
+    <string name="secure_mode_title">セキュアモード</string>
+    <string name="secure_mode_desc">最近のアプリやスクリーンショットでアプリの内容を非表示にし、センシティブなコンテンツを保護</string>
 </resources>

@@ -11,6 +11,7 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import ceui.lisa.jcstaff.network.Illust
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -134,6 +135,14 @@ object ContentFilterManager {
     fun isTagBlocked(tag: String): Boolean = tag in _blockedTags.value
 
     /**
+     * 通知过滤规则已变更，触发所有列表重新过滤。
+     * 由 SettingsStore 在全局过滤设置（如隐藏AI作品）变更时调用。
+     */
+    fun notifyFilterChanged() {
+        _filterVersion.update { it + 1 }
+    }
+
+    /**
      * 统一过滤判定：返回 true 表示该 item 应该展示，false 表示应该被过滤掉。
      *
      * 对非 Filterable 类型直接返回 true（通过过滤）。
@@ -151,6 +160,7 @@ object ContentFilterManager {
         val authorId = item.authorId
         if (authorId != null && authorId in _blockedUserIds.value) return false
         if (item.contentTags.any { it in _blockedTags.value }) return false
+        if (item is Illust && item.illust_ai_type == 2 && SettingsStore.hideAiContent.value) return false
         return true
     }
 

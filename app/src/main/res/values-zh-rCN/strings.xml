@@ -256,6 +256,13 @@
     <string name="filter_by_tag">按标签筛选</string>
     <string name="no_bookmark_tags">暂无收藏标签</string>
 
+    <!-- Filename Template -->
+    <string name="filename_template_title">下载文件名格式</string>
+    <string name="filename_template_desc">自定义下载图片的文件名</string>
+    <string name="filename_template_preview">预览</string>
+    <string name="filename_template_variables">可用变量: {id} 作品ID, {title} 标题, {user} 作者, {user_id} 作者ID, {page} 页码, {date} 日期</string>
+    <string name="filename_template_reset">恢复默认</string>
+
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">获取元数据...</string>
     <string name="ugoira_downloading">下载中</string>
@@ -395,4 +402,8 @@
     <string name="no_content">暂无内容</string>
     <string name="n_works">%1$d 件作品</string>
     <string name="n_users">%1$d 人</string>
+
+    <!-- Secure Mode -->
+    <string name="secure_mode_title">隐私模式</string>
+    <string name="secure_mode_desc">在最近任务和截图中隐藏应用内容，防止敏感内容泄露</string>
 </resources>

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -28,6 +29,11 @@ private val Context.globalSettingsDataStore: DataStore<Preferences>
 object SettingsStore {
     private val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
     private val IMAGE_CACHE_LIMIT_MB = intPreferencesKey("image_cache_limit_mb")
+    private val HIDE_AI_CONTENT = booleanPreferencesKey("hide_ai_content")
+    private val SECURE_MODE = booleanPreferencesKey("secure_mode")
+    private val DOWNLOAD_FILENAME_TEMPLATE = stringPreferencesKey("download_filename_template")
+
+    const val DEFAULT_FILENAME_TEMPLATE = "{id}_{title}_p{page}"
 
     private var dataStore: DataStore<Preferences>? = null
     private var globalDataStore: DataStore<Preferences>? = null
@@ -46,6 +52,15 @@ object SettingsStore {
 
     private val _imageCacheLimitMb = MutableStateFlow(DEFAULT_IMAGE_CACHE_LIMIT_MB)
     val imageCacheLimitMb: StateFlow<Int> = _imageCacheLimitMb.asStateFlow()
+
+    private val _hideAiContent = MutableStateFlow(false)
+    val hideAiContent: StateFlow<Boolean> = _hideAiContent.asStateFlow()
+
+    private val _secureMode = MutableStateFlow(false)
+    val secureMode: StateFlow<Boolean> = _secureMode.asStateFlow()
+
+    private val _downloadFilenameTemplate = MutableStateFlow(DEFAULT_FILENAME_TEMPLATE)
+    val downloadFilenameTemplate: StateFlow<String> = _downloadFilenameTemplate.asStateFlow()
 
     const val MIN_IMAGE_CACHE_LIMIT_MB = 256
     const val MAX_IMAGE_CACHE_LIMIT_MB = 4096
@@ -68,12 +83,15 @@ object SettingsStore {
         syncJob = scope.launch {
             dataStore?.data?.collect { preferences ->
                 _imageCacheLimitMb.value = preferences[IMAGE_CACHE_LIMIT_MB] ?: DEFAULT_IMAGE_CACHE_LIMIT_MB
+                _hideAiContent.value = preferences[HIDE_AI_CONTENT] ?: false
+                _downloadFilenameTemplate.value = preferences[DOWNLOAD_FILENAME_TEMPLATE] ?: DEFAULT_FILENAME_TEMPLATE
             }
         }
         globalSyncJob?.cancel()
         globalSyncJob = scope.launch {
             globalDataStore?.data?.collect { preferences ->
                 _selectedLanguage.value = preferences[SELECTED_LANGUAGE]
+                _secureMode.value = preferences[SECURE_MODE] ?: false
             }
         }
     }
@@ -106,7 +124,24 @@ object SettingsStore {
         dataStore = globalDataStore
         // 重置为默认值
         _imageCacheLimitMb.value = DEFAULT_IMAGE_CACHE_LIMIT_MB
+        _hideAiContent.value = false
+        _downloadFilenameTemplate.value = DEFAULT_FILENAME_TEMPLATE
         startSync()
+    }
+
+    suspend fun setHideAiContent(hide: Boolean) {
+        _hideAiContent.value = hide
+        ContentFilterManager.notifyFilterChanged()
+        dataStore?.edit { preferences ->
+            preferences[HIDE_AI_CONTENT] = hide
+        }
+    }
+
+    suspend fun setSecureMode(enabled: Boolean) {
+        _secureMode.value = enabled
+        globalDataStore?.edit { preferences ->
+            preferences[SECURE_MODE] = enabled
+        }
     }
 
     suspend fun setImageCacheLimitMb(limitMb: Int) {
@@ -114,6 +149,14 @@ object SettingsStore {
         _imageCacheLimitMb.value = clamped
         dataStore?.edit { preferences ->
             preferences[IMAGE_CACHE_LIMIT_MB] = clamped
+        }
+    }
+
+    suspend fun setDownloadFilenameTemplate(template: String) {
+        val effective = template.ifBlank { DEFAULT_FILENAME_TEMPLATE }
+        _downloadFilenameTemplate.value = effective
+        dataStore?.edit { preferences ->
+            preferences[DOWNLOAD_FILENAME_TEMPLATE] = effective
         }
     }
 

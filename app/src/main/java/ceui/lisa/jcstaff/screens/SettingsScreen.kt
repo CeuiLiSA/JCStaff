@@ -25,13 +25,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.SwitchAccount
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,8 +67,11 @@ import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.core.AppLanguage
+import ceui.lisa.jcstaff.core.FilenameFormatter
 import ceui.lisa.jcstaff.core.LanguageManager
+import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.SettingsStore
+import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.User
@@ -81,9 +88,13 @@ fun SettingsScreen(
 ) {
     val navViewModel = LocalNavigationViewModel.current
     val imageCacheLimitMb by SettingsStore.imageCacheLimitMb.collectAsState()
+    val hideAiContent by SettingsStore.hideAiContent.collectAsState()
+    val secureMode by SettingsStore.secureMode.collectAsState()
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+    val filenameTemplate by SettingsStore.downloadFilenameTemplate.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showFilenameTemplateDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
@@ -162,6 +173,32 @@ fun SettingsScreen(
                 onClick = { navViewModel.navigate(NavRoute.BlockSettings) }
             )
 
+            // 隐藏AI作品
+            SettingsItemSwitch(
+                icon = Icons.Default.SmartToy,
+                title = stringResource(R.string.hide_ai_content_title),
+                description = stringResource(R.string.hide_ai_content_desc),
+                checked = hideAiContent,
+                onCheckedChange = {
+                    coroutineScope.launch {
+                        SettingsStore.setHideAiContent(it)
+                    }
+                }
+            )
+
+            // 隐私模式
+            SettingsItemSwitch(
+                icon = Icons.Default.Security,
+                title = stringResource(R.string.secure_mode_title),
+                description = stringResource(R.string.secure_mode_desc),
+                checked = secureMode,
+                onCheckedChange = {
+                    coroutineScope.launch {
+                        SettingsStore.setSecureMode(it)
+                    }
+                }
+            )
+
             SettingsDivider()
 
             // ==================== 存储 ====================
@@ -195,6 +232,14 @@ fun SettingsScreen(
                 }
             )
 
+            // 下载文件名格式
+            SettingsItemNavigation(
+                icon = Icons.Default.TextFields,
+                title = stringResource(R.string.filename_template_title),
+                description = stringResource(R.string.filename_template_desc),
+                onClick = { showFilenameTemplateDialog = true }
+            )
+
             SettingsDivider()
 
 
@@ -214,6 +259,20 @@ fun SettingsScreen(
                 showLanguageDialog = false
                 coroutineScope.launch {
                     LanguageManager.setLanguage(language)
+                }
+            }
+        )
+    }
+
+    // 文件名模板编辑对话框
+    if (showFilenameTemplateDialog) {
+        FilenameTemplateDialog(
+            currentTemplate = filenameTemplate,
+            onDismiss = { showFilenameTemplateDialog = false },
+            onConfirm = { newTemplate ->
+                showFilenameTemplateDialog = false
+                coroutineScope.launch {
+                    SettingsStore.setDownloadFilenameTemplate(newTemplate)
                 }
             }
         )
@@ -594,6 +653,95 @@ private fun LogoutConfirmDialog(
                     text = stringResource(R.string.logout),
                     color = MaterialTheme.colorScheme.error
                 )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun FilenameTemplateDialog(
+    currentTemplate: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var templateText by remember { mutableStateOf(currentTemplate) }
+
+    // Preview using a sample Illust
+    val previewIllust = remember {
+        Illust(
+            id = 142141392,
+            title = "Sample Title",
+            create_date = "2025-01-15T12:00:00+09:00",
+            user = User(
+                id = 12345678,
+                name = "Artist"
+            )
+        )
+    }
+    val previewFilename = remember(templateText) {
+        val effective = templateText.ifBlank { SettingsStore.DEFAULT_FILENAME_TEMPLATE }
+        FilenameFormatter.format(effective, previewIllust, pageIndex = 0) + ".jpg"
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.filename_template_title),
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = templateText,
+                    onValueChange = { templateText = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Preview
+                Text(
+                    text = stringResource(R.string.filename_template_preview),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = previewFilename,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Available variables
+                Text(
+                    text = stringResource(R.string.filename_template_variables),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Reset to default
+                TextButton(
+                    onClick = { templateText = SettingsStore.DEFAULT_FILENAME_TEMPLATE }
+                ) {
+                    Text(stringResource(R.string.filename_template_reset))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(templateText) }) {
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {

@@ -68,8 +68,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.BookmarkTagsViewModel
 import ceui.lisa.jcstaff.components.LoadingIndicator
+import ceui.lisa.jcstaff.core.FilenameFormatter
 import ceui.lisa.jcstaff.core.LoadTaskManager
 import ceui.lisa.jcstaff.core.ObjectStore
+import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.core.downloadToGallery
 import ceui.lisa.jcstaff.core.saveFromCacheToGallery
 import ceui.lisa.jcstaff.network.Illust
@@ -260,7 +262,8 @@ fun IllustActionBar(
                             ugoiraViewModel.saveToGallery(context)
                         } else {
                             // 普通图片: 保存原图
-                            val fileName = "pixiv_${illust.id}_${System.currentTimeMillis()}"
+                            val template = SettingsStore.downloadFilenameTemplate.value
+                            val fileName = FilenameFormatter.format(template, illust, pageIndex = 0)
                             val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
                             if (cachedFilePath != null) {
                                 saveFromCacheToGallery(

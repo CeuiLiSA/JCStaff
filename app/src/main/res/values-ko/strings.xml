@@ -117,6 +117,8 @@
     <string name="card_corner_radius_desc">카드 모서리 둥글기 조절</string>
     <string name="card_spacing_title">카드 간격</string>
     <string name="card_spacing_desc">카드 사이에 간격 추가</string>
+    <string name="hide_ai_content_title">AI 생성 작품 숨기기</string>
+    <string name="hide_ai_content_desc">모든 목록에서 AI 생성 일러스트와 만화를 필터링</string>
 
     <!-- Download History Screen -->
     <string name="download_history">다운로드 기록</string>
@@ -232,6 +234,13 @@
     <string name="all_bookmarks">전체</string>
     <string name="filter_by_tag">태그로 필터</string>
     <string name="no_bookmark_tags">북마크 태그가 없습니다</string>
+
+    <!-- Filename Template -->
+    <string name="filename_template_title">다운로드 파일명 형식</string>
+    <string name="filename_template_desc">다운로드 이미지의 파일명을 사용자 지정</string>
+    <string name="filename_template_preview">미리보기</string>
+    <string name="filename_template_variables">사용 가능한 변수: {id} 작품ID, {title} 제목, {user} 작가, {user_id} 작가ID, {page} 페이지, {date} 날짜</string>
+    <string name="filename_template_reset">기본값으로 복원</string>
 
     <!-- Ugoira -->
     <string name="ugoira_fetching_metadata">메타데이터 가져오는 중...</string>
@@ -403,4 +412,8 @@
     <string name="report_reason_user_threat">자살 또는 범죄 예고</string>
     <string name="report_reason_user_wiki">pixiv 백과사전에서 부정 행위</string>
     <string name="report_reason_user_other">기타, 이용약관·사이트 방침 위반</string>
+
+    <!-- Secure Mode -->
+    <string name="secure_mode_title">보안 모드</string>
+    <string name="secure_mode_desc">최근 앱 및 스크린샷에서 앱 콘텐츠를 숨겨 민감한 콘텐츠를 보호</string>
 </resources>

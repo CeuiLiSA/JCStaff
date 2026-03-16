@@ -233,7 +233,8 @@ suspend fun batchDownloadToGallery(
 
     illusts.forEachIndexed { index, illust ->
         val imageUrl = illust.maxUrl() ?: illust.previewUrl()
-        val fileName = "pixiv_${illust.id}"
+        val template = SettingsStore.downloadFilenameTemplate.value
+        val fileName = FilenameFormatter.format(template, illust, pageIndex = 0)
 
         val result = downloadToGallery(
             context = context,

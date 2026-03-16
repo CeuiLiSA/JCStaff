@@ -283,11 +283,8 @@ object DownloadTaskManager {
             // 下载每一页
             for (i in downloadedPages until totalPages) {
                 val url = imageUrls[i]
-                val fileName = if (totalPages > 1) {
-                    "pixiv_${illust.id}_p$i"
-                } else {
-                    "pixiv_${illust.id}"
-                }
+                val template = SettingsStore.downloadFilenameTemplate.value
+                val fileName = FilenameFormatter.format(template, illust, pageIndex = i)
 
                 // 重置当前页进度
                 dao.updateCurrentPageProgress(task.illustId, 0)
