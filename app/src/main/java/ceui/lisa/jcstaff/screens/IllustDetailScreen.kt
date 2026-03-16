@@ -33,7 +33,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,7 +61,6 @@ import ceui.lisa.jcstaff.components.illust.IllustMetaInfo
 import ceui.lisa.jcstaff.components.illust.IllustTags
 import ceui.lisa.jcstaff.core.IllustListViewModel
 import ceui.lisa.jcstaff.core.LocalSelectionManager
-import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.PixivClient
@@ -169,43 +167,13 @@ fun IllustDetailScreen(
         Scaffold(
             containerColor = Color.Transparent
         ) { paddingValues ->
-            val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
-            val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
-            val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
-            val gridSpacing = if (gridSpacingEnabled) 8.dp else 0.dp
-            val gridPaddingHorizontal = if (gridSpacingEnabled) 8.dp else 0.dp
-
-            // 抵消 grid contentPadding 的 modifier，让 FullLine item 占满全宽
-            // 使用 Constraints.fixed 强制子组件测量到展开宽度，
-            // 向 grid 报告原始宽度避免布局冲突
-            val fullWidthModifier = if (gridPaddingHorizontal > 0.dp) {
-                Modifier.layout { measurable, constraints ->
-                    val padPx = gridPaddingHorizontal.roundToPx()
-                    val expandedWidth = constraints.maxWidth + padPx * 2
-                    val placeable = measurable.measure(
-                        constraints.copy(
-                            minWidth = expandedWidth,
-                            maxWidth = expandedWidth
-                        )
-                    )
-                    layout(constraints.maxWidth, placeable.height) {
-                        placeable.place(-padPx, 0)
-                    }
-                }
-            } else {
-                Modifier
-            }
-
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(2),
                 state = gridState,
                 contentPadding = PaddingValues(
-                    start = gridPaddingHorizontal,
-                    end = gridPaddingHorizontal,
-                    top = 0.dp,
                     bottom = paddingValues.calculateBottomPadding() + 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
                 verticalItemSpacing = 0.dp,
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -230,7 +198,7 @@ fun IllustDetailScreen(
                                 )
                             )
                         },
-                        modifier = fullWidthModifier
+                        modifier = Modifier
                     )
                 }
 
@@ -275,14 +243,14 @@ fun IllustDetailScreen(
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
-                            modifier = fullWidthModifier
+                            modifier = Modifier
                                 .padding(horizontal = 16.dp, vertical = 16.dp)
                         )
                     }
 
                     // 作者信息区域
                     item(key = "author", span = StaggeredGridItemSpan.FullLine) {
-                        Box(modifier = fullWidthModifier.fillMaxWidth()) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
                             IllustAuthorRow(
                                 user = loadedIllust.user,
                                 isFollowed = isFollowed,
@@ -296,7 +264,7 @@ fun IllustDetailScreen(
 
                     // 操作按钮行
                     item(key = "actions", span = StaggeredGridItemSpan.FullLine) {
-                        Box(modifier = fullWidthModifier.fillMaxWidth()) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
                             IllustActionBar(
                                 illust = loadedIllust,
                                 isBookmarked = isBookmarked,
@@ -312,7 +280,7 @@ fun IllustDetailScreen(
                     // 标签
                     if (!loadedIllust.tags.isNullOrEmpty()) {
                         item(key = "tags", span = StaggeredGridItemSpan.FullLine) {
-                            Box(modifier = fullWidthModifier.fillMaxWidth()) {
+                            Box(modifier = Modifier.fillMaxWidth()) {
                                 IllustTags(
                                     tags = loadedIllust.tags,
                                     onTagClick = { tag ->
@@ -327,7 +295,7 @@ fun IllustDetailScreen(
                     // 作品简介
                     if (!loadedIllust.caption.isNullOrBlank()) {
                         item(key = "caption", span = StaggeredGridItemSpan.FullLine) {
-                            Box(modifier = fullWidthModifier.fillMaxWidth()) {
+                            Box(modifier = Modifier.fillMaxWidth()) {
                                 IllustCaption(caption = loadedIllust.caption)
                             }
                         }
@@ -335,14 +303,14 @@ fun IllustDetailScreen(
 
                     // 元信息区域
                     item(key = "meta_info", span = StaggeredGridItemSpan.FullLine) {
-                        Box(modifier = fullWidthModifier.fillMaxWidth()) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
                             IllustMetaInfo(illust = loadedIllust)
                         }
                     }
 
                     // 评论预览
                     item(key = "comment_preview", span = StaggeredGridItemSpan.FullLine) {
-                        Box(modifier = fullWidthModifier.fillMaxWidth()) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
                             CommentPreviewSection(
                                 objectId = illustId,
                                 objectType = "illust",
@@ -405,7 +373,7 @@ fun IllustDetailScreen(
 
                 // 相关作品瀑布流
                 items(relatedState.illusts, key = { "related_${it.id}" }) { relatedIllust ->
-                    Box(modifier = Modifier.padding(bottom = gridSpacing)) {
+                    Box {
                         IllustCard(
                             illust = relatedIllust,
                             onClick = {
@@ -418,8 +386,6 @@ fun IllustDetailScreen(
                                     )
                                 )
                             },
-                            showIllustInfo = showIllustInfo,
-                            cornerRadius = illustCornerRadius
                         )
                     }
                 }

@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,11 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.PagedState
-import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.components.animations.ElasticPullToRefresh
@@ -90,7 +87,6 @@ fun IllustGrid(
  * - 支持下拉刷新
  * - 支持无限滚动加载更多
  * - 支持选择模式
- * - 自动应用设置（间距、圆角、信息显示）
  * - 持久化滚动位置
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,15 +114,7 @@ fun IllustGrid(
     // 选择管理器
     val selectionManager = LocalSelectionManager.current
 
-    // 设置（StateFlow 已有初始值，无需 initial 参数）
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
-    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
-    val illustCornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
-
-    val density = LocalDensity.current
-    val spacing = if (gridSpacingEnabled) 8.dp else with(density) { 1f.toDp() }
-    val defaultContentPadding = if (gridSpacingEnabled) PaddingValues(8.dp) else PaddingValues(0.dp)
-    val finalContentPadding = contentPadding ?: defaultContentPadding
+    val finalContentPadding = contentPadding ?: PaddingValues(0.dp)
 
     // Grid state: 优先使用外部传入的 state，否则使用标准 rememberLazyStaggeredGridState
     // rememberLazyStaggeredGridState 内部使用 rememberSaveable，配合 SaveableStateProvider 自动保持滚动位置
@@ -174,8 +162,8 @@ fun IllustGrid(
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(columns),
                     contentPadding = finalContentPadding,
-                    horizontalArrangement = Arrangement.spacedBy(spacing),
-                    verticalItemSpacing = spacing,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    verticalItemSpacing = 0.dp,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(8) { index ->
@@ -194,26 +182,21 @@ fun IllustGrid(
                     columns = StaggeredGridCells.Fixed(columns),
                     state = actualGridState,
                     contentPadding = finalContentPadding,
-                    horizontalArrangement = Arrangement.spacedBy(spacing),
-                    verticalItemSpacing = spacing,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    verticalItemSpacing = 0.dp,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // 自定义头部内容
                     headerContent?.invoke(this)
 
-                    // Illust 列表
                     items(illusts, key = { it.id }) { illust ->
                         IllustCard(
                             modifier = Modifier,
                             illust = illust,
                             onClick = { onIllustClick(illust) },
-                            onLongClick = onIllustLongClick?.let { { it(illust) } },
-                            showIllustInfo = showIllustInfo,
-                            cornerRadius = illustCornerRadius
+                            onLongClick = onIllustLongClick?.let { { it(illust) } }
                         )
                     }
 
-                    // 加载更多指示器
                     if (isLoadingMore) {
                         item(span = StaggeredGridItemSpan.FullLine) {
                             Box(

@@ -315,7 +315,6 @@ private fun TagsCarouselRow(
                 IllustCard(
                     illust = illust,
                     onClick = { onIllustClick(illust) },
-                    showIllustInfo = true,
                     modifier = Modifier
                         .width(160.dp)
                         .clip(RoundedCornerShape(8.dp))

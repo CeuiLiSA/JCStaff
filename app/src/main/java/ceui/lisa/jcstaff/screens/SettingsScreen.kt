@@ -26,12 +26,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.RoundedCorner
-import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.SwitchAccount
 import androidx.compose.material3.AlertDialog
@@ -83,9 +80,6 @@ fun SettingsScreen(
     onLogoutClick: () -> Unit = {}
 ) {
     val navViewModel = LocalNavigationViewModel.current
-    val showIllustInfo by SettingsStore.showIllustInfo.collectAsState()
-    val cornerRadius by SettingsStore.illustCardCornerRadius.collectAsState()
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
     val imageCacheLimitMb by SettingsStore.imageCacheLimitMb.collectAsState()
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -145,52 +139,6 @@ fun SettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
-
-            SettingsDivider()
-            // ==================== 外观设置 ====================
-            SettingsSectionHeader(title = stringResource(R.string.settings_appearance))
-
-            // 显示作品信息
-            SettingsItemSwitch(
-                icon = Icons.Default.Info,
-                title = stringResource(R.string.show_illust_info_title),
-                description = stringResource(R.string.show_illust_info_desc),
-                checked = showIllustInfo,
-                onCheckedChange = { checked ->
-                    coroutineScope.launch {
-                        SettingsStore.setShowIllustInfo(checked)
-                    }
-                }
-            )
-
-            // 卡片圆角
-            SettingsItemSlider(
-                icon = Icons.Default.RoundedCorner,
-                title = stringResource(R.string.card_corner_radius_title),
-                description = stringResource(R.string.card_corner_radius_desc),
-                value = cornerRadius.toFloat(),
-                valueLabel = "${cornerRadius}dp",
-                valueRange = 0f..24f,
-                steps = 23,
-                onValueChange = { value ->
-                    coroutineScope.launch {
-                        SettingsStore.setIllustCardCornerRadius(value.roundToInt())
-                    }
-                }
-            )
-
-            // 瀑布流间距
-            SettingsItemSwitch(
-                icon = Icons.Default.SpaceBar,
-                title = stringResource(R.string.card_spacing_title),
-                description = stringResource(R.string.card_spacing_desc),
-                checked = gridSpacingEnabled,
-                onCheckedChange = { checked ->
-                    coroutineScope.launch {
-                        SettingsStore.setGridSpacingEnabled(checked)
-                    }
-                }
-            )
 
             SettingsDivider()
 

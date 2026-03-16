@@ -135,7 +135,6 @@ import ceui.lisa.jcstaff.components.LoadingIndicator
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.LocalSelectionManager
-import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.utils.formatCount
@@ -1195,13 +1194,7 @@ private fun RankingCarousel(
     onViewAllClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Check if grid spacing is enabled to determine layout behavior
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
-
-    // Calculate header padding to align with LazyRow cards
-    // When grid spacing enabled: Grid has 8dp padding, so header needs 8dp more = 16dp total
-    // When disabled: Grid has 0dp padding, so header needs 10dp
-    val headerHorizontalPadding = if (gridSpacingEnabled) 8.dp else 10.dp
+    val headerHorizontalPadding = 10.dp
 
     Column(
         modifier = modifier.fillMaxWidth()
@@ -1269,28 +1262,11 @@ private fun RankingCarousel(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Cards carousel - extend to screen edges when grid spacing is enabled
-        // contentPadding should align first card with grid content
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(if (gridSpacingEnabled) 8.dp else 1.dp),
+            horizontalArrangement = Arrangement.spacedBy(1.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                horizontal = if (gridSpacingEnabled) 16.dp else 10.dp
-            ),
-            modifier = if (gridSpacingEnabled) {
-                Modifier.layout { measurable, constraints ->
-                    // Extend LazyRow to fill screen edge-to-edge
-                    val horizontalPadding = 8.dp.roundToPx()
-                    val expandedConstraints = constraints.copy(
-                        maxWidth = constraints.maxWidth + horizontalPadding * 2
-                    )
-                    val placeable = measurable.measure(expandedConstraints)
-                    layout(placeable.width, placeable.height) {
-                        placeable.place(-horizontalPadding, 0)
-                    }
-                }
-            } else {
-                Modifier
-            }
+                horizontal = 10.dp
+            )
         ) {
             itemsIndexed(illusts, key = { _, illust -> "ranking_${illust.id}" }) { index, illust ->
                 RankingCard(
@@ -1473,10 +1449,7 @@ private fun SectionHeader(
     onSeeAllClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val gridSpacingEnabled by SettingsStore.gridSpacingEnabled.collectAsState()
-    // When grid spacing enabled: Grid has 8dp padding, so need 8dp more = 16dp total (align with RankingCarousel)
-    // When disabled: Grid has 0dp padding, so need 10dp
-    val horizontalPadding = if (gridSpacingEnabled) 8.dp else 10.dp
+    val horizontalPadding = 10.dp
 
     Column(
         modifier = modifier

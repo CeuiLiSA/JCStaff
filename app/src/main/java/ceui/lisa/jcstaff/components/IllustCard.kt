@@ -1,22 +1,17 @@
 package ceui.lisa.jcstaff.components
 
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,12 +24,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Gif
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -45,63 +37,39 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ceui.lisa.jcstaff.components.animations.LocalSharedTransitionScope
-import ceui.lisa.jcstaff.components.animations.LocalAnimatedVisibilityScope
 import ceui.lisa.jcstaff.components.animations.ParticleBurst
 import ceui.lisa.jcstaff.core.LocalSelectionManager
 import ceui.lisa.jcstaff.core.ObjectStore
-import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
-import ceui.lisa.jcstaff.navigation.NavRoute
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun IllustCard(
     illust: Illust,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onLongClick: (() -> Unit)? = null,
-    showIllustInfo: Boolean = true,
-    cornerRadius: Int = 8
+    onLongClick: (() -> Unit)? = null
 ) {
-    val context = LocalContext.current
     val selectionManager = LocalSelectionManager.current
-    val navViewModel = LocalNavigationViewModel.current
-    val coroutineScope = rememberCoroutineScope()
 
-    // P3: 用 derivedStateOf 包装 selectionManager 读取，减少不必要的重组
     val isSelectionMode by remember { derivedStateOf { selectionManager.isSelectionMode } }
-    val isSelected by remember { derivedStateOf { selectionManager.isSelected(illust.id) } }
+    val isSelected = if (isSelectionMode) selectionManager.isSelected(illust.id) else false
 
-    val previewUrl = illust.previewUrl()
-    val aspectRatio = illust.aspectRatio()
+    val previewUrl = remember(illust.id) { illust.previewUrl() }
+    val aspectRatio = remember(illust.id) { illust.aspectRatio() }
 
-    // Shared element transition scopes
-    val sharedTransitionScope = LocalSharedTransitionScope.current
-    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+    val painter = rememberAsyncImagePainter(model = previewUrl)
 
-    // Bookmark state (optimistic UI)
-    var isBookmarked by remember(illust.id, illust.is_bookmarked) {
-        mutableStateOf(illust.is_bookmarked == true)
-    }
-    var isBookmarking by remember { mutableStateOf(false) }
-    var showParticleBurst by remember { mutableStateOf(false) }
-
-    // P1: 选择模式动画仅在选择模式下创建，非选择模式下直接用静态值
     val scale = if (isSelectionMode) {
         val animatedScale by animateFloatAsState(
             targetValue = if (isSelected) 0.92f else 1f,
@@ -116,32 +84,15 @@ fun IllustCard(
         1f
     }
 
-    // Bookmark button animations
-    val bookmarkScale by animateFloatAsState(
-        targetValue = if (isBookmarked) 1.15f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "bookmark_scale"
-    )
-    val bookmarkTint by animateColorAsState(
-        targetValue = if (isBookmarked) Color(0xFFE91E63) else Color.White,
-        label = "bookmark_color"
-    )
-
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .clip(RoundedCornerShape(cornerRadius.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
             .then(
                 if (isSelected) {
                     Modifier.border(
                         width = 3.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(cornerRadius.dp)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 } else Modifier
             )
@@ -162,137 +113,178 @@ fun IllustCard(
                 }
             )
     ) {
-        Box {
-            @OptIn(ExperimentalSharedTransitionApi::class)
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(previewUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = illust.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(aspectRatio)
-                    .then(
-                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-                            with(sharedTransitionScope) {
-                                Modifier.sharedElement(
-                                    rememberSharedContentState("illust_image_${illust.id}"),
-                                    animatedVisibilityScope = animatedVisibilityScope
-                                )
-                            }
-                        } else Modifier
-                    )
-            )
+        Image(
+            painter = painter,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(aspectRatio)
+        )
 
-            // Selection indicator (top-start)
-            androidx.compose.animation.AnimatedVisibility(
-                visible = isSelectionMode,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
+        if (isSelectionMode) {
+            SelectionIndicator(
+                isSelected = isSelected,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(8.dp)
+            )
+        }
+
+        if (illust.isGif() || illust.page_count > 1) {
+            BadgeRow(
+                isGif = illust.isGif(),
+                pageCount = illust.page_count,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionIndicator(
+    isSelected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(28.dp)
+            .background(
+                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Black.copy(
+                    alpha = 0.4f
+                ),
+                shape = CircleShape
+            )
+            .border(width = 2.dp, color = Color.White, shape = CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "已选中",
+                tint = Color.White,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+private val BadgeShape = RoundedCornerShape(6.dp)
+private val GifBadgeColor = Color(0xFF00BCD4).copy(alpha = 0.9f)
+private val PageCountBadgeColor = Color.Black.copy(alpha = 0.7f)
+
+@Composable
+private fun BadgeRow(
+    isGif: Boolean,
+    pageCount: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (isGif) {
+            Text(
+                text = "GIF",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                fontSize = 10.sp,
+                modifier = Modifier
+                    .background(GifBadgeColor, BadgeShape)
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
+            )
+        }
+        if (pageCount > 1) {
+            Row(
+                modifier = Modifier
+                    .background(PageCountBadgeColor, BadgeShape)
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Black.copy(
-                                alpha = 0.4f
-                            ),
-                            shape = CircleShape
-                        )
-                        .border(
-                            width = 2.dp,
-                            color = Color.White,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isSelected) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "已选中",
-                            tint = Color.White,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Default.GridView,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp)
+                )
+                Text(
+                    text = "$pageCount",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 10.sp
+                )
             }
+        }
+    }
+}
 
-            // Badges (GIF, page count) — top-end
-            if (illust.isGif() || illust.page_count > 1) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (illust.isGif()) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFF00BCD4).copy(alpha = 0.9f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Text(
-                                    text = "GIF",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                    }
-                    if (illust.page_count > 1) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color.Black.copy(alpha = 0.7f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.GridView,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Text(
-                                    text = "${illust.page_count}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+/**
+ * 收藏按钮 — 极简版，首次组合仅创建静态图标
+ * 动画状态（scale/color/particle）仅在用户点击后才创建
+ */
+@Composable
+private fun BookmarkButton(
+    illust: Illust,
+    modifier: Modifier = Modifier
+) {
+    val coroutineScope = rememberCoroutineScope()
+    var isBookmarked by remember(illust.id, illust.is_bookmarked) {
+        mutableStateOf(illust.is_bookmarked == true)
+    }
+    var isBookmarking by remember { mutableStateOf(false) }
 
-            // Particle burst overlay on bookmark
+    // 是否曾经被点击过 — 只有点击后才创建动画状态
+    var hasInteracted by remember { mutableStateOf(false) }
+    var showParticleBurst by remember { mutableStateOf(false) }
+
+    // 动画仅在交互后创建
+    val bookmarkScale = if (hasInteracted) {
+        val animated by animateFloatAsState(
+            targetValue = if (isBookmarked) 1.15f else 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            ),
+            label = "bookmark_scale"
+        )
+        animated
+    } else {
+        1f
+    }
+    val bookmarkTint = if (hasInteracted) {
+        val animated by animateColorAsState(
+            targetValue = if (isBookmarked) Color(0xFFE91E63) else Color.White,
+            label = "bookmark_color"
+        )
+        animated
+    } else {
+        if (isBookmarked) Color(0xFFE91E63) else Color.White
+    }
+
+    Box(modifier = modifier) {
+        if (hasInteracted) {
             ParticleBurst(
                 trigger = showParticleBurst,
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
                     .size(72.dp)
+                    .align(Alignment.Center)
             )
+        }
 
-            // Bookmark button — bottom-end, always visible
-            IconButton(
-                onClick = {
-                    if (isBookmarking) return@IconButton
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .scale(bookmarkScale)
+                .clickable {
+                    if (isBookmarking) return@clickable
+                    hasInteracted = true
                     val wasBookmarked = isBookmarked
-                    isBookmarked = !wasBookmarked // optimistic flip
+                    isBookmarked = !wasBookmarked
                     if (!wasBookmarked) showParticleBurst = true
                     coroutineScope.launch {
                         isBookmarking = true
@@ -307,57 +299,29 @@ fun IllustCard(
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
-                            isBookmarked = wasBookmarked // rollback
+                            isBookmarked = wasBookmarked
                             e.printStackTrace()
                         } finally {
                             isBookmarking = false
                         }
                     }
                 },
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(36.dp)
-                    .scale(bookmarkScale)
+                    .size(28.dp)
+                    .background(
+                        color = Color.Black.copy(alpha = 0.4f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.4f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (isBookmarked) "取消收藏" else "收藏",
-                        tint = bookmarkTint,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-        }
-
-        if (showIllustInfo) {
-            Column(modifier = Modifier.padding(8.dp)) {
-                Text(
-                    text = illust.title ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = illust.user?.name ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clickable {
-                        illust.user?.id?.let { userId ->
-                            navViewModel.navigate(NavRoute.UserProfile(userId = userId))
-                        }
-                    }
+                Icon(
+                    imageVector = if (isBookmarked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isBookmarked) "取消收藏" else "收藏",
+                    tint = bookmarkTint,
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }

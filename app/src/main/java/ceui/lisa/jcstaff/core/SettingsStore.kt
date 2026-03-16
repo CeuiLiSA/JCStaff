@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -27,9 +26,6 @@ private val Context.globalSettingsDataStore: DataStore<Preferences>
         by preferencesDataStore(name = "settings_global")
 
 object SettingsStore {
-    private val SHOW_ILLUST_INFO = booleanPreferencesKey("show_illust_info")
-    private val ILLUST_CARD_CORNER_RADIUS = intPreferencesKey("illust_card_corner_radius")
-    private val GRID_SPACING_ENABLED = booleanPreferencesKey("grid_spacing_enabled")
     private val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
     private val IMAGE_CACHE_LIMIT_MB = intPreferencesKey("image_cache_limit_mb")
 
@@ -44,16 +40,6 @@ object SettingsStore {
      * Per-user DataStore 单例缓存：每个文件名只创建一个实例
      */
     private val dataStoreCache = mutableMapOf<String, DataStore<Preferences>>()
-
-    // StateFlow 缓存当前值，避免 Cold Flow 导致的闪烁
-    private val _showIllustInfo = MutableStateFlow(true)
-    val showIllustInfo: StateFlow<Boolean> = _showIllustInfo.asStateFlow()
-
-    private val _illustCardCornerRadius = MutableStateFlow(8)
-    val illustCardCornerRadius: StateFlow<Int> = _illustCardCornerRadius.asStateFlow()
-
-    private val _gridSpacingEnabled = MutableStateFlow(true)
-    val gridSpacingEnabled: StateFlow<Boolean> = _gridSpacingEnabled.asStateFlow()
 
     private val _selectedLanguage = MutableStateFlow<String?>(null)
     val selectedLanguage: StateFlow<String?> = _selectedLanguage.asStateFlow()
@@ -81,9 +67,6 @@ object SettingsStore {
         syncJob?.cancel()
         syncJob = scope.launch {
             dataStore?.data?.collect { preferences ->
-                _showIllustInfo.value = preferences[SHOW_ILLUST_INFO] ?: true
-                _illustCardCornerRadius.value = preferences[ILLUST_CARD_CORNER_RADIUS] ?: 8
-                _gridSpacingEnabled.value = preferences[GRID_SPACING_ENABLED] ?: true
                 _imageCacheLimitMb.value = preferences[IMAGE_CACHE_LIMIT_MB] ?: DEFAULT_IMAGE_CACHE_LIMIT_MB
             }
         }
@@ -122,33 +105,8 @@ object SettingsStore {
     fun reset() {
         dataStore = globalDataStore
         // 重置为默认值
-        _showIllustInfo.value = true
-        _illustCardCornerRadius.value = 8
-        _gridSpacingEnabled.value = true
         _imageCacheLimitMb.value = DEFAULT_IMAGE_CACHE_LIMIT_MB
         startSync()
-    }
-
-    suspend fun setShowIllustInfo(show: Boolean) {
-        _showIllustInfo.value = show
-        dataStore?.edit { preferences ->
-            preferences[SHOW_ILLUST_INFO] = show
-        }
-    }
-
-    suspend fun setIllustCardCornerRadius(radius: Int) {
-        val clamped = radius.coerceIn(0, 24)
-        _illustCardCornerRadius.value = clamped
-        dataStore?.edit { preferences ->
-            preferences[ILLUST_CARD_CORNER_RADIUS] = clamped
-        }
-    }
-
-    suspend fun setGridSpacingEnabled(enabled: Boolean) {
-        _gridSpacingEnabled.value = enabled
-        dataStore?.edit { preferences ->
-            preferences[GRID_SPACING_ENABLED] = enabled
-        }
     }
 
     suspend fun setImageCacheLimitMb(limitMb: Int) {
