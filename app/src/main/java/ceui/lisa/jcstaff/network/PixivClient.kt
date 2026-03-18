@@ -64,6 +64,7 @@ object PixivClient {
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(IMAGE_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(IMAGE_TIMEOUT, TimeUnit.SECONDS)
+            .protocols(listOf(Protocol.HTTP_1_1)) // Pixiv CDN drops HTTP/2 streams mid-download
             .addInterceptor(RefererInterceptor())
             .build()
     }

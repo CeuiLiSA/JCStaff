@@ -58,6 +58,9 @@ data class DownloadTaskEntity(
     @ColumnInfo(name = "illust_json")
     val illustJson: String,
 
+    @ColumnInfo(name = "square_url")
+    val squareUrl: String = "",
+
     @ColumnInfo(name = "status")
     val status: DownloadStatus = DownloadStatus.PENDING,
 

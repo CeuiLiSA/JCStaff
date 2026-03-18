@@ -86,6 +86,14 @@ class DownloadHistoryViewModel : ViewModel() {
         }
     }
 
+    fun stopTask(illustId: Long) {
+        DownloadTaskManager.stopTask(illustId)
+    }
+
+    fun resumeQueue() {
+        DownloadTaskManager.resumeQueue()
+    }
+
     fun retryTask(illustId: Long) {
         DownloadTaskManager.retryTask(illustId)
     }

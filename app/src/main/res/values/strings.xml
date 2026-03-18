@@ -128,6 +128,7 @@
 
     <!-- Download History Screen -->
     <string name="download_history">下载历史</string>
+    <string name="download_queue">下载队列</string>
     <string name="no_download_history">暂无下载任务</string>
     <string name="clear_download_history_title">清空下载任务</string>
     <string name="clear_download_history_message">确定要清空所有下载任务吗？此操作无法撤销。</string>
@@ -139,6 +140,12 @@
     <string name="status_downloading">下载中</string>
     <string name="status_completed">已完成</string>
     <string name="status_failed">下载失败</string>
+    <string name="section_downloading">正在下载</string>
+    <string name="section_failed">下载失败</string>
+    <string name="section_completed">已完成</string>
+    <string name="cancel_download">取消下载</string>
+    <string name="pause_download">暂停下载</string>
+    <string name="resume_queue">继续下载</string>
 
     <!-- Drawer Section -->
     <string name="drawer_section_history">历史记录</string>

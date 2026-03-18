@@ -28,6 +28,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 import java.io.File
 
+/** 用户主动暂停时抛出，区别于网络错误，不标记为 FAILED */
+private class StopRequestedException : Exception()
+
 /**
  * 下载任务管理器
  *
@@ -53,6 +56,9 @@ object DownloadTaskManager {
 
     private val _currentDownloadId = MutableStateFlow<Long?>(null)
     val currentDownloadId: StateFlow<Long?> = _currentDownloadId.asStateFlow()
+
+    // Tasks requested to stop — checked between pages, then reset to PENDING
+    private val stopRequestedIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
 
     private var isInitialized = false
 
@@ -95,6 +101,7 @@ object DownloadTaskManager {
                     illustId = illust.id,
                     title = illust.title ?: "",
                     previewUrl = illust.previewUrl(),
+                    squareUrl = illust.image_urls?.square_medium ?: "",
                     width = illust.width,
                     height = illust.height,
                     userId = illust.user?.id ?: 0L,
@@ -138,6 +145,7 @@ object DownloadTaskManager {
                 illustId = illust.id,
                 title = illust.title ?: "",
                 previewUrl = illust.previewUrl(),
+                squareUrl = illust.image_urls?.square_medium ?: "",
                 width = illust.width,
                 height = illust.height,
                 userId = illust.user?.id ?: 0L,
@@ -150,6 +158,21 @@ object DownloadTaskManager {
             )
             dao.insertIfNotExists(entity)
         }
+    }
+
+    /**
+     * 恢复队列（用户手动触发）
+     */
+    fun resumeQueue() {
+        scope.launch { processQueue() }
+    }
+
+    /**
+     * 停止当前下载，任务重置回等待队列（断点续传：已下载的页不会重复）
+     */
+    fun stopTask(illustId: Long) {
+        stopRequestedIds.add(illustId)
+        Log.d(TAG, "Stop requested for task: $illustId")
     }
 
     /**
@@ -253,7 +276,8 @@ object DownloadTaskManager {
 
                 for (task in pendingTasks) {
                     _currentDownloadId.value = task.illustId
-                    downloadTask(context, task)
+                    val shouldContinue = downloadTask(context, task)
+                    if (!shouldContinue) break
                 }
 
                 _currentDownloadId.value = null
@@ -263,8 +287,9 @@ object DownloadTaskManager {
         }
     }
 
-    private suspend fun downloadTask(context: Context, task: DownloadTaskEntity) {
-        val dao = dao ?: return
+    /** 返回 true = 继续队列，false = 用户主动暂停，停止整个队列 */
+    private suspend fun downloadTask(context: Context, task: DownloadTaskEntity): Boolean {
+        val dao = dao ?: return true
 
         try {
             // 更新状态为下载中
@@ -282,6 +307,13 @@ object DownloadTaskManager {
 
             // 下载每一页
             for (i in downloadedPages until totalPages) {
+                // 检查是否被用户停止
+                if (stopRequestedIds.remove(task.illustId)) {
+                    dao.updateStatus(task.illustId, DownloadStatus.PENDING, null)
+                    Log.d(TAG, "Task stopped by user, reset to pending: ${task.illustId}")
+                    return false
+                }
+
                 val url = imageUrls[i]
                 val template = SettingsStore.downloadFilenameTemplate.value
                 val fileName = FilenameFormatter.format(template, illust, pageIndex = i)
@@ -291,6 +323,7 @@ object DownloadTaskManager {
 
                 val result = downloadImageWithProgress(
                     context = context,
+                    illustId = task.illustId,
                     imageUrl = url,
                     fileName = fileName,
                     onProgress = { progress ->
@@ -313,13 +346,18 @@ object DownloadTaskManager {
             dao.markCompleted(task.illustId, DownloadStatus.COMPLETED, downloadedPages)
             Log.d(TAG, "Completed download: ${task.illustId}")
 
+        } catch (e: StopRequestedException) {
+            stopRequestedIds.remove(task.illustId)
+            dao.updateStatus(task.illustId, DownloadStatus.PENDING, null)
+            Log.d(TAG, "Task paused mid-download, reset to pending: ${task.illustId}")
+            return false
         } catch (e: kotlinx.coroutines.CancellationException) {
-            // Re-throw CancellationException to properly support coroutine cancellation
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download ${task.illustId}: ${e.message}")
             dao.updateStatus(task.illustId, DownloadStatus.FAILED, e.message)
         }
+        return true
     }
 
     private fun getImageUrls(illust: Illust): List<String> {
@@ -339,6 +377,7 @@ object DownloadTaskManager {
 
     private suspend fun downloadImageWithProgress(
         context: Context,
+        illustId: Long,
         imageUrl: String,
         fileName: String,
         onProgress: (Int) -> Unit
@@ -373,6 +412,10 @@ object DownloadTaskManager {
                         var bytesRead: Int
 
                         while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                            // 每次读取后检查是否被用户暂停
+                            if (illustId in stopRequestedIds) {
+                                return@withContext Result.failure(StopRequestedException())
+                            }
                             outputStream.write(buffer, 0, bytesRead)
                             totalBytesRead += bytesRead
 
