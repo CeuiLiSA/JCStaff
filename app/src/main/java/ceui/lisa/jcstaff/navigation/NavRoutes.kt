@@ -122,6 +122,13 @@ sealed interface NavRoute : java.io.Serializable {
     data class Report(val objectId: Long, val objectType: String) : NavRoute {
         override val stableKey = "Report_${objectType}_$objectId"
     }
+    data class MangaReader(
+        val illustId: Long,
+        val illustTitle: String,
+        val initialPage: Int = 0
+    ) : NavRoute {
+        override val stableKey = "MangaReader_$illustId"
+    }
 }
 
 /** Get a human-readable title for the route (used in app switcher) */
@@ -159,4 +166,5 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.CollectionDetail -> "珍藏册"
     is NavRoute.CollectionDiscovery -> "珍藏册发现"
     is NavRoute.Report -> if (objectType == "user") "举报用户" else "举报作品"
+    is NavRoute.MangaReader -> illustTitle.ifEmpty { "漫画阅读" }
 }

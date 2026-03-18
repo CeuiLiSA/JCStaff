@@ -89,6 +89,7 @@ import ceui.lisa.jcstaff.screens.ImageViewerScreen
 import ceui.lisa.jcstaff.screens.LandingScreen
 import ceui.lisa.jcstaff.screens.LatestWorksScreen
 import ceui.lisa.jcstaff.screens.NovelDetailScreen
+import ceui.lisa.jcstaff.screens.MangaReaderScreen
 import ceui.lisa.jcstaff.screens.NovelReaderScreen
 import ceui.lisa.jcstaff.screens.RankingDetailScreen
 import ceui.lisa.jcstaff.screens.SauceNaoScreen
@@ -553,6 +554,14 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                                         )
                                     }
 
+                                    is NavRoute.MangaReader -> {
+                                        MangaReaderScreen(
+                                            illustId = route.illustId,
+                                            illustTitle = route.illustTitle,
+                                            initialPage = route.initialPage
+                                        )
+                                    }
+
                                     is NavRoute.Bookmarks -> {
                                         BookmarksScreen(
                                             userId = route.userId
@@ -726,14 +735,17 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                 }
             }
 
-            // App Switcher FAB (visible when depth >= 3)
-            AppSwitcherFab(
-                navigationDepth = navViewModel.navigationDepth,
-                onClick = { navViewModel.showAppSwitcher() },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 16.dp)
-            )
+            // App Switcher FAB (visible when depth >= 3, hidden in manga reader)
+            val isMangaReader = currentEntry?.route is NavRoute.MangaReader
+            if (!isMangaReader) {
+                AppSwitcherFab(
+                    navigationDepth = navViewModel.navigationDepth,
+                    onClick = { navViewModel.showAppSwitcher() },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 16.dp)
+                )
+            }
 
             // App Switcher Overlay
             AppSwitcherOverlay(

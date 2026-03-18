@@ -2,6 +2,7 @@ package ceui.lisa.jcstaff.core
 
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -167,18 +168,30 @@ suspend fun saveFileToGallery(
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val contentValues = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-                put(
-                    MediaStore.Images.Media.RELATIVE_PATH,
-                    Environment.DIRECTORY_PICTURES + "/JCStaff"
-                )
-                put(MediaStore.Images.Media.IS_PENDING, 1)
+            val isVideo = mimeType.startsWith("video/")
+            val resolver = context.contentResolver
+
+            val contentValues: ContentValues
+            val externalUri: android.net.Uri
+            if (isVideo) {
+                externalUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                contentValues = ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Video.Media.MIME_TYPE, mimeType)
+                    put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/JCStaff")
+                    put(MediaStore.Video.Media.IS_PENDING, 1)
+                }
+            } else {
+                externalUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/JCStaff")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
             }
 
-            val resolver = context.contentResolver
-            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            val uri = resolver.insert(externalUri, contentValues)
                 ?: return@withContext Result.failure(Exception("Failed to create MediaStore entry"))
 
             resolver.openOutputStream(uri)?.use { outputStream ->
@@ -187,8 +200,11 @@ suspend fun saveFileToGallery(
                 }
             }
 
-            contentValues.clear()
-            contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+            if (isVideo) {
+                contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
+            } else {
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+            }
             resolver.update(uri, contentValues, null, null)
         } else {
             val picturesDir =

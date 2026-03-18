@@ -287,6 +287,29 @@
     <string name="ugoira_error_download_failed">下载失败: %1$d</string>
     <string name="ugoira_error_empty_response">响应为空</string>
     <string name="ugoira_error_processing">处理失败</string>
+    <string name="save_webp">保存为 WebP</string>
+    <string name="save_mp4">保存为 MP4</string>
+    <string name="ugoira_export_format">选择导出格式</string>
+    <string name="ugoira_encoding_webp">生成 WebP...</string>
+    <string name="ugoira_encoding_mp4">生成 MP4...</string>
+
+    <!-- Manga Reader -->
+    <string name="manga_start_reading">开始阅读</string>
+    <string name="manga_page_count">%1$d 页</string>
+    <string name="manga_settings">阅读设置</string>
+    <string name="manga_reading_direction">翻页方向</string>
+    <string name="manga_direction_ltr">从左到右</string>
+    <string name="manga_direction_rtl">从右到左</string>
+    <string name="manga_reading_mode">阅读模式</string>
+    <string name="manga_mode_paged">翻页模式</string>
+    <string name="manga_mode_scroll">滚动模式</string>
+    <string name="manga_page_display">页面显示</string>
+    <string name="manga_single_page">单页</string>
+    <string name="manga_double_page">双页</string>
+    <string name="manga_auto_hide_controls">自动隐藏工具栏</string>
+    <string name="manga_auto_hide_desc">3 秒无操作后自动隐藏</string>
+    <string name="manga_keep_screen_on">阅读时保持屏幕常亮</string>
+    <string name="manga_toggle_direction">切换翻页方向</string>
 
     <!-- Tag Detail -->
     <string name="tab_tag_illusts">插画</string>

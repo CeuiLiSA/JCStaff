@@ -76,6 +76,7 @@ import ceui.lisa.jcstaff.core.downloadToGallery
 import ceui.lisa.jcstaff.core.saveFromCacheToGallery
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.network.PixivClient
+import ceui.lisa.jcstaff.ugoira.UgoiraExportFormat
 import ceui.lisa.jcstaff.ugoira.UgoiraViewModel
 import ceui.lisa.jcstaff.components.animations.AnimatedCounter
 import ceui.lisa.jcstaff.utils.formatCount
@@ -244,28 +245,129 @@ fun IllustActionBar(
             }
         }
 
-        // 下载按钮 (Ugoira 保存为 GIF, 其他保存原图)
+        // 下载按钮 (Ugoira 有格式选择, 其他保存原图)
         val isUgoira = illust.isGif()
         val ugoiraViewModel: UgoiraViewModel? = if (isUgoira) {
             viewModel(key = "ugoira_${illust.id}")
         } else null
+        var showFormatMenu by remember { mutableStateOf(false) }
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .clickable(enabled = !isDownloading) {
-                    coroutineScope.launch {
-                        isDownloading = true
-                        val result = if (isUgoira && ugoiraViewModel != null) {
-                            // Ugoira: 保存 GIF
-                            ugoiraViewModel.saveToGallery(context)
+        if (isUgoira && ugoiraViewModel != null) {
+            // Ugoira: split button - left saves GIF directly, right opens format menu
+            Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
+                ) {
+                    // Main action: save GIF
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
+                            .clickable(enabled = !isDownloading) {
+                                coroutineScope.launch {
+                                    isDownloading = true
+                                    val result = ugoiraViewModel.saveToGallery(context, UgoiraExportFormat.GIF)
+                                    isDownloading = false
+                                    Toast.makeText(
+                                        context,
+                                        if (result.isSuccess) context.getString(R.string.saved_to_gallery)
+                                        else context.getString(R.string.save_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                            .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+                    ) {
+                        if (isDownloading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         } else {
-                            // 普通图片: 保存原图
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.save_gif),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 6.dp)
+                        )
+                    }
+                    // Divider
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(20.dp)
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                    )
+                    // Format picker arrow
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(topEnd = 20.dp, bottomEnd = 20.dp))
+                            .clickable(enabled = !isDownloading) { showFormatMenu = true }
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = stringResource(R.string.ugoira_export_format),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = showFormatMenu,
+                    onDismissRequest = { showFormatMenu = false }
+                ) {
+                    listOf(
+                        UgoiraExportFormat.GIF to R.string.save_gif,
+                        UgoiraExportFormat.WEBP to R.string.save_webp,
+                        UgoiraExportFormat.MP4 to R.string.save_mp4
+                    ).forEach { (format, labelRes) ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(labelRes)) },
+                            onClick = {
+                                showFormatMenu = false
+                                coroutineScope.launch {
+                                    isDownloading = true
+                                    val result = ugoiraViewModel.saveToGallery(context, format)
+                                    isDownloading = false
+                                    Toast.makeText(
+                                        context,
+                                        if (result.isSuccess) context.getString(R.string.saved_to_gallery)
+                                        else context.getString(R.string.save_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        } else {
+            // 普通图片: 保存原图
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable(enabled = !isDownloading) {
+                        coroutineScope.launch {
+                            isDownloading = true
                             val template = SettingsStore.downloadFilenameTemplate.value
                             val fileName = FilenameFormatter.format(template, illust, pageIndex = 0)
                             val cachedFilePath = LoadTaskManager.getCachedFilePath(downloadUrl)
-                            if (cachedFilePath != null) {
+                            val result = if (cachedFilePath != null) {
                                 saveFromCacheToGallery(
                                     context = context,
                                     cachedFilePath = cachedFilePath,
@@ -278,49 +380,42 @@ fun IllustActionBar(
                                     fileName = fileName
                                 )
                             }
-                        }
-                        isDownloading = false
-                        if (result.isSuccess) {
+                            isDownloading = false
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.saved_to_gallery),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.save_failed),
+                                if (result.isSuccess) context.getString(R.string.saved_to_gallery)
+                                else context.getString(R.string.save_failed),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
                     }
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(20.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                if (isDownloading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(20.dp)
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            if (isDownloading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Download,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                Text(
+                    text = stringResource(R.string.download),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 6.dp)
                 )
             }
-            Text(
-                text = if (isUgoira) stringResource(R.string.save_gif) else stringResource(R.string.download),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 6.dp)
-            )
         }
 
         Spacer(modifier = Modifier.weight(1f))

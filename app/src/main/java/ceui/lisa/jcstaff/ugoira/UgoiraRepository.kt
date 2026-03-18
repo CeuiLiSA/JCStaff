@@ -33,7 +33,7 @@ sealed class UgoiraState {
 class UgoiraException(val errorResId: Int, val errorCode: Int? = null) : Exception()
 
 /**
- * Ugoira data (GIF file)
+ * Ugoira data (output file)
  */
 data class UgoiraData(
     val gifFile: File
@@ -47,17 +47,31 @@ object UgoiraRepository {
     private const val TAG = "UgoiraRepository"
     private const val UGOIRA_DIR = "ugoira"
 
-    private val gifCache = java.util.concurrent.ConcurrentHashMap<Long, UgoiraData>()
+    private val fileCache = java.util.concurrent.ConcurrentHashMap<Pair<Long, UgoiraExportFormat>, UgoiraData>()
+
+    // ── GIF (existing API, unchanged for callers) ──────────────────────────
 
     suspend fun getOrCreateGif(
         context: Context,
         illustId: Long,
         stateFlow: MutableStateFlow<UgoiraState>? = null
+    ): UgoiraData? = getOrCreate(context, illustId, UgoiraExportFormat.GIF, stateFlow)
+
+    fun getGifFile(illustId: Long): File? = getFile(illustId, UgoiraExportFormat.GIF)
+
+    // ── Generic multi-format API ───────────────────────────────────────────
+
+    suspend fun getOrCreate(
+        context: Context,
+        illustId: Long,
+        format: UgoiraExportFormat,
+        stateFlow: MutableStateFlow<UgoiraState>? = null
     ): UgoiraData? = withContext(Dispatchers.IO) {
+        val cacheKey = Pair(illustId, format)
+
         // Memory cache
-        gifCache[illustId]?.let { cached ->
+        fileCache[cacheKey]?.let { cached ->
             if (cached.gifFile.exists()) {
-                Log.d(TAG, "Using memory cached GIF for $illustId")
                 stateFlow?.value = UgoiraState.Done(cached)
                 return@withContext cached
             }
@@ -66,12 +80,12 @@ object UgoiraRepository {
         val ugoiraDir = File(context.filesDir, UGOIRA_DIR)
         if (!ugoiraDir.exists()) ugoiraDir.mkdirs()
 
-        val gifFile = File(ugoiraDir, "${illustId}.gif")
+        val outputFile = File(ugoiraDir, "$illustId.${format.extension}")
 
-        // Check disk cache
-        if (gifFile.exists()) {
-            val data = UgoiraData(gifFile)
-            gifCache[illustId] = data
+        // Disk cache
+        if (outputFile.exists()) {
+            val data = UgoiraData(outputFile)
+            fileCache[cacheKey] = data
             stateFlow?.value = UgoiraState.Done(data)
             return@withContext data
         }
@@ -88,35 +102,39 @@ object UgoiraRepository {
                 return@withContext null
             }
 
-            val zipUrl = metadata.getZipUrl()
-            if (zipUrl == null) {
-                stateFlow?.value = UgoiraState.Error(R.string.ugoira_error_no_zip_url)
-                return@withContext null
+            // Step 2: Download zip (if frames not already extracted)
+            if (!framesDir.exists() || framesDir.listFiles().isNullOrEmpty()) {
+                val zipUrl = metadata.getZipUrl()
+                if (zipUrl == null) {
+                    stateFlow?.value = UgoiraState.Error(R.string.ugoira_error_no_zip_url)
+                    return@withContext null
+                }
+                val zipFile = File(ugoiraDir, "tmp_$illustId.zip")
+                downloadZip(zipUrl, zipFile, stateFlow)
+
+                // Step 3: Extract
+                stateFlow?.value = UgoiraState.Extracting
+                extractZip(zipFile, framesDir)
+                zipFile.delete()
             }
 
-            // Step 2: Download zip
-            val zipFile = File(ugoiraDir, "tmp_$illustId.zip")
-            downloadZip(zipUrl, zipFile, stateFlow)
-
-            // Step 3: Extract
-            stateFlow?.value = UgoiraState.Extracting
-            extractZip(zipFile, framesDir)
-
-            // Delete zip file
-            zipFile.delete()
-
-            // Step 4: Encode to GIF
+            // Step 4: Encode to the requested format
             stateFlow?.value = UgoiraState.Encoding(0)
-            encodeGif(framesDir, metadata, gifFile) { progress ->
-                stateFlow?.value = UgoiraState.Encoding(progress)
+            when (format) {
+                UgoiraExportFormat.GIF -> encodeGif(framesDir, metadata, outputFile) { p ->
+                    stateFlow?.value = UgoiraState.Encoding(p)
+                }
+                UgoiraExportFormat.WEBP -> encodeWebP(framesDir, metadata, outputFile) { p ->
+                    stateFlow?.value = UgoiraState.Encoding(p)
+                }
+                UgoiraExportFormat.MP4 -> encodeMp4(framesDir, metadata, outputFile) { p ->
+                    stateFlow?.value = UgoiraState.Encoding(p)
+                }
             }
 
-            // Delete frame files
-            framesDir.deleteRecursively()
-
-            val data = UgoiraData(gifFile)
-            gifCache[illustId] = data
-            Log.d(TAG, "GIF created: ${gifFile.absolutePath}")
+            val data = UgoiraData(outputFile)
+            fileCache[cacheKey] = data
+            Log.d(TAG, "${format.name} created: ${outputFile.absolutePath}")
             stateFlow?.value = UgoiraState.Done(data)
             data
         } catch (e: UgoiraException) {
@@ -130,6 +148,12 @@ object UgoiraRepository {
         }
     }
 
+    fun getFile(illustId: Long, format: UgoiraExportFormat): File? {
+        return fileCache[Pair(illustId, format)]?.gifFile
+    }
+
+    // ── Encoders ──────────────────────────────────────────────────────────
+
     private fun encodeGif(
         framesDir: File,
         metadata: UgoiraMetadata,
@@ -137,8 +161,8 @@ object UgoiraRepository {
         onProgress: (Int) -> Unit = {}
     ) {
         val encoder = AnimatedGifEncoder()
-        encoder.setRepeat(0) // Loop forever
-        encoder.setQuality(10) // Quality (1-20, 1 is best but slowest)
+        encoder.setRepeat(0)
+        encoder.setQuality(10)
         encoder.start(outputFile.absolutePath)
 
         val totalFrames = metadata.frames.size
@@ -155,12 +179,56 @@ object UgoiraRepository {
             bitmap.recycle()
 
             processedFrames++
-            val progress = (processedFrames * 100 / totalFrames)
-            onProgress(progress)
+            onProgress(processedFrames * 100 / totalFrames)
         }
 
         encoder.finish()
     }
+
+    private fun encodeWebP(
+        framesDir: File,
+        metadata: UgoiraMetadata,
+        outputFile: File,
+        onProgress: (Int) -> Unit = {}
+    ) {
+        val frames = mutableListOf<Pair<android.graphics.Bitmap, Int>>()
+        val totalFrames = metadata.frames.size
+
+        try {
+            for ((index, frame) in metadata.frames.withIndex()) {
+                val fileName = frame.file ?: continue
+                val file = File(framesDir, fileName)
+                if (!file.exists()) continue
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: continue
+                frames.add(Pair(bitmap, frame.delay))
+                onProgress((index + 1) * 50 / totalFrames) // first 50% = loading frames
+            }
+
+            FileOutputStream(outputFile).use { out ->
+                AnimatedWebPEncoder.encode(frames, out)
+            }
+            onProgress(100)
+        } finally {
+            frames.forEach { it.first.recycle() }
+        }
+    }
+
+    private fun encodeMp4(
+        framesDir: File,
+        metadata: UgoiraMetadata,
+        outputFile: File,
+        onProgress: (Int) -> Unit = {}
+    ) {
+        val framePairs = metadata.frames.mapNotNull { frame ->
+            val fileName = frame.file ?: return@mapNotNull null
+            val file = File(framesDir, fileName)
+            if (!file.exists()) return@mapNotNull null
+            Pair(file, frame.delay)
+        }
+        Mp4Encoder.encode(framePairs, outputFile, onProgress)
+    }
+
+    // ── Download / Extract ────────────────────────────────────────────────
 
     private suspend fun downloadZip(
         url: String,
@@ -222,20 +290,22 @@ object UgoiraRepository {
         Log.d(TAG, "Zip extracted to: ${outputDir.absolutePath}")
     }
 
-    fun getGifFile(illustId: Long): File? {
-        return gifCache[illustId]?.gifFile
-    }
+    // ── Cache management ──────────────────────────────────────────────────
 
     fun clearCache(context: Context, illustId: Long) {
-        gifCache.remove(illustId)
+        UgoiraExportFormat.entries.forEach { format ->
+            fileCache.remove(Pair(illustId, format))
+        }
         val ugoiraDir = File(context.filesDir, UGOIRA_DIR)
         File(ugoiraDir, "tmp_$illustId.zip").delete()
         File(ugoiraDir, "frames_$illustId").deleteRecursively()
-        File(ugoiraDir, "${illustId}.gif").delete()
+        UgoiraExportFormat.entries.forEach { format ->
+            File(ugoiraDir, "$illustId.${format.extension}").delete()
+        }
     }
 
     fun clearAllCache(context: Context) {
-        gifCache.clear()
+        fileCache.clear()
         val ugoiraDir = File(context.filesDir, UGOIRA_DIR)
         ugoiraDir.deleteRecursively()
     }
