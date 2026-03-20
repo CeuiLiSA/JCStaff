@@ -33,6 +33,9 @@
     <string name="welcome_headline">每一筆，都是靈感的起點</string>
     <string name="welcome_body">數百萬來自全球創作者的插畫作品匯聚於此。瀏覽趨勢、收藏佳作、追蹤喜愛的創作者——開啟屬於你的創意之旅</string>
     <string name="welcome_start">開始探索</string>
+    <string name="agree_terms_prefix">我已閱讀並同意</string>
+    <string name="agree_terms_and">和</string>
+    <string name="agree_terms_hint">請先閱讀並同意服務條款和隱私權政策</string>
 
     <!-- Home Screen -->
     <string name="daily_ranking">每日排行</string>

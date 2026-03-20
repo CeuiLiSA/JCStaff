@@ -1,6 +1,8 @@
 package ceui.lisa.jcstaff.screens
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -9,6 +11,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,16 +19,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,7 +47,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import ceui.lisa.jcstaff.R
 import coil.ImageLoader
@@ -47,6 +65,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ceui.lisa.jcstaff.network.PixivClient
 import kotlin.random.Random
 
@@ -174,6 +193,10 @@ fun OnboardScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val agreeHint = stringResource(R.string.agree_terms_hint)
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Background slideshow with Ken Burns effect
         if (imageUrls.isNotEmpty()) {
@@ -250,11 +273,76 @@ fun OnboardScreen(
                 color = Color.White.copy(alpha = 0.70f)
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Terms agreement checkbox
+            var agreedToTerms by remember { mutableStateOf(false) }
+
+            val prefixText = stringResource(R.string.agree_terms_prefix)
+            val termsText = stringResource(R.string.terms_of_service)
+            val andText = stringResource(R.string.agree_terms_and)
+            val privacyText = stringResource(R.string.privacy_policy)
+
+            val linkStyle = SpanStyle(
+                textDecoration = TextDecoration.Underline,
+                color = Color.White
+            )
+            val annotatedText = remember(prefixText, termsText, andText, privacyText) {
+                buildAnnotatedString {
+                    append(prefixText)
+                    pushStringAnnotation("url", "https://policies.pixiv.net/en.html#terms")
+                    withStyle(linkStyle) { append(termsText) }
+                    pop()
+                    append(andText)
+                    pushStringAnnotation("url", "https://policies.pixiv.net/en/privacy_policy.html")
+                    withStyle(linkStyle) { append(privacyText) }
+                    pop()
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = agreedToTerms,
+                    onCheckedChange = { agreedToTerms = it },
+                    modifier = Modifier.size(36.dp),
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = Color.White,
+                        uncheckedColor = Color.White.copy(alpha = 0.5f),
+                        checkmarkColor = Color.Black
+                    )
+                )
+
+                @Suppress("DEPRECATION")
+                ClickableText(
+                    text = annotatedText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color.White.copy(alpha = 0.65f)
+                    ),
+                    onClick = { offset ->
+                        annotatedText.getStringAnnotations("url", offset, offset)
+                            .firstOrNull()?.let { annotation ->
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
+                                )
+                            }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Primary action — Login
             Button(
-                onClick = onLoginClick,
+                onClick = {
+                    if (agreedToTerms) {
+                        onLoginClick()
+                    } else {
+                        coroutineScope.launch { snackbarHostState.showSnackbar(agreeHint) }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -276,7 +364,13 @@ fun OnboardScreen(
 
             // Secondary action — Sign up
             OutlinedButton(
-                onClick = onSignupClick,
+                onClick = {
+                    if (agreedToTerms) {
+                        onSignupClick()
+                    } else {
+                        coroutineScope.launch { snackbarHostState.showSnackbar(agreeHint) }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -296,6 +390,22 @@ fun OnboardScreen(
                     )
                 )
             }
+        }
+
+        // Snackbar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(bottom = 16.dp)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                containerColor = Color.White,
+                contentColor = Color.Black,
+                shape = RoundedCornerShape(12.dp)
+            )
         }
     }
 }

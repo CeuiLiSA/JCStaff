@@ -33,6 +33,9 @@
     <string name="welcome_headline">すべての筆跡が、インスピレーションの始まり</string>
     <string name="welcome_body">世界中のクリエイターによる数百万のイラストがここに。トレンドを探索し、お気に入りを保存し、好きなアーティストをフォロー — あなたの創作の旅を始めよう</string>
     <string name="welcome_start">はじめる</string>
+    <string name="agree_terms_prefix">以下に同意します：</string>
+    <string name="agree_terms_and">および</string>
+    <string name="agree_terms_hint">利用規約とプライバシーポリシーに同意してください</string>
 
     <!-- Home Screen -->
     <string name="daily_ranking">デイリーランキング</string>

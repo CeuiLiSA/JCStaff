@@ -33,6 +33,9 @@
     <string name="welcome_headline">Every Stroke Sparks Inspiration</string>
     <string name="welcome_body">Millions of illustrations from creators worldwide, all in one place. Explore trends, save favorites, follow artists you love — start your creative journey</string>
     <string name="welcome_start">Get Started</string>
+    <string name="agree_terms_prefix">I have read and agree to the </string>
+    <string name="agree_terms_and"> and </string>
+    <string name="agree_terms_hint">Please read and agree to the Terms of Service and Privacy Policy first</string>
 
     <!-- Home Screen -->
     <string name="daily_ranking">Daily Ranking</string>
