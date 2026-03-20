@@ -467,40 +467,41 @@ private fun SearchFilterBar(
             }
         }
 
-        if (sort != SearchSort.POPULAR_PREVIEW) {
-            if (startDate != null || endDate != null) {
-                FilterChip(
-                    selected = true,
-                    onClick = { showDatePicker = true },
-                    label = {
-                        val label = when {
-                            startDate != null && endDate != null -> "$startDate ~ $endDate"
-                            startDate != null -> "$startDate ~"
-                            else -> "~ $endDate"
-                        }
-                        Text(label)
-                    },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                            modifier = Modifier.size(InputChipDefaults.IconSize)
-                        )
+        val dateEnabled = sort != SearchSort.POPULAR_PREVIEW
+        if (startDate != null || endDate != null) {
+            FilterChip(
+                selected = true,
+                enabled = dateEnabled,
+                onClick = { showDatePicker = true },
+                label = {
+                    val label = when {
+                        startDate != null && endDate != null -> "$startDate ~ $endDate"
+                        startDate != null -> "$startDate ~"
+                        else -> "~ $endDate"
                     }
-                )
-            } else {
-                AssistChip(
-                    onClick = { showDatePicker = true },
-                    label = { Text(stringResource(R.string.date_range)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = null,
-                            modifier = Modifier.size(AssistChipDefaults.IconSize)
-                        )
-                    }
-                )
-            }
+                    Text(label)
+                },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(InputChipDefaults.IconSize)
+                    )
+                }
+            )
+        } else {
+            AssistChip(
+                enabled = dateEnabled,
+                onClick = { showDatePicker = true },
+                label = { Text(stringResource(R.string.date_range)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = null,
+                        modifier = Modifier.size(AssistChipDefaults.IconSize)
+                    )
+                }
+            )
         }
     }
 
