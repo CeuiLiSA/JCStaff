@@ -53,7 +53,9 @@ interface PixivApi {
         @Query("filter") filter: String = "for_ios",
         @Query("offset") offset: Int? = null,
         @Query("include_translated_tag_results") includeTranslatedTagResults: Boolean = true,
-        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
+        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null
     ): IllustResponse
 
     @GET("/v1/search/user")
@@ -174,7 +176,9 @@ interface PixivApi {
         @Query("sort") sort: String = "date_desc",
         @Query("filter") filter: String = "for_ios",
         @Query("include_translated_tag_results") includeTranslatedTagResults: Boolean = true,
-        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true
+        @Query("merge_plain_keyword_results") mergePlainKeywordResults: Boolean = true,
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null
     ): NovelResponse
 
     // ===== Novel Endpoints =====
@@ -302,6 +306,20 @@ interface PixivApi {
         @Query("category") category: String = "all",
         @Query("filter") filter: String = "for_android"
     ): SpotlightResponse
+
+    // ===== Series Endpoints =====
+
+    @GET("/v1/illust/series")
+    suspend fun getIllustSeries(
+        @Query("illust_series_id") seriesId: Long,
+        @Query("filter") filter: String = "for_ios"
+    ): IllustSeriesResponse
+
+    @GET("/v2/novel/series")
+    suspend fun getNovelSeries(
+        @Query("series_id") seriesId: Long,
+        @Query("filter") filter: String = "for_ios"
+    ): NovelResponse
 
     // ===== Ugoira Endpoints =====
 

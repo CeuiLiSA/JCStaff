@@ -103,6 +103,8 @@ import ceui.lisa.jcstaff.screens.UserBookmarkNovelsScreen
 import ceui.lisa.jcstaff.screens.UserCreatedIllustsScreen
 import ceui.lisa.jcstaff.screens.UserCreatedNovelsScreen
 import ceui.lisa.jcstaff.screens.CollectionDetailScreen
+import ceui.lisa.jcstaff.screens.IllustSeriesScreen
+import ceui.lisa.jcstaff.screens.NovelSeriesScreen
 import ceui.lisa.jcstaff.screens.ReportScreen
 import ceui.lisa.jcstaff.screens.UserFollowingScreen
 import ceui.lisa.jcstaff.screens.UserProfileScreen
@@ -713,6 +715,20 @@ fun AppNavigation(authViewModel: AuthViewModel, navViewModel: NavigationViewMode
                                         ReportScreen(
                                             objectId = route.objectId,
                                             objectType = route.objectType
+                                        )
+                                    }
+
+                                    is NavRoute.NovelSeriesDetail -> {
+                                        NovelSeriesScreen(
+                                            seriesId = route.seriesId,
+                                            seriesTitle = route.seriesTitle
+                                        )
+                                    }
+
+                                    is NavRoute.IllustSeriesDetail -> {
+                                        IllustSeriesScreen(
+                                            seriesId = route.seriesId,
+                                            seriesTitle = route.seriesTitle
                                         )
                                     }
                                 }

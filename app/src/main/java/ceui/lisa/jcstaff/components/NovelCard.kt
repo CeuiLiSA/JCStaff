@@ -50,7 +50,8 @@ import coil.request.ImageRequest
 fun NovelCard(
     novel: Novel,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSeriesClick: ((seriesId: Long, seriesTitle: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coverUrl = novel.image_urls?.medium
@@ -145,10 +146,13 @@ fun NovelCard(
 
                 // Series badge
                 if (novel.series != null && novel.series.title != null) {
+                    val seriesModifier = if (onSeriesClick != null) {
+                        Modifier.clickable { onSeriesClick(novel.series.id, novel.series.title) }
+                    } else Modifier
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier
+                        modifier = seriesModifier
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

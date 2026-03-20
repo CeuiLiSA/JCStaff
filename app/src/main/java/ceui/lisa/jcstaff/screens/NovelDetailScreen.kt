@@ -1,6 +1,7 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -243,7 +244,15 @@ fun NovelDetailScreen(
                     if (hasSeries) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.clickable {
+                                navViewModel.navigate(
+                                    NavRoute.NovelSeriesDetail(
+                                        seriesId = loadedNovel.series!!.id,
+                                        seriesTitle = loadedNovel.series!!.title ?: ""
+                                    )
+                                )
+                            }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,

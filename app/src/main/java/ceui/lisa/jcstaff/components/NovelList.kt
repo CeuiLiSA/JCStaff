@@ -51,6 +51,9 @@ fun NovelList(
         onNovelClick = { novel ->
             navViewModel.navigate(NavRoute.NovelDetail(novelId = novel.id))
         },
+        onSeriesClick = { seriesId, seriesTitle ->
+            navViewModel.navigate(NavRoute.NovelSeriesDetail(seriesId = seriesId, seriesTitle = seriesTitle))
+        },
         modifier = modifier,
         isLoading = state.isLoading,
         isLoadingMore = state.isLoadingMore,
@@ -74,7 +77,8 @@ fun NovelList(
     error: String? = null,
     onRefresh: (() -> Unit)? = null,
     onLoadMore: (() -> Unit)? = null,
-    listState: LazyListState = rememberLazyListState()
+    listState: LazyListState = rememberLazyListState(),
+    onSeriesClick: ((seriesId: Long, seriesTitle: String) -> Unit)? = null
 ) {
     // Detect scroll to bottom for infinite loading
     if (onLoadMore != null) {
@@ -134,7 +138,8 @@ fun NovelList(
                     items(novels, key = { it.id }) { novel ->
                         NovelCard(
                             novel = novel,
-                            onClick = { onNovelClick(novel) }
+                            onClick = { onNovelClick(novel) },
+                            onSeriesClick = onSeriesClick
                         )
                     }
 

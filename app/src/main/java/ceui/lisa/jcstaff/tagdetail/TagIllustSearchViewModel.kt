@@ -20,7 +20,9 @@ import kotlinx.coroutines.launch
 data class IllustSearchParams(
     val tags: List<Tag> = emptyList(),
     val sort: SearchSort = SearchSort.DATE_DESC,
-    val searchTarget: SearchTarget = SearchTarget.PARTIAL_MATCH_FOR_TAGS
+    val searchTarget: SearchTarget = SearchTarget.PARTIAL_MATCH_FOR_TAGS,
+    val startDate: String? = null,
+    val endDate: String? = null
 ) {
     val searchWord: String get() = tags.mapNotNull { it.name }.joinToString(" ")
 }
@@ -72,6 +74,11 @@ class TagIllustSearchViewModel(
         search()
     }
 
+    fun setDateRange(startDate: String?, endDate: String?) {
+        _searchParams.value = _searchParams.value.copy(startDate = startDate, endDate = endDate)
+        search()
+    }
+
     fun search() {
         val params = _searchParams.value
         if (params.searchWord.isBlank()) return
@@ -90,7 +97,9 @@ class TagIllustSearchViewModel(
                     PixivClient.pixivApi.searchIllusts(
                         word = params.searchWord,
                         sort = params.sort.apiValue,
-                        searchTarget = params.searchTarget.apiValue
+                        searchTarget = params.searchTarget.apiValue,
+                        startDate = params.startDate,
+                        endDate = params.endDate
                     )
                 }
             },

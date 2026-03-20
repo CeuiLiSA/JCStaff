@@ -1,6 +1,7 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -19,7 +21,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -249,9 +255,12 @@ fun TagDetailScreen(
                                         SearchFilterBar(
                                             sort = illustSearchParams.sort,
                                             searchTarget = illustSearchParams.searchTarget,
+                                            startDate = illustSearchParams.startDate,
+                                            endDate = illustSearchParams.endDate,
                                             isPremium = isPremium,
                                             onSortChanged = { illustViewModel.setSort(it) },
                                             onSearchTargetChanged = { illustViewModel.setSearchTarget(it) },
+                                            onDateRangeChanged = { s, e -> illustViewModel.setDateRange(s, e) },
                                             onPremiumRequired = {
                                                 coroutineScope.launch {
                                                     snackbarHostState.currentSnackbarData?.dismiss()
@@ -268,9 +277,12 @@ fun TagDetailScreen(
                                 SearchFilterBar(
                                     sort = novelSearchParams.sort,
                                     searchTarget = novelSearchParams.searchTarget,
+                                    startDate = novelSearchParams.startDate,
+                                    endDate = novelSearchParams.endDate,
                                     isPremium = isPremium,
                                     onSortChanged = { novelViewModel.setSort(it) },
                                     onSearchTargetChanged = { novelViewModel.setSearchTarget(it) },
+                                    onDateRangeChanged = { s, e -> novelViewModel.setDateRange(s, e) },
                                     onPremiumRequired = {
                                         coroutineScope.launch {
                                             snackbarHostState.currentSnackbarData?.dismiss()
@@ -361,17 +373,22 @@ fun TagDetailScreen(
 private fun SearchFilterBar(
     sort: SearchSort,
     searchTarget: SearchTarget,
+    startDate: String? = null,
+    endDate: String? = null,
     isPremium: Boolean,
     onSortChanged: (SearchSort) -> Unit,
     onSearchTargetChanged: (SearchTarget) -> Unit,
+    onDateRangeChanged: (String?, String?) -> Unit = { _, _ -> },
     onPremiumRequired: () -> Unit
 ) {
     var sortExpanded by remember { mutableStateOf(false) }
     var targetExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -449,6 +466,84 @@ private fun SearchFilterBar(
                 }
             }
         }
+
+        if (sort != SearchSort.POPULAR_PREVIEW) {
+            if (startDate != null || endDate != null) {
+                FilterChip(
+                    selected = true,
+                    onClick = { showDatePicker = true },
+                    label = {
+                        val label = when {
+                            startDate != null && endDate != null -> "$startDate ~ $endDate"
+                            startDate != null -> "$startDate ~"
+                            else -> "~ $endDate"
+                        }
+                        Text(label)
+                    },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(InputChipDefaults.IconSize)
+                        )
+                    }
+                )
+            } else {
+                AssistChip(
+                    onClick = { showDatePicker = true },
+                    label = { Text(stringResource(R.string.date_range)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null,
+                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    if (showDatePicker) {
+        val dateRangePickerState = rememberDateRangePickerState(
+            initialSelectedStartDateMillis = startDate?.let { dateStringToMillis(it) },
+            initialSelectedEndDateMillis = endDate?.let { dateStringToMillis(it) }
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val start = dateRangePickerState.selectedStartDateMillis?.let { millisToDateString(it) }
+                    val end = dateRangePickerState.selectedEndDateMillis?.let { millisToDateString(it) }
+                    onDateRangeChanged(start, end)
+                    showDatePicker = false
+                }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        ) {
+            DateRangePicker(state = dateRangePickerState)
+        }
+    }
+}
+
+private fun millisToDateString(millis: Long): String {
+    val instant = java.time.Instant.ofEpochMilli(millis)
+    val date = instant.atZone(java.time.ZoneOffset.UTC).toLocalDate()
+    return date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+}
+
+private fun dateStringToMillis(dateStr: String): Long? {
+    return try {
+        val date = java.time.LocalDate.parse(dateStr, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+        date.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+    } catch (e: Exception) {
+        null
     }
 }
 

@@ -57,6 +57,11 @@ data class ImageUrls(
     }
 }
 
+data class IllustSeries(
+    val id: Long = 0L,
+    val title: String? = null
+) : Serializable
+
 data class Illust(
     val id: Long,
     val title: String? = null,
@@ -72,6 +77,7 @@ data class Illust(
     val page_count: Int = 0,
     val restrict: Int? = null,
     val sanity_level: Int? = null,
+    val series: IllustSeries? = null,
     val tags: List<Tag>? = null,
     val total_bookmarks: Int? = null,
     val total_view: Int? = null,
@@ -131,6 +137,25 @@ data class Tag(
 ) : Serializable
 
 data class IllustResponse(
+    val illusts: List<Illust> = listOf(),
+    val next_url: String? = null
+) : Serializable, PagedResponse<Illust> {
+    override val displayList: List<Illust> get() = illusts
+    override val nextUrl: String? get() = next_url
+}
+
+data class IllustSeriesDetail(
+    val id: Long = 0L,
+    val title: String? = null,
+    val caption: String? = null,
+    val cover_image_urls: ImageUrls? = null,
+    val total: Int? = null,
+    val user: User? = null
+) : Serializable
+
+data class IllustSeriesResponse(
+    val illust_series_detail: IllustSeriesDetail? = null,
+    val illust_series_first_illust: Illust? = null,
     val illusts: List<Illust> = listOf(),
     val next_url: String? = null
 ) : Serializable, PagedResponse<Illust> {

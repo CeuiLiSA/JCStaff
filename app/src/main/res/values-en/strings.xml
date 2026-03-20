@@ -272,6 +272,7 @@
     <string name="premium_sort_hint">Sorting by popularity is a Pixiv Premium feature</string>
     <string name="remove_tag_title">Remove Tag</string>
     <string name="remove_tag_message">Removing \"%1$s\" will exclude it from search keywords and refresh the results.</string>
+    <string name="date_range">Date Range</string>
 
     <!-- Account Management -->
     <string name="account_management">Account Management</string>
