@@ -1,7 +1,6 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,6 +59,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -483,12 +483,11 @@ private fun SearchFilterBar(
         }
 
         val dateEnabled = sort != SearchSort.POPULAR_PREVIEW
-        Box(modifier = if (!dateEnabled) Modifier.clickable { onDateDisabled() } else Modifier) {
+        Box(modifier = if (!dateEnabled) Modifier.alpha(0.38f) else Modifier) {
             if (startDate != null || endDate != null) {
                 FilterChip(
                     selected = true,
-                    enabled = dateEnabled,
-                    onClick = { showDatePicker = true },
+                    onClick = { if (dateEnabled) showDatePicker = true else onDateDisabled() },
                     label = {
                         val label = when {
                             startDate != null && endDate != null -> "$startDate ~ $endDate"
@@ -507,8 +506,7 @@ private fun SearchFilterBar(
                 )
             } else {
                 AssistChip(
-                    enabled = dateEnabled,
-                    onClick = { showDatePicker = true },
+                    onClick = { if (dateEnabled) showDatePicker = true else onDateDisabled() },
                     label = { Text(stringResource(R.string.date_range)) },
                     leadingIcon = {
                         Icon(
