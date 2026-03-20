@@ -434,4 +434,14 @@
     <string name="report_reason_user_wiki">pixiv百科事典での迷惑行為</string>
     <string name="report_reason_user_other">その他、利用規約・サイトポリシー違反</string>
 
+    <!-- About -->
+    <string name="settings_about">アプリについて</string>
+    <string name="settings_about_desc">利用規約、プライバシーポリシー、バージョン情報</string>
+    <string name="about_version">バージョン %1$s</string>
+    <string name="terms_of_service">利用規約</string>
+    <string name="terms_of_service_desc">pixiv利用規約を表示</string>
+    <string name="privacy_policy">プライバシーポリシー</string>
+    <string name="privacy_policy_desc">pixivプライバシーポリシーを表示</string>
+    <string name="about_author">作者 @CeuiLiSA（林忆宁）</string>
+
 </resources>

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Language
@@ -227,6 +228,13 @@ fun SettingsScreen(
 
             SettingsDivider()
 
+            // 关于
+            SettingsItemNavigation(
+                icon = Icons.Default.Info,
+                title = stringResource(R.string.settings_about),
+                description = stringResource(R.string.settings_about_desc),
+                onClick = { navViewModel.navigate(NavRoute.About) }
+            )
 
             // 底部安全区域
             val navBarBottom =
@@ -736,3 +744,4 @@ private fun FilenameTemplateDialog(
         }
     )
 }
+

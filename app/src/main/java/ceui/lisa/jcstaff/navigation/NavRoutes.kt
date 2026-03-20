@@ -86,6 +86,9 @@ sealed interface NavRoute : java.io.Serializable {
     data class WebTagDetail(val tag: Tag) : NavRoute {
         override val stableKey = "WebTagDetail_${tag.name}"
     }
+    data object About : NavRoute {
+        override val stableKey = "About"
+    }
     data object BlockSettings : NavRoute {
         override val stableKey = "BlockSettings"
     }
@@ -160,6 +163,7 @@ fun NavRoute.getTitle(): String = when (this) {
     is NavRoute.UgoiraRanking -> "动图排行"
     is NavRoute.LatestWorks -> "最新作品"
     is NavRoute.WebTagDetail -> tag.name ?: "标签详情"
+    is NavRoute.About -> "关于"
     is NavRoute.BlockSettings -> "屏蔽设置"
     is NavRoute.CacheBrowser -> "缓存浏览"
     is NavRoute.SauceNao -> "以图搜图"

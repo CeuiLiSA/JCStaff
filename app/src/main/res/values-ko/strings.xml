@@ -413,4 +413,14 @@
     <string name="report_reason_user_wiki">pixiv 백과사전에서 부정 행위</string>
     <string name="report_reason_user_other">기타, 이용약관·사이트 방침 위반</string>
 
+    <!-- About -->
+    <string name="settings_about">정보</string>
+    <string name="settings_about_desc">이용약관, 개인정보 처리방침 및 버전 정보</string>
+    <string name="about_version">버전 %1$s</string>
+    <string name="terms_of_service">이용약관</string>
+    <string name="terms_of_service_desc">pixiv 이용약관 보기</string>
+    <string name="privacy_policy">개인정보 처리방침</string>
+    <string name="privacy_policy_desc">pixiv 개인정보 처리방침 보기</string>
+    <string name="about_author">개발자 @CeuiLiSA（林忆宁）</string>
+
 </resources>

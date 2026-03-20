@@ -466,6 +466,16 @@
     <string name="sauce_nao_error_unknown">未知错误</string>
     <string name="related_articles">相关文章</string>
 
+    <!-- About -->
+    <string name="settings_about">关于</string>
+    <string name="settings_about_desc">服务条款、隐私协议和版本信息</string>
+    <string name="about_version">版本 %1$s</string>
+    <string name="terms_of_service">服务条款</string>
+    <string name="terms_of_service_desc">查看 pixiv 服务条款</string>
+    <string name="privacy_policy">隐私协议</string>
+    <string name="privacy_policy_desc">查看 pixiv 隐私协议</string>
+    <string name="about_author">作者 @CeuiLiSA（林忆宁）</string>
+
     <!-- Report -->
     <string name="report_illust_title">举报作品</string>
     <string name="report_user_title">举报用户</string>

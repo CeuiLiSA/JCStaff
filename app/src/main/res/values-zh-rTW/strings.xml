@@ -434,4 +434,14 @@
     <string name="report_reason_user_wiki">在pixiv百科全書進行不良行為</string>
     <string name="report_reason_user_other">其他、違反了使用條款·本站方針</string>
 
+    <!-- About -->
+    <string name="settings_about">關於</string>
+    <string name="settings_about_desc">服務條款、隱私權政策和版本資訊</string>
+    <string name="about_version">版本 %1$s</string>
+    <string name="terms_of_service">服務條款</string>
+    <string name="terms_of_service_desc">查看 pixiv 服務條款</string>
+    <string name="privacy_policy">隱私權政策</string>
+    <string name="privacy_policy_desc">查看 pixiv 隱私權政策</string>
+    <string name="about_author">作者 @CeuiLiSA（林忆宁）</string>
+
 </resources>
