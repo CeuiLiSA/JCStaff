@@ -28,6 +28,23 @@
     <string name="theme_system">시스템 설정</string>
     <string name="theme_light">라이트</string>
     <string name="theme_dark">다크</string>
+    <string name="dynamic_color_title">Material You 다이내믹 컬러</string>
+    <string name="dynamic_color_desc">시스템 배경화면 색상을 앱 테마에 사용</string>
+    <string name="color_theme_title">테마 색상</string>
+    <string name="color_theme_desc">앱의 기본 색상 선택</string>
+    <string name="preset_colors">프리셋 색상</string>
+    <string name="custom_color">사용자 정의 색상</string>
+    <string name="color_preview">미리보기</string>
+    <string name="color_purple">퍼플</string>
+    <string name="color_blue">블루</string>
+    <string name="color_teal">틸</string>
+    <string name="color_green">그린</string>
+    <string name="color_yellow">옐로</string>
+    <string name="color_orange">오렌지</string>
+    <string name="color_red">레드</string>
+    <string name="color_pink">핑크</string>
+    <string name="color_indigo">인디고</string>
+    <string name="color_cyan">시안</string>
     <string name="login_success">로그인 성공</string>
 
     <!-- Landing Screen -->

@@ -43,6 +43,8 @@ object SettingsStore {
     private val HIDE_AI_CONTENT = booleanPreferencesKey("hide_ai_content")
     private val DOWNLOAD_FILENAME_TEMPLATE = stringPreferencesKey("download_filename_template")
     private val THEME_MODE = stringPreferencesKey("theme_mode")
+    private val USE_DYNAMIC_COLOR = booleanPreferencesKey("use_dynamic_color")
+    private val CUSTOM_SEED_COLOR = intPreferencesKey("custom_seed_color")
 
     const val DEFAULT_FILENAME_TEMPLATE = "{id}_{title}_p{page}"
 
@@ -72,6 +74,13 @@ object SettingsStore {
 
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
+
+    private val _useDynamicColor = MutableStateFlow(true)
+    val useDynamicColor: StateFlow<Boolean> = _useDynamicColor.asStateFlow()
+
+    const val DEFAULT_SEED_COLOR: Int = 0xFF6750A4.toInt()
+    private val _customSeedColor = MutableStateFlow(DEFAULT_SEED_COLOR)
+    val customSeedColor: StateFlow<Int> = _customSeedColor.asStateFlow()
 
     const val MIN_IMAGE_CACHE_LIMIT_MB = 256
     const val MAX_IMAGE_CACHE_LIMIT_MB = 4096
@@ -103,6 +112,8 @@ object SettingsStore {
             globalDataStore?.data?.collect { preferences ->
                 _selectedLanguage.value = preferences[SELECTED_LANGUAGE]
                 _themeMode.value = ThemeMode.fromKey(preferences[THEME_MODE])
+                _useDynamicColor.value = preferences[USE_DYNAMIC_COLOR] ?: true
+                _customSeedColor.value = preferences[CUSTOM_SEED_COLOR] ?: DEFAULT_SEED_COLOR
             }
         }
     }
@@ -162,6 +173,16 @@ object SettingsStore {
         dataStore?.edit { preferences ->
             preferences[DOWNLOAD_FILENAME_TEMPLATE] = effective
         }
+    }
+
+    suspend fun setUseDynamicColor(enabled: Boolean) {
+        _useDynamicColor.value = enabled
+        globalDataStore?.edit { it[USE_DYNAMIC_COLOR] = enabled }
+    }
+
+    suspend fun setCustomSeedColor(colorArgb: Int) {
+        _customSeedColor.value = colorArgb
+        globalDataStore?.edit { it[CUSTOM_SEED_COLOR] = colorArgb }
     }
 
     suspend fun setThemeMode(mode: ThemeMode) {

@@ -92,6 +92,9 @@ dependencies {
     implementation(libs.telephoto.zoomable.image.coil)
     implementation(libs.telephoto.zoomable.peek.overlay)
 
+    // Material color utilities (seed-based color scheme generation)
+    implementation("com.google.android.material:material:1.12.0")
+
     // HTML parsing
     implementation(libs.jsoup)
 

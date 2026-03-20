@@ -109,6 +109,23 @@
     <string name="theme_system">跟随系统</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
+    <string name="dynamic_color_title">Material You 动态取色</string>
+    <string name="dynamic_color_desc">使用系统壁纸颜色作为应用主题</string>
+    <string name="color_theme_title">主题颜色</string>
+    <string name="color_theme_desc">选择应用的主色调</string>
+    <string name="preset_colors">预设颜色</string>
+    <string name="custom_color">自定义颜色</string>
+    <string name="color_preview">预览</string>
+    <string name="color_purple">紫色</string>
+    <string name="color_blue">蓝色</string>
+    <string name="color_teal">青色</string>
+    <string name="color_green">绿色</string>
+    <string name="color_yellow">黄色</string>
+    <string name="color_orange">橙色</string>
+    <string name="color_red">红色</string>
+    <string name="color_pink">粉色</string>
+    <string name="color_indigo">靛蓝</string>
+    <string name="color_cyan">蓝绿</string>
     <string name="login_success">登录成功</string>
 
     <!-- Settings Screen -->

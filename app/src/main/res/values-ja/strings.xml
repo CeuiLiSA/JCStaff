@@ -28,6 +28,23 @@
     <string name="theme_system">システムに従う</string>
     <string name="theme_light">ライト</string>
     <string name="theme_dark">ダーク</string>
+    <string name="dynamic_color_title">Material You ダイナミックカラー</string>
+    <string name="dynamic_color_desc">システムの壁紙色をアプリテーマに使用</string>
+    <string name="color_theme_title">テーマカラー</string>
+    <string name="color_theme_desc">アプリのメインカラーを選択</string>
+    <string name="preset_colors">プリセットカラー</string>
+    <string name="custom_color">カスタムカラー</string>
+    <string name="color_preview">プレビュー</string>
+    <string name="color_purple">パープル</string>
+    <string name="color_blue">ブルー</string>
+    <string name="color_teal">ティール</string>
+    <string name="color_green">グリーン</string>
+    <string name="color_yellow">イエロー</string>
+    <string name="color_orange">オレンジ</string>
+    <string name="color_red">レッド</string>
+    <string name="color_pink">ピンク</string>
+    <string name="color_indigo">インディゴ</string>
+    <string name="color_cyan">シアン</string>
     <string name="login_success">ログイン成功</string>
 
     <!-- Landing Screen -->

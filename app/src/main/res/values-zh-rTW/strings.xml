@@ -28,6 +28,23 @@
     <string name="theme_system">跟隨系統</string>
     <string name="theme_light">淺色</string>
     <string name="theme_dark">深色</string>
+    <string name="dynamic_color_title">Material You 動態取色</string>
+    <string name="dynamic_color_desc">使用系統桌布顏色作為應用程式主題</string>
+    <string name="color_theme_title">主題顏色</string>
+    <string name="color_theme_desc">選擇應用程式的主色調</string>
+    <string name="preset_colors">預設顏色</string>
+    <string name="custom_color">自訂顏色</string>
+    <string name="color_preview">預覽</string>
+    <string name="color_purple">紫色</string>
+    <string name="color_blue">藍色</string>
+    <string name="color_teal">青色</string>
+    <string name="color_green">綠色</string>
+    <string name="color_yellow">黃色</string>
+    <string name="color_orange">橙色</string>
+    <string name="color_red">紅色</string>
+    <string name="color_pink">粉色</string>
+    <string name="color_indigo">靛藍</string>
+    <string name="color_cyan">藍綠</string>
     <string name="login_success">登入成功</string>
 
     <!-- Landing Screen -->

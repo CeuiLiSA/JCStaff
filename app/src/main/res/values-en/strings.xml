@@ -28,6 +28,23 @@
     <string name="theme_system">Follow System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="dynamic_color_title">Material You Dynamic Color</string>
+    <string name="dynamic_color_desc">Use system wallpaper color as app theme</string>
+    <string name="color_theme_title">Theme Color</string>
+    <string name="color_theme_desc">Choose the app\'s primary color</string>
+    <string name="preset_colors">Preset Colors</string>
+    <string name="custom_color">Custom Color</string>
+    <string name="color_preview">Preview</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_teal">Teal</string>
+    <string name="color_green">Green</string>
+    <string name="color_yellow">Yellow</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_red">Red</string>
+    <string name="color_pink">Pink</string>
+    <string name="color_indigo">Indigo</string>
+    <string name="color_cyan">Cyan</string>
     <string name="login_success">Login successful</string>
 
     <!-- Landing Screen -->

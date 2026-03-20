@@ -1,10 +1,14 @@
 package ceui.lisa.jcstaff.screens
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,8 +29,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Language
@@ -59,6 +66,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -73,6 +82,8 @@ import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.SettingsStore
 import ceui.lisa.jcstaff.core.ThemeMode
+import ceui.lisa.jcstaff.ui.theme.PresetColor
+import ceui.lisa.jcstaff.ui.theme.colorSchemeFromSeed
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -94,8 +105,11 @@ fun SettingsScreen(
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     val filenameTemplate by SettingsStore.downloadFilenameTemplate.collectAsState()
     val themeMode by SettingsStore.themeMode.collectAsState()
+    val useDynamicColor by SettingsStore.useDynamicColor.collectAsState()
+    val customSeedColor by SettingsStore.customSeedColor.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showColorPickerDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showFilenameTemplateDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -180,6 +194,29 @@ fun SettingsScreen(
                 }),
                 onClick = { showThemeDialog = true }
             )
+
+            // Material You 动态取色
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                SettingsItemSwitch(
+                    icon = Icons.Default.Palette,
+                    title = stringResource(R.string.dynamic_color_title),
+                    description = stringResource(R.string.dynamic_color_desc),
+                    checked = useDynamicColor,
+                    onCheckedChange = {
+                        coroutineScope.launch { SettingsStore.setUseDynamicColor(it) }
+                    }
+                )
+            }
+
+            // 主题颜色（动态取色关闭时或 Android 12 以下显示）
+            if (!useDynamicColor || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                SettingsItemNavigation(
+                    icon = Icons.Default.ColorLens,
+                    title = stringResource(R.string.color_theme_title),
+                    description = stringResource(R.string.color_theme_desc),
+                    onClick = { showColorPickerDialog = true }
+                )
+            }
 
             // 屏蔽设置
             SettingsItemNavigation(
@@ -284,6 +321,18 @@ fun SettingsScreen(
                 coroutineScope.launch {
                     SettingsStore.setDownloadFilenameTemplate(newTemplate)
                 }
+            }
+        )
+    }
+
+    // 颜色选择对话框
+    if (showColorPickerDialog) {
+        ColorThemeDialog(
+            currentColor = customSeedColor,
+            onDismiss = { showColorPickerDialog = false },
+            onConfirm = { color ->
+                showColorPickerDialog = false
+                coroutineScope.launch { SettingsStore.setCustomSeedColor(color) }
             }
         )
     }
@@ -703,6 +752,164 @@ private fun ThemeDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedTheme) }) {
+                Text(stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+// ==================== 颜色选择对话框 ====================
+
+private val presetColors = listOf(
+    PresetColor(R.string.color_purple, 0xFF6750A4.toInt()),
+    PresetColor(R.string.color_blue, 0xFF1B6EF3.toInt()),
+    PresetColor(R.string.color_teal, 0xFF006C51.toInt()),
+    PresetColor(R.string.color_green, 0xFF386A20.toInt()),
+    PresetColor(R.string.color_yellow, 0xFF695F00.toInt()),
+    PresetColor(R.string.color_orange, 0xFFA23F16.toInt()),
+    PresetColor(R.string.color_red, 0xFFBE0032.toInt()),
+    PresetColor(R.string.color_pink, 0xFFFF6F91.toInt()),
+    PresetColor(R.string.color_indigo, 0xFF3F4693.toInt()),
+    PresetColor(R.string.color_cyan, 0xFF006970.toInt()),
+)
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ColorThemeDialog(
+    currentColor: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    var selectedColor by remember { mutableStateOf(currentColor) }
+    var hexInput by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.color_theme_title),
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                // 预设颜色
+                Text(
+                    text = stringResource(R.string.preset_colors),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    presetColors.forEach { preset ->
+                        val isSelected = preset.argb == selectedColor
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color(preset.argb))
+                                .then(
+                                    if (isSelected) Modifier.border(
+                                        3.dp,
+                                        MaterialTheme.colorScheme.onSurface,
+                                        CircleShape
+                                    ) else Modifier
+                                )
+                                .clickable {
+                                    selectedColor = preset.argb
+                                    hexInput = ""
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 自定义颜色
+                Text(
+                    text = stringResource(R.string.custom_color),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = hexInput,
+                        onValueChange = { input ->
+                            hexInput = input.take(7)
+                            val cleaned = input.removePrefix("#").trim()
+                            if (cleaned.length == 6) {
+                                try {
+                                    selectedColor = (0xFF000000 or cleaned.toLong(16)).toInt()
+                                } catch (_: NumberFormatException) { }
+                            }
+                        },
+                        label = { Text("#RRGGBB") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(selectedColor))
+                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 预览
+                Text(
+                    text = stringResource(R.string.color_preview),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                val previewScheme = remember(selectedColor) {
+                    colorSchemeFromSeed(selectedColor, isDark = false)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        previewScheme.primary,
+                        previewScheme.secondary,
+                        previewScheme.tertiary,
+                        previewScheme.primaryContainer,
+                        previewScheme.secondaryContainer,
+                    ).forEach { color ->
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedColor) }) {
                 Text(stringResource(R.string.confirm))
             }
         },
