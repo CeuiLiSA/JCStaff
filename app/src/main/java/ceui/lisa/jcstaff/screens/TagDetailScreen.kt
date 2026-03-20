@@ -1,6 +1,7 @@
 package ceui.lisa.jcstaff.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -114,6 +115,7 @@ fun TagDetailScreen(
     var tagPendingRemoval by remember { mutableStateOf<Tag?>(null) }
 
     val premiumHint = stringResource(R.string.premium_sort_hint)
+    val dateDisabledHint = stringResource(R.string.date_range_disabled_hint)
 
     // Back handler for selection mode
     BackHandler(enabled = selectionManager.isSelectionMode) {
@@ -261,6 +263,12 @@ fun TagDetailScreen(
                                             onSortChanged = { illustViewModel.setSort(it) },
                                             onSearchTargetChanged = { illustViewModel.setSearchTarget(it) },
                                             onDateRangeChanged = { s, e -> illustViewModel.setDateRange(s, e) },
+                                            onDateDisabled = {
+                                                coroutineScope.launch {
+                                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                                    snackbarHostState.showSnackbar(dateDisabledHint)
+                                                }
+                                            },
                                             onPremiumRequired = {
                                                 coroutineScope.launch {
                                                     snackbarHostState.currentSnackbarData?.dismiss()
@@ -283,6 +291,12 @@ fun TagDetailScreen(
                                     onSortChanged = { novelViewModel.setSort(it) },
                                     onSearchTargetChanged = { novelViewModel.setSearchTarget(it) },
                                     onDateRangeChanged = { s, e -> novelViewModel.setDateRange(s, e) },
+                                    onDateDisabled = {
+                                        coroutineScope.launch {
+                                            snackbarHostState.currentSnackbarData?.dismiss()
+                                            snackbarHostState.showSnackbar(dateDisabledHint)
+                                        }
+                                    },
                                     onPremiumRequired = {
                                         coroutineScope.launch {
                                             snackbarHostState.currentSnackbarData?.dismiss()
@@ -379,6 +393,7 @@ private fun SearchFilterBar(
     onSortChanged: (SearchSort) -> Unit,
     onSearchTargetChanged: (SearchTarget) -> Unit,
     onDateRangeChanged: (String?, String?) -> Unit = { _, _ -> },
+    onDateDisabled: () -> Unit = {},
     onPremiumRequired: () -> Unit
 ) {
     var sortExpanded by remember { mutableStateOf(false) }
@@ -468,40 +483,42 @@ private fun SearchFilterBar(
         }
 
         val dateEnabled = sort != SearchSort.POPULAR_PREVIEW
-        if (startDate != null || endDate != null) {
-            FilterChip(
-                selected = true,
-                enabled = dateEnabled,
-                onClick = { showDatePicker = true },
-                label = {
-                    val label = when {
-                        startDate != null && endDate != null -> "$startDate ~ $endDate"
-                        startDate != null -> "$startDate ~"
-                        else -> "~ $endDate"
+        Box(modifier = if (!dateEnabled) Modifier.clickable { onDateDisabled() } else Modifier) {
+            if (startDate != null || endDate != null) {
+                FilterChip(
+                    selected = true,
+                    enabled = dateEnabled,
+                    onClick = { showDatePicker = true },
+                    label = {
+                        val label = when {
+                            startDate != null && endDate != null -> "$startDate ~ $endDate"
+                            startDate != null -> "$startDate ~"
+                            else -> "~ $endDate"
+                        }
+                        Text(label)
+                    },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(InputChipDefaults.IconSize)
+                        )
                     }
-                    Text(label)
-                },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = null,
-                        modifier = Modifier.size(InputChipDefaults.IconSize)
-                    )
-                }
-            )
-        } else {
-            AssistChip(
-                enabled = dateEnabled,
-                onClick = { showDatePicker = true },
-                label = { Text(stringResource(R.string.date_range)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = null,
-                        modifier = Modifier.size(AssistChipDefaults.IconSize)
-                    )
-                }
-            )
+                )
+            } else {
+                AssistChip(
+                    enabled = dateEnabled,
+                    onClick = { showDatePicker = true },
+                    label = { Text(stringResource(R.string.date_range)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null,
+                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    }
+                )
+            }
         }
     }
 

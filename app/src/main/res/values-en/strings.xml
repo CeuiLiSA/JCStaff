@@ -273,6 +273,7 @@
     <string name="remove_tag_title">Remove Tag</string>
     <string name="remove_tag_message">Removing \"%1$s\" will exclude it from search keywords and refresh the results.</string>
     <string name="date_range">Date Range</string>
+    <string name="date_range_disabled_hint">Date filtering is not available in Popular Preview mode. Switch to another sort first.</string>
 
     <!-- Account Management -->
     <string name="account_management">Account Management</string>

@@ -330,6 +330,7 @@
     <string name="remove_tag_title">移除标签</string>
     <string name="remove_tag_message">移除「%1$s」后，该标签将不再作为搜索关键字，搜索结果会随之更新。</string>
     <string name="date_range">日期范围</string>
+    <string name="date_range_disabled_hint">热度预览模式不支持日期筛选，请先切换其他排序方式</string>
 
     <!-- Account Management -->
     <string name="account_management">账号管理</string>
