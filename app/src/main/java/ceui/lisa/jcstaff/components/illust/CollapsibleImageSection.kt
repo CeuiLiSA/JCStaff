@@ -227,7 +227,11 @@ fun CollapsibleImageSection(
                             if (loadedIllust.page_count > 1) {
                                 val additionalPages =
                                     loadedIllust.meta_pages?.drop(1) ?: emptyList()
-                                additionalPages.forEachIndexed { index, page ->
+                                // 折叠时只渲染前2张额外页（加首图共3张），避免20+张图全量组合造成卡顿
+                                // 展开时渲染全部；Layout 的 clipToBounds 保证视觉裁剪正确
+                                val pagesToRender =
+                                    if (isExpanded) additionalPages else additionalPages.take(2)
+                                pagesToRender.forEachIndexed { index, page ->
                                     val pageIndex = index + 1
                                     val imageKey = "${illustId}_$pageIndex"
                                     val largeUrl = page.image_urls?.large ?: ""
