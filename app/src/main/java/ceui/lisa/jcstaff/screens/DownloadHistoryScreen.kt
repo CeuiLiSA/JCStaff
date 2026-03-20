@@ -107,10 +107,13 @@ fun DownloadHistoryScreen(
                             text = stringResource(R.string.download_queue),
                             style = MaterialTheme.typography.titleMedium
                         )
+                        val strDownloading = stringResource(R.string.status_downloading_count, state.downloadingCount)
+                        val strPending = stringResource(R.string.status_pending_count, state.pendingCount)
+                        val strFailed = stringResource(R.string.status_failed_count, state.failedCount)
                         val summaryParts = buildList {
-                            if (state.downloadingCount > 0) add("下载中 ${state.downloadingCount}")
-                            if (state.pendingCount > 0) add("等待 ${state.pendingCount}")
-                            if (state.failedCount > 0) add("失败 ${state.failedCount}")
+                            if (state.downloadingCount > 0) add(strDownloading)
+                            if (state.pendingCount > 0) add(strPending)
+                            if (state.failedCount > 0) add(strFailed)
                         }
                         if (summaryParts.isNotEmpty()) {
                             Text(

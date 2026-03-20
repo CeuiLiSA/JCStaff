@@ -118,6 +118,15 @@
     <string name="card_spacing_title">卡片间距</string>
     <string name="card_spacing_desc">开启后瀑布流卡片之间有间距</string>
 
+    <!-- Collection -->
+    <string name="collection">珍藏册</string>
+    <string name="tap_to_retry">点击重试</string>
+    <string name="related_collections">相关珍藏册</string>
+    <string name="recommended_collections">推荐珍藏册</string>
+    <string name="everyone_collections">大家的珍藏册</string>
+    <string name="tag_related_collections">#%1$s 相关推荐珍藏册</string>
+    <string name="collection_bookmark_count">%1$d 收藏</string>
+
     <!-- Download History Screen -->
     <string name="download_history">下载历史</string>
     <string name="no_download_history">暂无下载任务</string>
@@ -131,6 +140,9 @@
     <string name="status_downloading">下载中</string>
     <string name="status_completed">已完成</string>
     <string name="status_failed">下载失败</string>
+    <string name="status_downloading_count">下载中 %1$d</string>
+    <string name="status_pending_count">等待 %1$d</string>
+    <string name="status_failed_count">失败 %1$d</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">清空历史</string>
@@ -335,6 +347,7 @@
     <string name="novel_original">原创</string>
     <string name="novel_detail">小说详情</string>
     <string name="novel_series">系列</string>
+    <string name="manga_series">漫画系列</string>
     <string name="novel_read">阅读小说</string>
     <string name="novel_start_reading">开始阅读</string>
     <string name="novel_loading">正在加载小说内容…</string>
@@ -388,6 +401,14 @@
     <!-- SauceNao -->
     <string name="sauce_nao">以图搜源</string>
     <string name="sauce_nao_open_in_app">在应用内打开</string>
+    <string name="sauce_nao_search_hint">选择图片搜索其来源</string>
+    <string name="sauce_nao_select_image">选择图片</string>
+    <string name="sauce_nao_searching">正在搜索...</string>
+    <string name="sauce_nao_reselect_image">重新选择图片</string>
+    <string name="sauce_nao_error_read_image">无法读取图片</string>
+    <string name="sauce_nao_error_empty_response">响应为空</string>
+    <string name="sauce_nao_error_request_failed">请求失败: %1$d</string>
+    <string name="sauce_nao_error_unknown">未知错误</string>
 
     <!-- User Profile Sections -->
     <string name="user_created_illusts">插画作品</string>

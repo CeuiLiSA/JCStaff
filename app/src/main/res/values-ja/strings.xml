@@ -120,6 +120,15 @@
     <string name="hide_ai_content_title">AI生成作品を非表示</string>
     <string name="hide_ai_content_desc">すべてのリストからAI生成のイラスト・漫画をフィルタリング</string>
 
+    <!-- Collection -->
+    <string name="collection">コレクション</string>
+    <string name="tap_to_retry">タップして再試行</string>
+    <string name="related_collections">関連コレクション</string>
+    <string name="recommended_collections">おすすめコレクション</string>
+    <string name="everyone_collections">みんなのコレクション</string>
+    <string name="tag_related_collections">#%1$s のコレクション</string>
+    <string name="collection_bookmark_count">%1$d ブックマーク</string>
+
     <!-- Download History Screen -->
     <string name="download_history">ダウンロード履歴</string>
     <string name="no_download_history">ダウンロードタスクはありません</string>
@@ -133,6 +142,9 @@
     <string name="status_downloading">ダウンロード中</string>
     <string name="status_completed">完了</string>
     <string name="status_failed">失敗</string>
+    <string name="status_downloading_count">ダウンロード中 %1$d</string>
+    <string name="status_pending_count">待機中 %1$d</string>
+    <string name="status_failed_count">失敗 %1$d</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">履歴を削除</string>
@@ -314,6 +326,7 @@
     <string name="novel_original">オリジナル</string>
     <string name="novel_detail">小説詳細</string>
     <string name="novel_series">シリーズ</string>
+    <string name="manga_series">マンガシリーズ</string>
     <string name="novel_read">小説を読む</string>
 
     <!-- General Tab -->
@@ -361,6 +374,14 @@
     <!-- SauceNao -->
     <string name="sauce_nao">画像検索</string>
     <string name="sauce_nao_open_in_app">アプリ内で開く</string>
+    <string name="sauce_nao_search_hint">画像を選択して出典を検索</string>
+    <string name="sauce_nao_select_image">画像を選択</string>
+    <string name="sauce_nao_searching">検索中...</string>
+    <string name="sauce_nao_reselect_image">別の画像を選択</string>
+    <string name="sauce_nao_error_read_image">画像を読み込めません</string>
+    <string name="sauce_nao_error_empty_response">レスポンスが空です</string>
+    <string name="sauce_nao_error_request_failed">リクエスト失敗: %1$d</string>
+    <string name="sauce_nao_error_unknown">不明なエラー</string>
 
     <!-- User Profile Sections -->
     <string name="user_created_illusts">イラスト作品</string>

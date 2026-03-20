@@ -120,6 +120,15 @@
     <string name="hide_ai_content_title">Hide AI-Generated Works</string>
     <string name="hide_ai_content_desc">Filter AI-generated illustrations and manga from all lists</string>
 
+    <!-- Collection -->
+    <string name="collection">Collection</string>
+    <string name="tap_to_retry">Tap to retry</string>
+    <string name="related_collections">Related Collections</string>
+    <string name="recommended_collections">Recommended Collections</string>
+    <string name="everyone_collections">Everyone\'s Collections</string>
+    <string name="tag_related_collections">Collections related to #%1$s</string>
+    <string name="collection_bookmark_count">%1$d bookmarks</string>
+
     <!-- Download History Screen -->
     <string name="download_history">Downloads</string>
     <string name="no_download_history">No download tasks</string>
@@ -133,6 +142,9 @@
     <string name="status_downloading">Downloading</string>
     <string name="status_completed">Completed</string>
     <string name="status_failed">Failed</string>
+    <string name="status_downloading_count">Downloading %1$d</string>
+    <string name="status_pending_count">Waiting %1$d</string>
+    <string name="status_failed_count">Failed %1$d</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">Clear History</string>
@@ -316,6 +328,7 @@
     <string name="novel_original">Original</string>
     <string name="novel_detail">Novel Detail</string>
     <string name="novel_series">Series</string>
+    <string name="manga_series">Manga Series</string>
     <string name="novel_read">Read Novel</string>
 
     <!-- General Tab -->
@@ -363,6 +376,14 @@
     <!-- SauceNao -->
     <string name="sauce_nao">Image Search</string>
     <string name="sauce_nao_open_in_app">Open in App</string>
+    <string name="sauce_nao_search_hint">Select an image to search for its source</string>
+    <string name="sauce_nao_select_image">Select Image</string>
+    <string name="sauce_nao_searching">Searching...</string>
+    <string name="sauce_nao_reselect_image">Select Another Image</string>
+    <string name="sauce_nao_error_read_image">Cannot read image</string>
+    <string name="sauce_nao_error_empty_response">Empty response</string>
+    <string name="sauce_nao_error_request_failed">Request failed: %1$d</string>
+    <string name="sauce_nao_error_unknown">Unknown error</string>
 
     <!-- User Profile Sections -->
     <string name="user_created_illusts">Illustrations</string>

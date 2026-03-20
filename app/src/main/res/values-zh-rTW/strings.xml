@@ -120,6 +120,15 @@
     <string name="hide_ai_content_title">隱藏AI生成作品</string>
     <string name="hide_ai_content_desc">在所有列表中過濾AI生成的插畫和漫畫</string>
 
+    <!-- Collection -->
+    <string name="collection">珍藏冊</string>
+    <string name="tap_to_retry">點擊重試</string>
+    <string name="related_collections">相關珍藏冊</string>
+    <string name="recommended_collections">推薦珍藏冊</string>
+    <string name="everyone_collections">大家的珍藏冊</string>
+    <string name="tag_related_collections">#%1$s 相關推薦珍藏冊</string>
+    <string name="collection_bookmark_count">%1$d 收藏</string>
+
     <!-- Download History Screen -->
     <string name="download_history">下載紀錄</string>
     <string name="no_download_history">暫無下載任務</string>
@@ -133,6 +142,9 @@
     <string name="status_downloading">下載中</string>
     <string name="status_completed">已完成</string>
     <string name="status_failed">下載失敗</string>
+    <string name="status_downloading_count">下載中 %1$d</string>
+    <string name="status_pending_count">等待 %1$d</string>
+    <string name="status_failed_count">失敗 %1$d</string>
 
     <!-- Browse History Screen -->
     <string name="clear_history">清空歷史</string>
@@ -314,6 +326,7 @@
     <string name="novel_original">原創</string>
     <string name="novel_detail">小說詳情</string>
     <string name="novel_series">系列</string>
+    <string name="manga_series">漫畫系列</string>
     <string name="novel_read">閱讀小說</string>
 
     <!-- General Tab -->
@@ -361,6 +374,14 @@
     <!-- SauceNao -->
     <string name="sauce_nao">以圖搜源</string>
     <string name="sauce_nao_open_in_app">在應用程式內開啟</string>
+    <string name="sauce_nao_search_hint">選擇圖片搜尋其來源</string>
+    <string name="sauce_nao_select_image">選擇圖片</string>
+    <string name="sauce_nao_searching">正在搜尋...</string>
+    <string name="sauce_nao_reselect_image">重新選擇圖片</string>
+    <string name="sauce_nao_error_read_image">無法讀取圖片</string>
+    <string name="sauce_nao_error_empty_response">回應為空</string>
+    <string name="sauce_nao_error_request_failed">請求失敗: %1$d</string>
+    <string name="sauce_nao_error_unknown">未知錯誤</string>
 
     <!-- User Profile Sections -->
     <string name="user_created_illusts">插畫作品</string>

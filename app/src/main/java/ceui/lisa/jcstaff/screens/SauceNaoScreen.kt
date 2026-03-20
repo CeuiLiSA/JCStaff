@@ -159,13 +159,13 @@ fun SauceNaoScreen() {
                     IconButton(onClick = { imagePickerLauncher.launch("image/*") }) {
                         Icon(
                             imageVector = Icons.Default.Image,
-                            contentDescription = "Select Image"
+                            contentDescription = stringResource(R.string.sauce_nao_select_image)
                         )
                     }
                     IconButton(onClick = { webView?.reload() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = stringResource(R.string.refresh)
                         )
                     }
                 }
@@ -213,7 +213,7 @@ fun SauceNaoScreen() {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "选择图片搜索其来源",
+                            text = stringResource(R.string.sauce_nao_search_hint),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -228,7 +228,7 @@ fun SauceNaoScreen() {
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.size(8.dp))
-                            Text("选择图片")
+                            Text(stringResource(R.string.sauce_nao_select_image))
                         }
                     }
                 }
@@ -242,7 +242,7 @@ fun SauceNaoScreen() {
                         CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "正在搜索...",
+                            text = stringResource(R.string.sauce_nao_searching),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -258,7 +258,7 @@ fun SauceNaoScreen() {
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "搜索失败",
+                            text = stringResource(R.string.search_error),
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -273,7 +273,7 @@ fun SauceNaoScreen() {
                         Button(
                             onClick = { imagePickerLauncher.launch("image/*") }
                         ) {
-                            Text("重新选择图片")
+                            Text(stringResource(R.string.sauce_nao_reselect_image))
                         }
                     }
                 }
@@ -437,7 +437,7 @@ private suspend fun uploadImageToSauceNao(context: Context, uri: Uri): SauceNaoS
         try {
             // Read and compress image
             val inputStream = context.contentResolver.openInputStream(uri)
-                ?: return@withContext SauceNaoState.Error("无法读取图片")
+                ?: return@withContext SauceNaoState.Error(context.getString(R.string.sauce_nao_error_read_image))
 
             val originalBytes = inputStream.readBytes()
             inputStream.close()
@@ -472,7 +472,7 @@ private suspend fun uploadImageToSauceNao(context: Context, uri: Uri): SauceNaoS
             Log.d(TAG, "Response code: ${response.code}")
 
             if (response.isSuccessful) {
-                val html = response.body?.string() ?: return@withContext SauceNaoState.Error("响应为空")
+                val html = response.body?.string() ?: return@withContext SauceNaoState.Error(context.getString(R.string.sauce_nao_error_empty_response))
                 Log.d(TAG, "Response HTML length: ${html.length}")
 
                 // Check if HTML contains error message
@@ -485,11 +485,11 @@ private suspend fun uploadImageToSauceNao(context: Context, uri: Uri): SauceNaoS
             } else {
                 val errorBody = response.body?.string() ?: ""
                 Log.e(TAG, "Request failed: ${response.code}, body: $errorBody")
-                SauceNaoState.Error("请求失败: ${response.code}")
+                SauceNaoState.Error(context.getString(R.string.sauce_nao_error_request_failed, response.code))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception: ${e.message}", e)
-            SauceNaoState.Error(e.message ?: "未知错误")
+            SauceNaoState.Error(e.message ?: context.getString(R.string.sauce_nao_error_unknown))
         }
     }
 }

@@ -14,7 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.NovelList
 import ceui.lisa.jcstaff.core.NovelListViewModel
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
@@ -38,12 +40,12 @@ fun NovelSeriesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(seriesTitle.ifEmpty { "系列" }) },
+                title = { Text(seriesTitle.ifEmpty { stringResource(R.string.novel_series) }) },
                 navigationIcon = {
                     IconButton(onClick = { navViewModel.goBack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 }

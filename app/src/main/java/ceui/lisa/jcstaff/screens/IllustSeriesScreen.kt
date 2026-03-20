@@ -16,7 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.IllustGrid
 import ceui.lisa.jcstaff.components.SelectionTopBar
 import ceui.lisa.jcstaff.core.IllustListViewModel
@@ -53,12 +55,12 @@ fun IllustSeriesScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(seriesTitle.ifEmpty { "漫画系列" }) },
+                    title = { Text(seriesTitle.ifEmpty { stringResource(R.string.manga_series) }) },
                     navigationIcon = {
                         IconButton(onClick = { navViewModel.goBack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回"
+                                contentDescription = stringResource(R.string.back)
                             )
                         }
                     }

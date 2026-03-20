@@ -44,10 +44,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ceui.lisa.jcstaff.R
 import ceui.lisa.jcstaff.components.CircleAvatar
 import ceui.lisa.jcstaff.components.IllustCard
 import ceui.lisa.jcstaff.home.CollectionViewModel
@@ -76,7 +78,7 @@ fun CollectionDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = state.title.ifEmpty { "珍藏册" },
+                        text = state.title.ifEmpty { stringResource(R.string.collection) },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -116,7 +118,7 @@ fun CollectionDetailScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = state.error ?: "Error",
+                            text = state.error ?: stringResource(R.string.load_error),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
@@ -124,7 +126,7 @@ fun CollectionDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "点击重试",
+                            text = stringResource(R.string.tap_to_retry),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -229,7 +231,7 @@ fun CollectionDetailScreen(
                     if (state.relatedCollections.isNotEmpty()) {
                         item(span = StaggeredGridItemSpan.FullLine) {
                             Text(
-                                text = "相关珍藏册",
+                                text = stringResource(R.string.related_collections),
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(
                                     start = 12.dp,
@@ -328,7 +330,7 @@ private fun RelatedCollectionCard(
                 }
                 if (collection.bookmarkCount > 0) {
                     Text(
-                        text = "${collection.bookmarkCount} bookmarks",
+                        text = stringResource(R.string.collection_bookmark_count, collection.bookmarkCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

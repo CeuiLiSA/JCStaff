@@ -2,6 +2,8 @@ package ceui.lisa.jcstaff.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.stringResource
+import ceui.lisa.jcstaff.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,7 +63,7 @@ fun CollectionDiscoveryScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("珍藏册") },
+                title = { Text(stringResource(R.string.collection)) },
                 navigationIcon = {
                     IconButton(onClick = { navViewModel.goBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -97,7 +99,7 @@ fun CollectionDiscoveryScreen() {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = state.error ?: "Error",
+                            text = state.error ?: stringResource(R.string.load_error),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center,
@@ -105,7 +107,7 @@ fun CollectionDiscoveryScreen() {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "点击重试",
+                            text = stringResource(R.string.tap_to_retry),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -123,7 +125,7 @@ fun CollectionDiscoveryScreen() {
                     // ── 推荐珍藏册 ──
                     if (state.recommendCollections.isNotEmpty()) {
                         item(key = "recommend_title") {
-                            SectionHeader(title = "推荐珍藏册")
+                            SectionHeader(title = stringResource(R.string.recommended_collections))
                         }
                         item(key = "recommend_row") {
                             CollectionRow(
@@ -142,8 +144,8 @@ fun CollectionDiscoveryScreen() {
                     if (state.everyoneCollections.isNotEmpty()) {
                         item(key = "everyone_title") {
                             SectionHeader(
-                                title = "大家的珍藏册",
-                                subtitle = "查看全部"
+                                title = stringResource(R.string.everyone_collections),
+                                subtitle = stringResource(R.string.view_all)
                             )
                         }
                         item(key = "everyone_row") {
@@ -163,8 +165,8 @@ fun CollectionDiscoveryScreen() {
                     state.tagGroups.forEach { group ->
                         item(key = "tag_header_${group.tag}") {
                             SectionHeader(
-                                title = "#${group.tag} 相关推荐珍藏册",
-                                subtitle = "查看全部"
+                                title = stringResource(R.string.tag_related_collections, group.tag),
+                                subtitle = stringResource(R.string.view_all)
                             )
                         }
                         item(key = "tag_row_${group.tag}") {
@@ -290,7 +292,7 @@ private fun CollectionCard(
                     if (collection.bookmarkCount > 0) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "${collection.bookmarkCount} 收藏",
+                            text = stringResource(R.string.collection_bookmark_count, collection.bookmarkCount),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
