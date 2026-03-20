@@ -23,6 +23,11 @@
     <!-- Language -->
     <string name="language_title">Language</string>
     <string name="language_desc">Select app display language</string>
+    <string name="theme_title">Dark Mode</string>
+    <string name="theme_desc">Switch app appearance theme</string>
+    <string name="theme_system">Follow System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
     <string name="login_success">Login successful</string>
 
     <!-- Landing Screen -->

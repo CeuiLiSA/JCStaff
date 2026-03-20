@@ -23,6 +23,11 @@
     <!-- Language -->
     <string name="language_title">언어</string>
     <string name="language_desc">앱 표시 언어 선택</string>
+    <string name="theme_title">다크 모드</string>
+    <string name="theme_desc">앱 외관 테마 전환</string>
+    <string name="theme_system">시스템 설정</string>
+    <string name="theme_light">라이트</string>
+    <string name="theme_dark">다크</string>
     <string name="login_success">로그인 성공</string>
 
     <!-- Landing Screen -->

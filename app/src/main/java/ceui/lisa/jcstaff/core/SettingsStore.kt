@@ -20,6 +20,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+enum class ThemeMode(val key: String) {
+    SYSTEM("system"),
+    LIGHT("light"),
+    DARK("dark");
+
+    companion object {
+        fun fromKey(key: String?): ThemeMode =
+            entries.firstOrNull { it.key == key } ?: SYSTEM
+    }
+}
+
 /**
  * Global DataStore for language (shared across all accounts)
  */
@@ -31,6 +42,7 @@ object SettingsStore {
     private val IMAGE_CACHE_LIMIT_MB = intPreferencesKey("image_cache_limit_mb")
     private val HIDE_AI_CONTENT = booleanPreferencesKey("hide_ai_content")
     private val DOWNLOAD_FILENAME_TEMPLATE = stringPreferencesKey("download_filename_template")
+    private val THEME_MODE = stringPreferencesKey("theme_mode")
 
     const val DEFAULT_FILENAME_TEMPLATE = "{id}_{title}_p{page}"
 
@@ -57,6 +69,9 @@ object SettingsStore {
 
     private val _downloadFilenameTemplate = MutableStateFlow(DEFAULT_FILENAME_TEMPLATE)
     val downloadFilenameTemplate: StateFlow<String> = _downloadFilenameTemplate.asStateFlow()
+
+    private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
+    val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
     const val MIN_IMAGE_CACHE_LIMIT_MB = 256
     const val MAX_IMAGE_CACHE_LIMIT_MB = 4096
@@ -87,6 +102,7 @@ object SettingsStore {
         globalSyncJob = scope.launch {
             globalDataStore?.data?.collect { preferences ->
                 _selectedLanguage.value = preferences[SELECTED_LANGUAGE]
+                _themeMode.value = ThemeMode.fromKey(preferences[THEME_MODE])
             }
         }
     }
@@ -145,6 +161,13 @@ object SettingsStore {
         _downloadFilenameTemplate.value = effective
         dataStore?.edit { preferences ->
             preferences[DOWNLOAD_FILENAME_TEMPLATE] = effective
+        }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        _themeMode.value = mode
+        globalDataStore?.edit { preferences ->
+            preferences[THEME_MODE] = mode.key
         }
     }
 

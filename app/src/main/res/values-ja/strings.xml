@@ -23,6 +23,11 @@
     <!-- Language -->
     <string name="language_title">言語</string>
     <string name="language_desc">アプリの表示言語を選択</string>
+    <string name="theme_title">ダークモード</string>
+    <string name="theme_desc">アプリの外観テーマを切り替え</string>
+    <string name="theme_system">システムに従う</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
     <string name="login_success">ログイン成功</string>
 
     <!-- Landing Screen -->

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.FolderOpen
@@ -71,6 +72,7 @@ import ceui.lisa.jcstaff.core.FilenameFormatter
 import ceui.lisa.jcstaff.core.LanguageManager
 import ceui.lisa.jcstaff.core.ContentFilterManager
 import ceui.lisa.jcstaff.core.SettingsStore
+import ceui.lisa.jcstaff.core.ThemeMode
 import ceui.lisa.jcstaff.network.Illust
 import ceui.lisa.jcstaff.navigation.LocalNavigationViewModel
 import ceui.lisa.jcstaff.navigation.NavRoute
@@ -91,7 +93,9 @@ fun SettingsScreen(
     val hideAiContent by SettingsStore.hideAiContent.collectAsState()
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     val filenameTemplate by SettingsStore.downloadFilenameTemplate.collectAsState()
+    val themeMode by SettingsStore.themeMode.collectAsState()
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showFilenameTemplateDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -162,6 +166,19 @@ fun SettingsScreen(
                 description = stringResource(R.string.language_desc),
                 value = currentLanguage?.displayName ?: "",
                 onClick = { showLanguageDialog = true }
+            )
+
+            // 深色模式
+            SettingsItemNavigation(
+                icon = Icons.Default.DarkMode,
+                title = stringResource(R.string.theme_title),
+                description = stringResource(R.string.theme_desc),
+                value = stringResource(when (themeMode) {
+                    ThemeMode.SYSTEM -> R.string.theme_system
+                    ThemeMode.LIGHT -> R.string.theme_light
+                    ThemeMode.DARK -> R.string.theme_dark
+                }),
+                onClick = { showThemeDialog = true }
             )
 
             // 屏蔽设置
@@ -266,6 +283,20 @@ fun SettingsScreen(
                 showFilenameTemplateDialog = false
                 coroutineScope.launch {
                     SettingsStore.setDownloadFilenameTemplate(newTemplate)
+                }
+            }
+        )
+    }
+
+    // 主题选择对话框
+    if (showThemeDialog) {
+        ThemeDialog(
+            currentTheme = themeMode,
+            onDismiss = { showThemeDialog = false },
+            onConfirm = { mode ->
+                showThemeDialog = false
+                coroutineScope.launch {
+                    SettingsStore.setThemeMode(mode)
                 }
             }
         )
@@ -610,6 +641,68 @@ private fun LanguageDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedLanguage) }) {
+                Text(stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun ThemeDialog(
+    currentTheme: ThemeMode,
+    onDismiss: () -> Unit,
+    onConfirm: (ThemeMode) -> Unit
+) {
+    var selectedTheme by remember { mutableStateOf(currentTheme) }
+
+    val options = listOf(
+        ThemeMode.SYSTEM to R.string.theme_system,
+        ThemeMode.LIGHT to R.string.theme_light,
+        ThemeMode.DARK to R.string.theme_dark
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.theme_title),
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column(modifier = Modifier.selectableGroup()) {
+                options.forEach { (mode, labelRes) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = (mode == selectedTheme),
+                                onClick = { selectedTheme = mode },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (mode == selectedTheme),
+                            onClick = null
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(labelRes),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedTheme) }) {
                 Text(stringResource(R.string.confirm))
             }
         },
