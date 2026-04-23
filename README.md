@@ -4,6 +4,29 @@
 
 ---
 
+## 截图
+
+<p>
+  <img src="docs/screenshots/01_home.jpg" width="200" />
+  <img src="docs/screenshots/02_discover.jpg" width="200" />
+  <img src="docs/screenshots/03_trending.jpg" width="200" />
+  <img src="docs/screenshots/04_new_works.jpg" width="200" />
+</p>
+<p>
+  <img src="docs/screenshots/05_illust_detail.jpg" width="200" />
+  <img src="docs/screenshots/06_illust_detail_scroll.jpg" width="200" />
+  <img src="docs/screenshots/07_user_profile.jpg" width="200" />
+  <img src="docs/screenshots/09_settings.jpg" width="200" />
+</p>
+<p>
+  <img src="docs/screenshots/10_search.jpg" width="200" />
+  <img src="docs/screenshots/11_novel_list.jpg" width="200" />
+  <img src="docs/screenshots/12_novel_detail.jpg" width="200" />
+  <img src="docs/screenshots/13_novel_reader.jpg" width="200" />
+</p>
+
+---
+
 ## 功能概览
 
 ### 内容浏览
